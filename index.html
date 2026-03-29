@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAMY — TMS</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-text">N A M Y</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-page="expeditions">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 17H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-4m-6 4l3-3-3-3"/></svg>
+        Expéditions
+      </a>
+      <a href="#" class="nav-item" data-page="dispatch">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        Dispatch
+      </a>
+      <a href="#" class="nav-item" data-page="planning">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Planning
+      </a>
+      <a href="#" class="nav-item" data-page="map">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+        Map chauffeurs
+      </a>
+      <a href="#" class="nav-item" data-page="statistiques">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Statistiques
+      </a>
+      <a href="#" class="nav-item" data-page="extraction">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Extraction
+      </a>
+      <a href="#" class="nav-item" data-page="administration">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+        Administration
+      </a>
+    </nav>
+    <div class="sidebar-bottom">
+      <a href="#" class="nav-item nav-logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Déconnexion
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main-content">
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="topbar-notice">
+        <span class="notice-dot"></span>
+        <span>CONTACT EXPLOITATION — NIZAR Lun–Ven 8h–16h : <strong>06 52 59 76 07</strong> · YAQUINE Sam–Dim 8h–16h : <strong>07 67 44 08 16</strong> · SALLE Lun–Dim 16h–20h : <a href="mailto:salle@fissaliv.com">salle@fissaliv.com</a></span>
+      </div>
+    </div>
+
+    <!-- Pages -->
+    <div class="page active" id="page-expeditions">
+      <div class="page-header">
+        <h1>Liste des expéditions</h1>
+        <button class="btn btn-primary" onclick="openModal('modal-create-expedition')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Créer une expédition
+        </button>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters-bar">
+        <input type="text" placeholder="ID" class="filter-input filter-sm" id="filter-id">
+        <input type="text" placeholder="Expéditeur (Nom / CP / Ville)" class="filter-input" id="filter-expediteur">
+        <input type="text" placeholder="Destinataire (Nom / CP / Ville)" class="filter-input" id="filter-destinataire">
+        <input type="date" class="filter-input filter-date" id="filter-date" value="2026-03-29">
+        <select class="filter-select" id="filter-statut">
+          <option value="">Tous les statuts</option>
+          <option value="en_attente">En attente</option>
+          <option value="planifie">Planifié</option>
+          <option value="en_cours">En cours</option>
+          <option value="livre">Livré</option>
+          <option value="litige">Litige</option>
+        </select>
+        <select class="filter-select" id="filter-chauffeur">
+          <option value="">Tous les chauffeurs</option>
+          <option value="tarek">TAREK MAKNI</option>
+          <option value="gore">Goré GREENCHARGEUR</option>
+          <option value="dama">Dama TRAORE</option>
+          <option value="rachid">Rachid SANOU</option>
+          <option value="amine">Amine EXCEL LIV</option>
+          <option value="mohamed">Mohamed KLILA</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="filterExpeditions()">Filtrer</button>
+        <button class="btn btn-ghost btn-sm" onclick="resetFilters()">Réinitialiser</button>
+      </div>
+
+      <!-- Stats rapides -->
+      <div class="quick-stats">
+        <div class="stat-card">
+          <span class="stat-value" id="stat-total">0</span>
+          <span class="stat-label">Total</span>
+        </div>
+        <div class="stat-card stat-warning">
+          <span class="stat-value" id="stat-attente">0</span>
+          <span class="stat-label">En attente</span>
+        </div>
+        <div class="stat-card stat-info">
+          <span class="stat-value" id="stat-planifie">0</span>
+          <span class="stat-label">Planifiées</span>
+        </div>
+        <div class="stat-card stat-success">
+          <span class="stat-value" id="stat-livre">0</span>
+          <span class="stat-label">Livrées</span>
+        </div>
+        <div class="stat-card stat-danger">
+          <span class="stat-value" id="stat-litige">0</span>
+          <span class="stat-label">Litiges</span>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-container">
+        <table class="data-table" id="expeditions-table">
+          <thead>
+            <tr>
+              <th class="sortable" data-col="id">ID <span class="sort-icon">↕</span></th>
+              <th class="sortable" data-col="tournee">Tournée <span class="sort-icon">↕</span></th>
+              <th class="sortable" data-col="expediteur">Expéditeur <span class="sort-icon">↕</span></th>
+              <th class="sortable" data-col="destinataire">Destinataire <span class="sort-icon">↕</span></th>
+              <th class="sortable" data-col="date">Date de livraison <span class="sort-icon">↕</span></th>
+              <th>Infos Expédition</th>
+              <th>Options</th>
+              <th class="sortable" data-col="prix">Prix TTC <span class="sort-icon">↕</span></th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="expeditions-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PAGE DISPATCH -->
+    <div class="page" id="page-dispatch">
+      <div class="page-header">
+        <h1>Dispatch</h1>
+        <button class="btn btn-primary" onclick="openModal('modal-create-tournee')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Créer une tournée
+        </button>
+      </div>
+      <div class="dispatch-layout">
+        <div class="dispatch-map-container">
+          <div id="dispatch-map" class="map-placeholder">
+            <div class="map-overlay-info">Carte interactive — Intégration Leaflet/OpenStreetMap</div>
+            <div class="map-pins-demo">
+              <div class="map-pin pin-red" style="top:35%;left:48%"><span>12119</span></div>
+              <div class="map-pin pin-red" style="top:42%;left:52%"><span>12124</span></div>
+              <div class="map-pin pin-red" style="top:38%;left:55%"><span>12125</span></div>
+              <div class="map-pin pin-green" style="top:30%;left:50%"><span>12080</span></div>
+              <div class="map-pin pin-green" style="top:45%;left:45%"><span>12074</span></div>
+              <div class="map-pin pin-green" style="top:50%;left:58%"><span>12035</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="dispatch-panels">
+          <div class="dispatch-panel">
+            <div class="panel-header">
+              <h3>Expéditions à affecter <span class="badge badge-warning" id="dispatch-count">0</span></h3>
+              <button class="btn btn-ai btn-sm" onclick="autoDispatch()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                Auto-dispatch IA
+              </button>
+            </div>
+            <div class="dispatch-list" id="dispatch-unassigned"></div>
+          </div>
+          <div class="dispatch-panel">
+            <div class="panel-header">
+              <h3>Tournées ouvertes du <span id="dispatch-date">29/03/2026</span></h3>
+            </div>
+            <div id="dispatch-tournees"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE PLANNING -->
+    <div class="page" id="page-planning">
+      <div class="page-header">
+        <h1>Planning des chauffeurs</h1>
+        <div class="week-nav">
+          <button class="btn btn-secondary btn-sm" onclick="prevWeek()">←</button>
+          <span id="week-label">Semaine actuelle & suivante — 23/03/2026 – 05/04/2026</span>
+          <button class="btn btn-secondary btn-sm" onclick="nextWeek()">→</button>
+        </div>
+      </div>
+      <div class="table-container">
+        <table class="planning-table" id="planning-table">
+          <thead id="planning-thead"></thead>
+          <tbody id="planning-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PAGE MAP -->
+    <div class="page" id="page-map">
+      <div class="page-header">
+        <h1>Map chauffeurs</h1>
+        <div class="legend">
+          <span class="legend-item"><span class="legend-dot dot-green"></span> En tournée</span>
+          <span class="legend-item"><span class="legend-dot dot-red"></span> Disponible</span>
+        </div>
+      </div>
+      <div id="map-chauffeurs" class="map-placeholder map-full">
+        <div class="map-overlay-info">Carte temps réel — GPS chauffeurs</div>
+        <div class="map-pins-demo">
+          <div class="map-driver-pin pin-green" style="top:25%;left:40%"><div class="driver-avatar">TM</div><span>TAREK</span></div>
+          <div class="map-driver-pin pin-green" style="top:35%;left:55%"><div class="driver-avatar">GG</div><span>GORE</span></div>
+          <div class="map-driver-pin pin-red" style="top:50%;left:48%"><div class="driver-avatar">DT</div><span>DAMA</span></div>
+          <div class="map-driver-pin pin-red" style="top:40%;left:35%"><div class="driver-avatar">RS</div><span>RACHID</span></div>
+          <div class="map-driver-pin pin-green" style="top:60%;left:52%"><div class="driver-avatar">MK</div><span>MOHAMED</span></div>
+          <div class="map-driver-pin pin-red" style="top:30%;left:62%"><div class="driver-avatar">AE</div><span>AMINE</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE STATISTIQUES -->
+    <div class="page" id="page-statistiques">
+      <div class="page-header">
+        <h1>Statistiques</h1>
+        <button class="btn btn-secondary" onclick="openModal('modal-dates')">Sélectionner les dates</button>
+      </div>
+      <div class="stats-tabs">
+        <button class="tab-btn active" onclick="switchTab('magasins')">🏪 Magasins</button>
+        <button class="tab-btn" onclick="switchTab('chauffeurs')">🚚 Chauffeurs</button>
+      </div>
+      <div id="stats-magasins" class="stats-content">
+        <div class="kpi-row" id="kpi-row"></div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr><th>Magasin</th><th>Livraisons</th><th>Devis</th><th>CA HT</th><th>Taux RCL</th></tr></thead>
+            <tbody id="stats-magasins-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="stats-chauffeurs" class="stats-content" style="display:none">
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr><th>Chauffeur</th><th>Livraisons</th><th>Devis</th><th>CA HT</th><th>Taux RCL</th></tr></thead>
+            <tbody id="stats-chauffeurs-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE EXTRACTION -->
+    <div class="page" id="page-extraction">
+      <div class="page-header"><h1>Extraction</h1></div>
+      <div class="card" style="max-width:600px">
+        <p class="text-muted">Extrayez vos expéditions au format PDF ou CSV sur une période donnée.</p>
+        <div class="form-group">
+          <label>Entreprise</label>
+          <select class="form-control" id="extract-entreprise">
+            <option value="">Toutes les entreprises</option>
+            <option>TRUFFAUT LE CHESNAY</option>
+            <option>TRUFFAUT PLAISIR</option>
+            <option>TRUFFAUT DOMUS</option>
+            <option>TRUFFAUT PARIS RIVE GAUCHE</option>
+            <option>TRUFFAUT FOURQUEUX</option>
+            <option>FISSA LIV</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Du</label>
+            <input type="date" class="form-control" value="2026-03-29" id="extract-from">
+          </div>
+          <div class="form-group">
+            <label>Au</label>
+            <input type="date" class="form-control" value="2026-04-05" id="extract-to">
+          </div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-danger" onclick="generateExport('pdf')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Générer PDF
+          </button>
+          <button class="btn btn-success" onclick="generateExport('csv')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Générer CSV
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE ADMINISTRATION -->
+    <div class="page" id="page-administration">
+      <div class="page-header"><h1>Administration</h1></div>
+      <div class="admin-grid">
+        <div class="admin-section">
+          <h3>Administration</h3>
+          <a href="#" class="admin-link" onclick="showAdminSub('configuration')">⚙️ Configuration</a>
+        </div>
+        <div class="admin-section">
+          <h3>Exploitation</h3>
+          <a href="#" class="admin-link" onclick="navigateTo('map')">🗺️ Map chauffeurs</a>
+          <a href="#" class="admin-link" onclick="showAdminSub('chauffeurs')">🚚 Chauffeurs</a>
+          <a href="#" class="admin-link" onclick="showAdminSub('vehicules')">🚐 Véhicules</a>
+          <a href="#" class="admin-link" onclick="showAdminSub('utilisateurs')">👤 Utilisateurs</a>
+          <a href="#" class="admin-link" onclick="showAdminSub('entreprises')">🏢 Entreprises</a>
+        </div>
+        <div class="admin-section">
+          <h3>Facturation</h3>
+          <a href="#" class="admin-link" onclick="showAdminSub('tarifs')">💶 Grilles tarifaires</a>
+        </div>
+      </div>
+
+      <!-- Sous-sections admin -->
+      <div id="admin-chauffeurs" class="admin-sub" style="display:none">
+        <div class="sub-header">
+          <h2>Liste des chauffeurs</h2>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-chauffeur')">+ Ajouter</button>
+        </div>
+        <input type="text" placeholder="Rechercher..." class="filter-input" style="margin-bottom:1rem;width:300px">
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr><th>ID</th><th>Prénom</th><th>Nom</th><th>Actions</th></tr></thead>
+            <tbody id="chauffeurs-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="admin-entreprises" class="admin-sub" style="display:none">
+        <div class="sub-header">
+          <h2>Liste des entreprises</h2>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-entreprise')">+ Ajouter</button>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr><th>ID</th><th>Entreprise</th><th>Adresse</th><th>Actions</th></tr></thead>
+            <tbody id="entreprises-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="admin-tarifs" class="admin-sub" style="display:none">
+        <div class="sub-header">
+          <h2>Grilles tarifaires</h2>
+          <button class="btn btn-primary btn-sm">+ Créer une grille</button>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr><th>Poids départ (≥)</th><th>Poids fin (&lt;)</th><th>Colis unique (&lt;kg)</th><th>Dimension max (cm)</th><th>Lieu livraison</th><th>Prix</th><th>Actions</th></tr></thead>
+            <tbody id="tarifs-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modal-create-expedition" style="display:none">
+  <div class="modal modal-large">
+    <div class="modal-header">
+      <h2>Créer une expédition</h2>
+      <button class="modal-close" onclick="closeModal('modal-create-expedition')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-section">
+        <div class="section-badge">Admin</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Client payeur <span class="required">*</span></label>
+            <select class="form-control" id="new-client" onchange="updateClientForm()">
+              <option value="">Sélectionner...</option>
+              <option value="TRUFFAUT LE CHESNAY">TRUFFAUT LE CHESNAY</option>
+              <option value="TRUFFAUT PLAISIR">TRUFFAUT PLAISIR</option>
+              <option value="TRUFFAUT DOMUS">TRUFFAUT DOMUS</option>
+              <option value="TRUFFAUT PARIS RIVE GAUCHE">TRUFFAUT PARIS RIVE GAUCHE</option>
+              <option value="TRUFFAUT FOURQUEUX">TRUFFAUT FOURQUEUX</option>
+              <option value="FISSA LIV">FISSA LIV</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Prestation <span class="required">*</span></label>
+            <select class="form-control" id="new-prestation">
+              <option>TRUFFAUT PIECE DU CHOIX STD</option>
+              <option>FISSALIV STD</option>
+              <option>EXPRESS</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="section-badge">1</div>
+        <h4>Date &amp; Prestation</h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date de livraison <span class="required">*</span></label>
+            <input type="date" class="form-control" id="new-date" value="2026-03-29">
+          </div>
+          <div class="form-group">
+            <label>Créneau horaire <span class="required">*</span></label>
+            <div class="creneau-btns">
+              <button class="creneau-btn" onclick="selectCreneau(this, '09:00-12:00')">09:00 - 12:00</button>
+              <button class="creneau-btn" onclick="selectCreneau(this, '12:00-16:00')">12:00 - 16:00</button>
+              <button class="creneau-btn" onclick="selectCreneau(this, '15:00-18:00')">15:00 - 18:00</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row-equal">
+        <div class="form-section">
+          <div class="section-badge">2</div>
+          <h4>Expéditeur <button class="btn-inverser" onclick="inverserAdresses()">⇄ Inverser</button></h4>
+          <div class="form-group">
+            <label>Nom de l'expéditeur <span class="required">*</span></label>
+            <input type="text" class="form-control" id="new-exp-nom" placeholder="Nom expéditeur">
+          </div>
+          <div class="form-group">
+            <label>Adresse <span class="required">*</span></label>
+            <input type="text" class="form-control" id="new-exp-adresse" placeholder="Adresse">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Code postal</label>
+              <input type="text" class="form-control" id="new-exp-cp" placeholder="CP">
+            </div>
+            <div class="form-group">
+              <label>Ville</label>
+              <input type="text" class="form-control" id="new-exp-ville" placeholder="Ville">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Téléphone</label>
+            <input type="text" class="form-control" id="new-exp-tel" placeholder="Téléphone">
+          </div>
+          <div class="form-group">
+            <label>Instructions d'enlèvement</label>
+            <input type="text" class="form-control" id="new-exp-instructions" placeholder="Instructions...">
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="section-badge">3</div>
+          <h4>Destinataire</h4>
+          <div class="form-group">
+            <label>Nom du destinataire <span class="required">*</span></label>
+            <input type="text" class="form-control" id="new-dest-nom" placeholder="Nom destinataire">
+          </div>
+          <div class="form-group">
+            <label>Adresse <span class="required">*</span></label>
+            <input type="text" class="form-control" id="new-dest-adresse" placeholder="Adresse (min 3 caractères)">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Code postal <span class="required">*</span></label>
+              <input type="text" class="form-control" id="new-dest-cp" placeholder="CP">
+            </div>
+            <div class="form-group">
+              <label>Ville <span class="required">*</span></label>
+              <input type="text" class="form-control" id="new-dest-ville" placeholder="Ville">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Téléphone <span class="required">*</span></label>
+            <input type="text" class="form-control" id="new-dest-tel" placeholder="Téléphone">
+          </div>
+          <div class="form-group">
+            <label>Email <span class="required">*</span></label>
+            <input type="email" class="form-control" id="new-dest-email" placeholder="Email">
+          </div>
+          <div class="form-group">
+            <label>Instructions de livraison</label>
+            <input type="text" class="form-control" id="new-dest-instructions" placeholder="Ex: 1er étage, digicode...">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row-equal">
+        <div class="form-section">
+          <div class="section-badge">4</div>
+          <h4>Colisage &amp; Options</h4>
+          <div class="form-group">
+            <label>Lieu de livraison <span class="required">*</span></label>
+            <select class="form-control" id="new-lieu" onchange="recalculerPrix()">
+              <option>Pièce du choix</option>
+              <option>Pied de camion</option>
+              <option>Rez-de-chaussée</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Poids total (kg) <span class="required">*</span></label>
+              <input type="number" class="form-control" id="new-poids-total" placeholder="0" oninput="recalculerPrix()">
+            </div>
+            <div class="form-group">
+              <label>Poids colis lourd (kg) <span class="required">*</span></label>
+              <input type="number" class="form-control" id="new-poids-lourd" placeholder="0">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Taille colis long (cm) <span class="required">*</span></label>
+              <input type="number" class="form-control" id="new-taille" placeholder="0" oninput="recalculerPrix()">
+            </div>
+            <div class="form-group">
+              <label>Nb de colis <span class="required">*</span></label>
+              <input type="number" class="form-control" id="new-nb-colis" placeholder="0">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Nb colis lourds (≥70kg)</label>
+            <input type="number" class="form-control" id="new-nb-lourds" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label>Description de la marchandise <span class="required">*</span></label>
+            <input type="text" class="form-control" id="new-description" placeholder="Ex: meuble, plantes...">
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="section-badge">5</div>
+          <h4>Tarification</h4>
+          <div id="tarif-info" class="tarif-placeholder">
+            <p>Remplissez les informations pour calculer le prix :</p>
+            <ul>
+              <li>Créneau horaire</li>
+              <li>Adresse destinataire valide</li>
+              <li>Informations de colisage</li>
+            </ul>
+          </div>
+          <div id="tarif-result" style="display:none">
+            <table class="tarif-table">
+              <tr><td>Tarif de base</td><td id="tarif-base">—</td></tr>
+              <tr><td>Supplément colis lourd</td><td id="tarif-supplement">—</td></tr>
+              <tr class="tarif-total-ht"><td>TOTAL HT</td><td id="tarif-ht">—</td></tr>
+              <tr class="tarif-tva"><td>TVA (20%)</td><td id="tarif-tva">—</td></tr>
+              <tr class="tarif-total-ttc"><td><strong>TOTAL TTC</strong></td><td id="tarif-ttc">—</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-create-expedition')">Annuler</button>
+      <button class="btn btn-primary" onclick="createExpedition()">Valider l'expédition</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Créer tournée -->
+<div class="modal-overlay" id="modal-create-tournee" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Créer une tournée</h2>
+      <button class="modal-close" onclick="closeModal('modal-create-tournee')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nom de la tournée <span class="required">*</span></label>
+        <input type="text" class="form-control" id="new-tournee-nom" placeholder="Ex: TAREK 29/03">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date de début <span class="required">*</span></label>
+          <input type="date" class="form-control" id="new-tournee-date" value="2026-03-30">
+        </div>
+        <div class="form-group">
+          <label>Heure de début <span class="required">*</span></label>
+          <input type="time" class="form-control" id="new-tournee-heure" value="08:00">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Chauffeur</label>
+        <select class="form-control" id="new-tournee-chauffeur">
+          <option value="">Non assigné</option>
+          <option>TAREK MAKNI</option>
+          <option>Goré GREENCHARGEUR</option>
+          <option>Dama TRAORE</option>
+          <option>Rachid SANOU</option>
+          <option>Amine EXCEL LIV</option>
+          <option>Mohamed KLILA</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Couleur de la tournée</label>
+        <div class="color-picker-row">
+          <input type="color" class="color-picker" id="new-tournee-couleur" value="#076460">
+          <input type="text" class="form-control" id="new-tournee-couleur-hex" value="#076460" style="width:120px">
+        </div>
+      </div>
+      <div class="tournee-preview" id="tournee-preview">
+        <strong>Aperçu :</strong>
+        <div class="tournee-badge" id="preview-badge" style="background:#076460">TOURNÉE</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-create-tournee')">Annuler</button>
+      <button class="btn btn-primary" onclick="createTournee()">Créer la tournée</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal detail expédition -->
+<div class="modal-overlay" id="modal-detail-expedition" style="display:none">
+  <div class="modal modal-large">
+    <div class="modal-header">
+      <h2>Expédition <span id="detail-id"></span></h2>
+      <div class="modal-header-actions">
+        <button class="btn btn-secondary btn-sm">📄 Lettre de voiture</button>
+        <button class="btn btn-info btn-sm">📍 Lien de suivi</button>
+        <button class="btn btn-secondary btn-sm" onclick="dupliquerExpedition()">⧉ Dupliquer</button>
+        <button class="btn btn-danger btn-sm">⚠ Litige</button>
+        <button class="modal-close" onclick="closeModal('modal-detail-expedition')">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" id="detail-body"></div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div id="toast" class="toast" style="display:none"></div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
