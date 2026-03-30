@@ -2,7 +2,7 @@
 
 let currentPage = 'expeditions';
 let selectedCreneau = null;
-let filteredExpeditions = [...EXPEDITIONS];
+let filteredExpeditions = [];
 
 // ─── NAVIGATION ─────────────────────────────────────────────
 document.querySelectorAll('.nav-item[data-page]').forEach(item => {
@@ -576,6 +576,24 @@ function renderAdmin() {
     </tr>
   `).join('');
 
+  // Véhicules
+  const vehTbody = document.getElementById('vehicules-tbody');
+  if (vehTbody) {
+    vehTbody.innerHTML = VEHICULES.map(v => `
+      <tr>
+        <td style="font-family:'DM Mono',monospace">${v.id}</td>
+        <td>${v.nom}</td>
+        <td style="font-family:'DM Mono',monospace">${v.plaque || '—'}</td>
+        <td>
+          <div class="table-actions">
+            <button class="btn-icon">✏️</button>
+            <button class="btn-icon danger">🗑</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
   // Grilles tarifaires
   document.getElementById('tarifs-tbody').innerHTML = GRILLES_TARIFAIRES.map(g => `
     <tr>
@@ -599,6 +617,133 @@ function showAdminSub(sub) {
   document.querySelectorAll('.admin-sub').forEach(el => el.style.display = 'none');
   const el = document.getElementById(`admin-${sub}`);
   if (el) el.style.display = 'block';
+}
+
+// ─── CRÉATION VÉHICULE ──────────────────────────────────────
+async function createVehicule() {
+  const nom = document.getElementById('new-veh-nom').value.trim();
+  const plaque = document.getElementById('new-veh-plaque').value.trim().toUpperCase();
+
+  if (!nom || !plaque) {
+    showToast('Veuillez remplir le type et la plaque', 'warning');
+    return;
+  }
+
+  try {
+    const { data, error } = await db.from('vehicules').insert({ nom, plaque }).select().single();
+    if (error) throw error;
+    VEHICULES.push(data);
+  } catch (err) {
+    console.error('[NAMY] Erreur création véhicule:', err);
+    const newId = VEHICULES.length ? Math.max(...VEHICULES.map(v => v.id)) + 1 : 1;
+    VEHICULES.push({ id: newId, nom, plaque });
+  }
+
+  renderAdmin();
+  closeModal('modal-create-vehicule');
+  document.getElementById('new-veh-nom').value = '';
+  document.getElementById('new-veh-plaque').value = '';
+  showToast(`Véhicule "${nom}" ajouté avec succès`);
+}
+
+// ─── CRÉATION UTILISATEUR ───────────────────────────────────
+async function createUtilisateur() {
+  const prenom = document.getElementById('new-user-prenom').value.trim();
+  const nom = document.getElementById('new-user-nom').value.trim();
+  const email = document.getElementById('new-user-email').value.trim();
+  const password = document.getElementById('new-user-password').value;
+  const role = document.getElementById('new-user-role').value;
+  const entreprise_id = document.getElementById('new-user-entreprise').value || null;
+
+  if (!prenom || !nom || !email || !password || !role) {
+    showToast('Veuillez remplir tous les champs obligatoires', 'warning');
+    return;
+  }
+
+  if (password.length < 8) {
+    showToast('Le mot de passe doit contenir au moins 8 caractères', 'warning');
+    return;
+  }
+
+  try {
+    const { data, error } = await db.functions.invoke('create-user', {
+      body: { email, password, role, prenom, nom, entreprise_id: entreprise_id ? parseInt(entreprise_id) : null }
+    });
+
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    closeModal('modal-create-utilisateur');
+    document.getElementById('new-user-prenom').value = '';
+    document.getElementById('new-user-nom').value = '';
+    document.getElementById('new-user-email').value = '';
+    document.getElementById('new-user-password').value = '';
+    document.getElementById('new-user-role').value = '';
+    document.getElementById('new-user-entreprise').value = '';
+    showToast(`Utilisateur "${prenom} ${nom}" (${role}) créé avec succès`);
+  } catch (err) {
+    console.error('[NAMY] Erreur création utilisateur:', err);
+    showToast(`Erreur : ${err.message || 'Impossible de créer l\'utilisateur'}`, 'warning');
+  }
+}
+
+// ─── CRÉATION CHAUFFEUR ──────────────────────────────────────
+async function createChauffeur() {
+  const prenom = document.getElementById('new-chauff-prenom').value.trim();
+  const nom = document.getElementById('new-chauff-nom').value.trim();
+  const tel = document.getElementById('new-chauff-tel').value.trim();
+  const entreprise_id = document.getElementById('new-chauff-entreprise').value || null;
+  const actif = document.getElementById('new-chauff-actif').checked;
+
+  if (!prenom || !nom) {
+    showToast('Veuillez remplir le prénom et le nom', 'warning');
+    return;
+  }
+
+  const newChauffeur = { prenom, nom, tel: tel || null, entreprise_id: entreprise_id ? parseInt(entreprise_id) : null, actif };
+
+  try {
+    const { data, error } = await db
+      .from('chauffeurs')
+      .insert(newChauffeur)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    CHAUFFEURS.push(data);
+    populateDropdowns();
+    renderAdmin();
+    closeModal('modal-create-chauffeur');
+    resetChauffeurForm();
+    showToast(`Chauffeur "${prenom} ${nom}" ajouté avec succès`);
+  } catch (err) {
+    console.error('[NAMY] Erreur création chauffeur:', err);
+    const newId = CHAUFFEURS.length ? Math.max(...CHAUFFEURS.map(c => c.id)) + 1 : 1;
+    CHAUFFEURS.push({ id: newId, ...newChauffeur });
+    populateDropdowns();
+    renderAdmin();
+    closeModal('modal-create-chauffeur');
+    resetChauffeurForm();
+    showToast(`Chauffeur "${prenom} ${nom}" ajouté localement (hors-ligne)`, 'info');
+  }
+}
+
+function resetChauffeurForm() {
+  document.getElementById('new-chauff-prenom').value = '';
+  document.getElementById('new-chauff-nom').value = '';
+  document.getElementById('new-chauff-tel').value = '';
+  document.getElementById('new-chauff-entreprise').value = '';
+  document.getElementById('new-chauff-actif').checked = true;
+}
+
+// ─── FILTRE DATES STATS ─────────────────────────────────────
+function applyStatsDateFilter() {
+  const from = document.getElementById('stats-date-from').value;
+  const to = document.getElementById('stats-date-to').value;
+  closeModal('modal-dates');
+  renderStats();
+  showToast(`Statistiques filtrées du ${new Date(from).toLocaleDateString('fr-FR')} au ${new Date(to).toLocaleDateString('fr-FR')}`);
 }
 
 // ─── CRÉATION ENTREPRISE ─────────────────────────────────────

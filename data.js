@@ -296,6 +296,25 @@ function populateDropdowns() {
       sel.appendChild(opt);
     });
   });
+
+  // Entreprises dans les modaux chauffeur et utilisateur (avec id comme valeur)
+  const entIdSelects = [
+    document.getElementById('new-chauff-entreprise'),
+    document.getElementById('new-user-entreprise'),
+  ];
+
+  entIdSelects.forEach(sel => {
+    if (!sel) return;
+    const firstOpt = sel.querySelector('option');
+    sel.innerHTML = '';
+    if (firstOpt) sel.appendChild(firstOpt);
+    ENTREPRISES.forEach(e => {
+      const opt = document.createElement('option');
+      opt.value = e.id;
+      opt.textContent = e.nom;
+      sel.appendChild(opt);
+    });
+  });
 }
 
 // ─── INIT ───────────────────────────────────────────────────

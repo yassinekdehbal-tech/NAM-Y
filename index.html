@@ -338,6 +338,42 @@
         </div>
       </div>
 
+      <div id="admin-vehicules" class="admin-sub" style="display:none">
+        <div class="sub-header">
+          <h2>Liste des véhicules</h2>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-vehicule')">+ Ajouter</button>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr><th>ID</th><th>Véhicule</th><th>Plaque</th><th>Actions</th></tr></thead>
+            <tbody id="vehicules-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="admin-utilisateurs" class="admin-sub" style="display:none">
+        <div class="sub-header">
+          <h2>Liste des utilisateurs</h2>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-utilisateur')">+ Ajouter</button>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr><th>ID</th><th>Prénom</th><th>Nom</th><th>Email</th><th>Rôle</th><th>Actions</th></tr></thead>
+            <tbody id="utilisateurs-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="admin-configuration" class="admin-sub" style="display:none">
+        <div class="sub-header">
+          <h2>Configuration</h2>
+        </div>
+        <div class="card" style="padding:24px;color:var(--text-muted)">
+          <p>Paramètres généraux de l'application NAMY.</p>
+          <p style="margin-top:12px;font-size:13px">Version : 1.0.0 · Supabase : gwbvfohizdxwhmcoqvgh</p>
+        </div>
+      </div>
+
       <div id="admin-tarifs" class="admin-sub" style="display:none">
         <div class="sub-header">
           <h2>Grilles tarifaires</h2>
@@ -602,6 +638,150 @@
       </div>
     </div>
     <div class="modal-body" id="detail-body"></div>
+  </div>
+</div>
+
+<!-- Modal créer véhicule -->
+<div class="modal-overlay" id="modal-create-vehicule" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Ajouter un véhicule</h2>
+      <button class="modal-close" onclick="closeModal('modal-create-vehicule')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Type de véhicule <span class="required">*</span></label>
+        <input type="text" class="form-control" id="new-veh-nom" placeholder="Ex : Fourgon 20m³">
+      </div>
+      <div class="form-group">
+        <label>Plaque d'immatriculation <span class="required">*</span></label>
+        <input type="text" class="form-control" id="new-veh-plaque" placeholder="Ex : AB-123-CD" style="text-transform:uppercase">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-create-vehicule')">Annuler</button>
+      <button class="btn btn-primary" onclick="createVehicule()">Ajouter le véhicule</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal créer utilisateur -->
+<div class="modal-overlay" id="modal-create-utilisateur" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Ajouter un utilisateur</h2>
+      <button class="modal-close" onclick="closeModal('modal-create-utilisateur')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Prénom <span class="required">*</span></label>
+          <input type="text" class="form-control" id="new-user-prenom" placeholder="Prénom">
+        </div>
+        <div class="form-group">
+          <label>Nom <span class="required">*</span></label>
+          <input type="text" class="form-control" id="new-user-nom" placeholder="Nom">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email <span class="required">*</span></label>
+        <input type="email" class="form-control" id="new-user-email" placeholder="email@exemple.fr">
+      </div>
+      <div class="form-group">
+        <label>Mot de passe <span class="required">*</span></label>
+        <input type="password" class="form-control" id="new-user-password" placeholder="8 caractères minimum">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Rôle <span class="required">*</span></label>
+          <select class="form-control" id="new-user-role">
+            <option value="">Sélectionner...</option>
+            <option value="admin">Admin</option>
+            <option value="dirigeant">Dirigeant</option>
+            <option value="exploitant">Exploitant</option>
+            <option value="vendeur">Vendeur</option>
+            <option value="chauffeur">Chauffeur</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Entreprise</label>
+          <select class="form-control" id="new-user-entreprise">
+            <option value="">Aucune</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-create-utilisateur')">Annuler</button>
+      <button class="btn btn-primary" onclick="createUtilisateur()">Créer l'utilisateur</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal créer chauffeur -->
+<div class="modal-overlay" id="modal-create-chauffeur" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Ajouter un chauffeur</h2>
+      <button class="modal-close" onclick="closeModal('modal-create-chauffeur')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Prénom <span class="required">*</span></label>
+          <input type="text" class="form-control" id="new-chauff-prenom" placeholder="Prénom">
+        </div>
+        <div class="form-group">
+          <label>Nom <span class="required">*</span></label>
+          <input type="text" class="form-control" id="new-chauff-nom" placeholder="Nom">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Téléphone</label>
+        <input type="tel" class="form-control" id="new-chauff-tel" placeholder="06 12 34 56 78">
+      </div>
+      <div class="form-group">
+        <label>Entreprise</label>
+        <select class="form-control" id="new-chauff-entreprise">
+          <option value="">Aucune</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="new-chauff-actif" checked> Actif
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-create-chauffeur')">Annuler</button>
+      <button class="btn btn-primary" onclick="createChauffeur()">Ajouter le chauffeur</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal sélection dates stats -->
+<div class="modal-overlay" id="modal-dates" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Période de statistiques</h2>
+      <button class="modal-close" onclick="closeModal('modal-dates')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date de début</label>
+          <input type="date" class="form-control" id="stats-date-from" value="2026-03-01">
+        </div>
+        <div class="form-group">
+          <label>Date de fin</label>
+          <input type="date" class="form-control" id="stats-date-to" value="2026-03-30">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-dates')">Annuler</button>
+      <button class="btn btn-primary" onclick="applyStatsDateFilter()">Appliquer</button>
+    </div>
   </div>
 </div>
 
