@@ -73,11 +73,11 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .header-date {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 5px 12px;
+  padding: 4px 6px;
 }
 
 .header-date input[type=date] {
@@ -88,6 +88,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   font-size: 13px;
   outline: none;
   cursor: pointer;
+  width: 130px;
 }
 
 .header-date input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
@@ -95,6 +96,37 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .dispatch-date-label {
   font-size: 11px;
   color: var(--text-muted);
+
+}
+
+.date-nav-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.date-nav-btn:hover { background: var(--surface3); color: var(--text); border-color: var(--border2); }
+.date-nav-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.date-nav-btn.today-btn { font-weight: 600; }
+.date-all-btn {
+  background: none;
+  border: 1px dashed var(--border2);
+  border-radius: 4px;
+  color: var(--text-dim);
+  font-size: 11px;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all .15s;
+}
+.date-all-btn:hover { color: var(--text-muted); border-color: var(--text-muted); }
+.date-all-btn.active { background: var(--warning); color: #000; border-color: var(--warning); font-weight: 600; }
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -638,8 +670,13 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   <div class="logo">N A M Y</div>
 
   <div class="header-date">
-    <span class="dispatch-date-label">Dispatch pour</span>
-    <input type="date" id="dispatch-date" value="2026-03-30" onchange="loadDayData()">
+    <span class="dispatch-date-label">Dispatch</span>
+    <button class="date-nav-btn" onclick="shiftDate(-1)" title="Jour précédent">←</button>
+    <input type="date" id="dispatch-date" onchange="loadDayData()">
+    <button class="date-nav-btn" onclick="shiftDate(1)" title="Jour suivant">→</button>
+    <button class="date-nav-btn today-btn" onclick="goToday()">Auj.</button>
+    <button class="date-nav-btn" onclick="goTomorrow()">Demain</button>
+    <button class="date-all-btn" id="btn-all-dates" onclick="toggleAllDates()">Toutes</button>
   </div>
 
   <div class="header-filters">
@@ -872,6 +909,9 @@ let map = null;
 let markers = {};
 let multiSelectMode = false;
 let selectedCmds = new Set();
+let allDatesMode = false;
+let allCommandes = []; // backup non filtré par date
+let allTournees = []; // backup non filtré par date
 
 async function loadDispatchData() {
   try {
@@ -921,6 +961,17 @@ async function loadDispatchData() {
     showToast('⚠️ Mode hors ligne — données locales', 'warning');
   }
 
+  // Sauvegarder les données complètes avant filtrage par date
+  allCommandes = [...commandes];
+  allTournees = [...tournees];
+
+  // Filtrer par la date sélectionnée (sauf mode "Toutes les dates")
+  const selectedDate = getSelectedDate();
+  if (!allDatesMode && selectedDate) {
+    commandes = allCommandes.filter(c => c.date === selectedDate);
+    tournees = allTournees.filter(t => t.date === selectedDate);
+  }
+
   filteredCommandes = [...commandes];
   populateDispatchDropdowns();
 }
@@ -954,8 +1005,85 @@ function populateDispatchDropdowns() {
   }
 }
 
+// ─── DATE NAVIGATION ────────────────────────────────────────
+function getTomorrow() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split('T')[0];
+}
+
+function getToday() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function initDatePicker() {
+  const saved = sessionStorage.getItem('namy_dispatch_date');
+  const savedAll = sessionStorage.getItem('namy_dispatch_all') === 'true';
+  const dateInput = document.getElementById('dispatch-date');
+
+  if (savedAll) {
+    allDatesMode = true;
+    dateInput.value = getToday();
+    document.getElementById('btn-all-dates').classList.add('active');
+  } else {
+    dateInput.value = saved || getTomorrow();
+  }
+}
+
+function getSelectedDate() {
+  return document.getElementById('dispatch-date').value;
+}
+
+function setDate(dateStr) {
+  allDatesMode = false;
+  sessionStorage.setItem('namy_dispatch_all', 'false');
+  sessionStorage.setItem('namy_dispatch_date', dateStr);
+  document.getElementById('dispatch-date').value = dateStr;
+  document.getElementById('btn-all-dates').classList.remove('active');
+  loadDayData();
+}
+
+function shiftDate(delta) {
+  const current = new Date(getSelectedDate());
+  current.setDate(current.getDate() + delta);
+  setDate(current.toISOString().split('T')[0]);
+}
+
+function goToday() {
+  setDate(getToday());
+}
+
+function goTomorrow() {
+  setDate(getTomorrow());
+}
+
+function toggleAllDates() {
+  allDatesMode = !allDatesMode;
+  const btn = document.getElementById('btn-all-dates');
+  if (allDatesMode) {
+    btn.classList.add('active');
+    sessionStorage.setItem('namy_dispatch_all', 'true');
+  } else {
+    btn.classList.remove('active');
+    sessionStorage.setItem('namy_dispatch_all', 'false');
+  }
+  loadDayData();
+}
+
+function formatDateLabel(dateStr) {
+  if (allDatesMode) return 'Toutes les dates';
+  const d = new Date(dateStr);
+  const today = getToday();
+  const tomorrow = getTomorrow();
+  const label = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  if (dateStr === today) return `Aujourd'hui — ${label}`;
+  if (dateStr === tomorrow) return `Demain — ${label}`;
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 // ─── INIT ────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  initDatePicker();
   await loadDispatchData();
   initMap();
   renderAll();
@@ -1191,13 +1319,17 @@ async function removeFromTournee(cmdId, tourneeId) {
 function renderTournees() {
   document.getElementById('badge-tournees').textContent = tournees.length;
   const list = document.getElementById('tournees-list');
+  const dateLabel = formatDateLabel(getSelectedDate());
 
   if (tournees.length === 0) {
-    list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-dim);font-size:12.5px">Aucune tournée créée<br>Cliquez sur "+ Créer tournée"</div>';
+    list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-dim);font-size:12.5px">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:12px">Tournées — ${dateLabel}</div>
+      Aucune tournée créée<br>Cliquez sur "+ Créer tournée"
+    </div>`;
     return;
   }
 
-  list.innerHTML = tournees.map(t => {
+  list.innerHTML = `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);padding:10px 14px 4px;border-bottom:1px solid var(--border)">Tournées ouvertes — ${dateLabel}</div>` + tournees.map(t => {
     const totalPoids = t.stops.reduce((s, id) => {
       const c = commandes.find(x => x.id === id);
       return s + (c ? c.poids : 0);
@@ -1470,22 +1602,59 @@ function switchTab(tab) {
 }
 
 async function loadDayData() {
-  const selectedDate = document.getElementById('dispatch-date').value;
-  showToast(`📅 Chargement du ${selectedDate}...`);
+  const selectedDate = getSelectedDate();
+  const label = formatDateLabel(selectedDate);
+  sessionStorage.setItem('namy_dispatch_date', selectedDate);
+
+  showToast(`📅 ${allDatesMode ? 'Chargement de toutes les commandes...' : 'Chargement du ' + formatDate(selectedDate) + '...'}`);
+
   try {
-    const { data } = await db.from('expeditions').select('*')
-      .eq('date', selectedDate)
-      .order('id', { ascending: false });
-    if (data && data.length) {
-      commandes = data.map(e => ({
+    // Charger les expéditions
+    let expQuery = db.from('expeditions').select('*').order('id', { ascending: false });
+    if (!allDatesMode) expQuery = expQuery.eq('date', selectedDate);
+    const { data: expData } = await expQuery;
+
+    if (expData && expData.length) {
+      allCommandes = expData.map(e => ({
         id: e.id, expediteur: e.expediteur, dest: e.destinataire,
         adresse: e.dest_adresse, cp: e.dest_cp, ville: e.dest_ville,
         lat: e.lat || 48.85, lng: e.lng || 2.35, creneau: e.creneau,
         option: e.lieu || 'Pièce du choix', poids: e.poids,
         tournee_id: e.tournee_id || null, date: e.date,
       }));
+      commandes = [...allCommandes];
+    } else if (!allDatesMode) {
+      // Pas de données Supabase — filtrer le fallback local par date
+      commandes = allCommandes.length
+        ? allCommandes.filter(c => c.date === selectedDate)
+        : FALLBACK_COMMANDES.filter(c => c.date === selectedDate);
     }
-  } catch(e) { console.warn('Load failed:', e); }
+
+    // Charger les tournées
+    let tourQuery = db.from('tournees').select('*').order('date', { ascending: false });
+    if (!allDatesMode) tourQuery = tourQuery.eq('date', selectedDate);
+    const { data: tourData } = await tourQuery;
+
+    if (tourData && tourData.length) {
+      allTournees = tourData.map(t => ({ ...t, stops: t.stops || [] }));
+      tournees = [...allTournees];
+    } else if (!allDatesMode) {
+      tournees = allTournees.length
+        ? allTournees.filter(t => t.date === selectedDate)
+        : FALLBACK_TOURNEES.filter(t => t.date === selectedDate);
+    }
+  } catch(e) {
+    console.warn('Load failed:', e);
+    // Filtrer le fallback local
+    if (allDatesMode) {
+      commandes = [...FALLBACK_COMMANDES];
+      tournees = [...FALLBACK_TOURNEES];
+    } else {
+      commandes = FALLBACK_COMMANDES.filter(c => c.date === selectedDate);
+      tournees = FALLBACK_TOURNEES.filter(t => t.date === selectedDate);
+    }
+  }
+
   filteredCommandes = [...commandes];
   renderAll();
 }
