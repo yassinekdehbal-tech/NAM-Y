@@ -1,0 +1,663 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAMY — Grilles tarifaires</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f6f2;--surface:#fff;--surface2:#f0efe9;--border:#dddbd2;--text:#1a1a18;--muted:#6b6960;--dim:#a8a69e;--accent:#1a472a;--al:#eaf2ec;--accent2:#c47a1a;--a2l:#fef3e2;--danger:#c43a2a;--dl:#fef0ee;--info:#1a5c8c;--il:#e8f2fb;--purple:#6d28d9;--pl:#f0eeff;--warn:#b45309;--wl:#fffbeb;--r:8px;--rl:14px;--sh:0 1px 4px rgba(0,0,0,.07);--shl:0 8px 32px rgba(0,0,0,.12)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+.hdr{background:var(--text);height:52px;display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:100}
+.logo{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;letter-spacing:5px;color:#fff}
+.hdr-sub{font-size:13px;color:rgba(255,255,255,.5)}
+.hdr-act{margin-left:auto;display:flex;gap:8px}
+.layout{display:grid;grid-template-columns:270px 1fr;height:calc(100vh - 52px)}
+.sb{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sb-hd{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.sb-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.gl{flex:1;overflow-y:auto;padding:8px}
+.gi{padding:12px 14px;border-radius:var(--r);cursor:pointer;transition:all .15s;margin-bottom:4px;border:1.5px solid transparent}
+.gi:hover{background:var(--surface2)}
+.gi.on{background:var(--al);border-color:rgba(26,71,42,.2)}
+.gi-nm{font-size:13px;font-weight:600;margin-bottom:2px}
+.gi-mt{font-size:11.5px;color:var(--muted);margin-bottom:4px}
+.gi-tg{display:flex;gap:4px;flex-wrap:wrap}
+.tbadge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:.3px}
+.t-poids{background:var(--il);color:var(--info)}
+.t-zone{background:var(--al);color:var(--accent)}
+.t-colis{background:var(--a2l);color:var(--accent2)}
+.main{overflow-y:auto;display:flex;flex-direction:column}
+.gtabs{border-bottom:1px solid var(--border);background:var(--surface);display:flex;padding:0 24px;position:sticky;top:0;z-index:10;flex-shrink:0}
+.gtab{padding:13px 16px;background:none;border:none;border-bottom:2px solid transparent;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap}
+.gtab.on{color:var(--accent);border-bottom-color:var(--accent)}
+.gtab:hover:not(.on){color:var(--text)}
+.tp{display:none;padding:24px;flex-direction:column;gap:20px}
+.tp.on{display:flex}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh)}
+.ch{padding:13px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ct{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.cs{font-size:12px;color:var(--muted);font-weight:400;font-family:'DM Sans',sans-serif}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 14px;background:var(--surface2);font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(0,0,0,.015)}
+.mn{font-family:'DM Mono',monospace;font-weight:600}
+.c-p{color:var(--info)}.c-l{color:var(--accent)}.c-t1{color:var(--info)}.c-t2{color:var(--accent)}.c-t3{color:var(--purple)}.c-km{color:var(--accent2);font-style:italic}
+.bdg{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-family:'DM Mono',monospace;font-weight:600}
+.b-p{background:var(--il);color:var(--info)}.b-d{background:var(--surface2);color:var(--muted)}
+.bz{padding:3px 10px;border-radius:4px;font-weight:700;font-size:12px}
+.z-a{background:#dbeafe;color:#1d4ed8}.z-b{background:#d1fae5;color:#065f46}.z-c{background:#fef9c3;color:#854d0e}.z-d{background:#ffe4e6;color:#9f1239}.z-e{background:#f3e8ff;color:#6b21a8}
+.tgl{width:36px;height:20px;background:var(--border);border-radius:10px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;display:inline-block;vertical-align:middle}
+.tgl.on{background:var(--accent)}
+.tgl::after{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.tgl.on::after{left:19px}
+.pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;padding:16px}
+.pc{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;transition:all .15s}
+.pc.on{border-color:rgba(26,71,42,.3);background:var(--al)}
+.pc-cl{font-size:13px;font-weight:600;margin-bottom:2px}
+.pc-mt{font-size:11.5px;color:var(--muted)}
+.pc-tg{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap}
+.pb{font-size:10px;font-weight:600;padding:2px 6px;border-radius:3px}
+.pb-d{background:var(--wl);color:var(--warn);border:1px solid rgba(180,83,9,.2)}
+.pb-a{background:var(--al);color:var(--accent);border:1px solid rgba(26,71,42,.2)}
+.sim-top{background:var(--text);padding:14px 20px;display:flex;align-items:center;gap:10px}
+.sim-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff}
+.sim-body{padding:20px;display:flex;flex-direction:column;gap:16px}
+.sim-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fl{font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+.fc{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13.5px;outline:none;transition:border-color .15s;width:100%}
+.fc:focus{border-color:var(--accent);background:#fff}
+.fcks{display:flex;gap:8px;flex-wrap:wrap}
+.fck{display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:20px;font-size:12.5px;cursor:pointer;transition:all .15s;user-select:none}
+.fck.on{background:var(--al);border-color:rgba(26,71,42,.3);color:var(--accent);font-weight:600}
+.srp{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px}
+.sls{display:flex;flex-direction:column;gap:7px;margin-bottom:12px}
+.sl{display:flex;justify-content:space-between;font-size:13px}
+.sl span:first-child{color:var(--muted)}
+.sl.sep{border-top:1px solid var(--border);padding-top:8px;margin-top:4px;font-weight:600}
+.sl.sep span:first-child{color:var(--text)}
+.stb{background:var(--accent);color:#fff;border-radius:var(--r);padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
+.stl{font-size:13px;font-weight:600}.std{font-size:11.5px;opacity:.65;margin-top:2px}.stv{font-family:'DM Mono',monospace;font-size:30px;font-weight:700}
+.warn-b{background:var(--wl);border:1px solid rgba(180,83,9,.2);border-radius:var(--r);padding:12px 16px;color:var(--warn);font-size:13px;display:flex;align-items:center;gap:8px}
+.info-b{background:var(--il);border:1px solid rgba(26,92,140,.2);border-radius:var(--r);padding:10px 16px;color:var(--info);font-size:12.5px;display:flex;align-items:center;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:none;border-radius:var(--r);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;white-space:nowrap}
+.bp{background:var(--accent);color:#fff}.bp:hover{background:#143d22}
+.bg{background:var(--surface2);border:1px solid var(--border);color:var(--muted)}.bg:hover{color:var(--text);border-color:var(--muted)}
+.bd{background:var(--dl);color:var(--danger);border:1px solid rgba(196,58,42,.15)}.bd:hover{background:var(--danger);color:#fff}
+.bs{padding:5px 10px;font-size:12px}.bxs{padding:3px 8px;font-size:11px;border-radius:5px}
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+.md{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);width:500px;max-height:90vh;overflow-y:auto;box-shadow:var(--shl);animation:mIn .2s ease}
+@keyframes mIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.mh{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.mt{font-family:'Syne',sans-serif;font-size:16px;font-weight:700}
+.mc{background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted);padding:4px 8px;border-radius:4px}
+.mc:hover{background:var(--surface2)}
+.mb{padding:20px;display:flex;flex-direction:column;gap:14px}
+.mf{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pt{font-family:'Syne',sans-serif;font-size:20px;font-weight:800}
+.ps{font-size:13px;color:var(--muted);margin-top:2px}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--text);color:#fff;border-radius:var(--r);padding:10px 18px;font-size:13px;z-index:9999;box-shadow:var(--shl);display:none}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div class="logo">N A M Y</div>
+  <span class="hdr-sub">/ Grilles tarifaires</span>
+  <div class="hdr-act">
+    <button class="btn bg bs" style="color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.15)" onclick="O('mn')">+ Nouvelle grille</button>
+  </div>
+</header>
+<div class="layout">
+  <div class="sb">
+    <div class="sb-hd"><span class="sb-title">Grilles tarifaires</span><button class="btn bp bs" style="padding:3px 10px;font-size:11px" onclick="O('mn')">+</button></div>
+    <div class="gl" id="gl"></div>
+  </div>
+  <div class="main" id="main"></div>
+</div>
+
+<!-- Modal nouvelle grille -->
+<div class="mo" id="mn" style="display:none">
+  <div class="md">
+    <div class="mh"><span class="mt">Nouvelle grille tarifaire</span><button class="mc" onclick="C('mn')">✕</button></div>
+    <div class="mb">
+      <div class="fg"><label class="fl">Nom *</label><input type="text" class="fc" id="nn-n" placeholder="Ex: TRUFFAUT STANDARD"></div>
+      <div class="fg"><label class="fl">Type de calcul *</label>
+        <select class="fc" id="nn-t">
+          <option value="poids">⚖️ Poids + Dimensions</option>
+          <option value="zone">📍 Zone géographique + Véhicule</option>
+          <option value="colis">📦 Nombre de colis / Catégorie</option>
+        </select>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Rayon inclus (km)</label><input type="number" class="fc" id="nn-r" value="30"></div>
+        <div class="fg"><label class="fl">Majoration dim/fériés (%)</label><input type="number" class="fc" id="nn-m" value="20"></div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn bg" onclick="C('mn')">Annuler</button><button class="btn bp" onclick="creerGrille()">Créer</button></div>
+  </div>
+</div>
+
+<!-- Modal ligne poids -->
+<div class="mo" id="mp" style="display:none">
+  <div class="md">
+    <div class="mh"><span class="mt">Ajouter une ligne — Poids</span><button class="mc" onclick="C('mp')">✕</button></div>
+    <div class="mb">
+      <div class="fr">
+        <div class="fg"><label class="fl">Poids min (kg) ≥</label><input type="number" class="fc" id="lp-a" value="0"></div>
+        <div class="fg"><label class="fl">Poids max (kg) &lt;</label><input type="number" class="fc" id="lp-b" placeholder="Ex: 200"></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Poids colis max (kg)</label><input type="number" class="fc" id="lp-c" placeholder="Ex: 130"></div>
+        <div class="fg"><label class="fl">Dimension max (cm)</label><input type="number" class="fc" id="lp-d" placeholder="Ex: 320"></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Prix Pied camion (€HT)</label><input type="number" class="fc" id="lp-e" step="0.01"></div>
+        <div class="fg"><label class="fl">Prix Lieu du choix (€HT)</label><input type="number" class="fc" id="lp-f" step="0.01"></div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn bg" onclick="C('mp')">Annuler</button><button class="btn bp" onclick="addLP()">Ajouter</button></div>
+  </div>
+</div>
+
+<!-- Modal catégorie colis -->
+<div class="mo" id="mc2" style="display:none">
+  <div class="md">
+    <div class="mh"><span class="mt">Ajouter une catégorie de colis</span><button class="mc" onclick="C('mc2')">✕</button></div>
+    <div class="mb">
+      <div class="fg"><label class="fl">Nom de la catégorie *</label><input type="text" class="fc" id="lc-n" placeholder="Ex: LITERIE, ELECTROMÉNAGER"></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Nb colis min (≥)</label><input type="number" class="fc" id="lc-a" value="1"></div>
+        <div class="fg"><label class="fl">Nb colis max (&lt;)</label><input type="number" class="fc" id="lc-b" placeholder="Ex: 5"></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Prix de base (€HT)</label><input type="number" class="fc" id="lc-c" step="0.01"></div>
+        <div class="fg"><label class="fl">Prix colis supp. (€HT)</label><input type="number" class="fc" id="lc-d" step="0.01"></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Lieu de livraison</label>
+          <select class="fc" id="lc-e"><option>Pied de camion</option><option>Pièce du choix</option><option>Tous</option></select>
+        </div>
+        <div class="fg"><label class="fl">Seuil devis auto (nb colis)</label><input type="number" class="fc" id="lc-f" placeholder="Laisser vide = pas de seuil"></div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn bg" onclick="C('mc2')">Annuler</button><button class="btn bp" onclick="addLC()">Ajouter</button></div>
+  </div>
+</div>
+
+<!-- Modal option -->
+<div class="mo" id="mo2" style="display:none">
+  <div class="md">
+    <div class="mh"><span class="mt">Ajouter une option de livraison</span><button class="mc" onclick="C('mo2')">✕</button></div>
+    <div class="mb">
+      <div class="fg"><label class="fl">Nom *</label><input type="text" class="fc" id="op-n" placeholder="Ex: Manutention, Installation"></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Prix (€HT)</label><input type="number" class="fc" id="op-p" step="0.01"></div>
+        <div class="fg"><label class="fl">Unité</label>
+          <select class="fc" id="op-u"><option>Forfait</option><option>Par 30 minutes</option><option>Par colis</option><option>Par étage</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn bg" onclick="C('mo2')">Annuler</button><button class="btn bp" onclick="addOpt()">Ajouter</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let aId=1;
+const CLIENTS=[
+  {id:1,nom:'TRUFFAUT LE CHESNAY',       gid:1,devis:false},
+  {id:2,nom:'TRUFFAUT PLAISIR',          gid:1,devis:false},
+  {id:3,nom:'TRUFFAUT DOMUS',            gid:1,devis:true},
+  {id:4,nom:'TRUFFAUT PARIS RIVE GAUCHE',gid:1,devis:false},
+  {id:5,nom:'TRUFFAUT FOURQUEUX',        gid:1,devis:false},
+  {id:6,nom:'FISSA LIV',                 gid:2,devis:true},
+  {id:7,nom:'CLIENT EXPRESS DEMO',       gid:2,devis:false},
+  {id:8,nom:'LITERIE PARTENAIRE',        gid:3,devis:true},
+];
+
+let GG=[
+  {id:1,nom:'TRUFFAUT STANDARD',type:'poids',rayon:30,maj:20,
+   lignes:[
+    {id:1,a:0,  b:5,  c:5,  d:150,e:10, f:10 },
+    {id:2,a:5,  b:20, c:20, d:200,e:15, f:15 },
+    {id:3,a:20, b:100,c:30, d:200,e:25, f:25 },
+    {id:4,a:100,b:200,c:130,d:320,e:40, f:60 },
+    {id:5,a:200,b:500,c:130,d:400,e:60, f:100},
+    {id:6,a:500,b:800,c:130,d:400,e:80, f:130},
+    {id:7,a:800,b:1200,c:130,d:400,e:100,f:150},
+   ],
+   frais:[
+    {id:1,on:true, ds:'Km supplémentaire (>30km)',       ct:'2,50 €/km',  nt:'A+R au-delà du rayon'},
+    {id:2,on:true, ds:'Dimanche et jours fériés',        ct:'+20%',        nt:'Sur tarif de base'},
+    {id:3,on:true, ds:'Produit lourd (90–130kg)',         ct:'40 €/produit',nt:'Par article'},
+    {id:4,on:true, ds:'Étage sans ascenseur',             ct:'15 €/étage',  nt:'À partir du 5ème'},
+    {id:5,on:true, ds:'Échec retrait / annulation JJ',   ct:'50% course',  nt:''},
+    {id:6,on:true, ds:'Échec livraison + retour magasin',ct:'150% course', nt:''},
+    {id:7,on:false,ds:'Déballage et montage mobilier',   ct:'40 €/30min',  nt:'Jardin, barbecue'},
+    {id:8,on:false,ds:'Rempotage plante (<50kg)',         ct:'10 €/plante', nt:''},
+    {id:9,on:false,ds:'Plateau grue (131–500kg)',         ct:'180€+45€/suiv.',nt:'Transport spécialisé'},
+   ],
+   opts:[{id:1,n:'Manutention',p:40,u:'Par 30 minutes'}]
+  },
+  {id:2,nom:'EXPRESS ZONE',type:'zone',rayon:45,maj:30,
+   zones:[
+    {id:1,c:'A',lb:'< 15km',t1:30,t2:50, t3:70, km:null},
+    {id:2,c:'B',lb:'< 25km',t1:40,t2:70, t3:100,km:null},
+    {id:3,c:'C',lb:'< 35km',t1:50,t2:90, t3:130,km:null},
+    {id:4,c:'D',lb:'< 45km',t1:60,t2:110,t3:160,km:null},
+    {id:5,c:'E',lb:'> 45km',t1:null,t2:null,t3:null,km:{t1:.65,t2:.85,t3:1}},
+   ],
+   frais:[
+    {id:1,on:true,ds:'Dimanche et jours fériés',         ct:'+30%',       nt:''},
+    {id:2,on:true,ds:'Échec retrait / annulation JJ',    ct:'50% course', nt:''},
+    {id:3,on:true,ds:'Échec livraison + retour',         ct:'150% course',nt:''},
+    {id:4,on:true,ds:'Manutention',                      ct:'30 €/30min', nt:'15 min incluses enlèvement+livraison'},
+   ],
+   opts:[{id:1,n:'Manutention supplémentaire',p:30,u:'Par 30 minutes'}]
+  },
+  {id:3,nom:'COLIS LITERIE',type:'colis',rayon:30,maj:20,
+   cats:[
+    {id:1,n:'LITERIE',a:1,b:2,  p:10,s:10,l:'Pied de camion',ds:null},
+    {id:2,n:'LITERIE',a:2,b:5,  p:20,s:10,l:'Pied de camion',ds:null},
+    {id:3,n:'LITERIE',a:5,b:999,p:null,s:null,l:'Pied de camion',ds:5},
+   ],
+   dist:[{id:1,a:1,b:30,type:'Au kilomètre',p:2}],
+   frais:[
+    {id:1,on:true,ds:'Dimanche et jours fériés',         ct:'+20%',       nt:''},
+    {id:2,on:true,ds:'Échec retrait / annulation JJ',    ct:'50% course', nt:''},
+   ],
+   opts:[{id:1,n:'Installation',p:10,u:'Forfait'}]
+  }
+];
+
+document.addEventListener('DOMContentLoaded',()=>{rSB();rG(aId);});
+
+function rSB(){
+  document.getElementById('gl').innerHTML=GG.map(g=>{
+    const cl=CLIENTS.filter(c=>c.gid===g.id);
+    return`<div class="gi ${g.id===aId?'on':''}" onclick="selG(${g.id})">
+      <div class="gi-nm">${g.nom}</div>
+      <div class="gi-mt">${cl.length} client(s) · ${g.rayon}km inclus</div>
+      <div class="gi-tg">
+        <span class="tbadge t-${g.type}">${g.type==='poids'?'⚖️ Poids':g.type==='zone'?'📍 Zone':'📦 Colis'}</span>
+        ${cl.some(c=>c.devis)?'<span class="tbadge" style="background:var(--wl);color:var(--warn)">💬 Devis</span>':''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selG(id){aId=id;rSB();rG(id);}
+
+function rG(id){
+  const g=GG.find(x=>x.id===id);if(!g)return;
+  const m=document.getElementById('main');
+  if(g.type==='poids')m.innerHTML=bP(g);
+  else if(g.type==='zone')m.innerHTML=bZ(g);
+  else m.innerHTML=bC(g);
+}
+
+function bP(g){
+  const rows=g.lignes.map(l=>`<tr>
+    <td><span class="bdg b-p">${l.a}kg → &lt;${l.b}kg</span></td>
+    <td><span class="bdg b-d">max ${l.c}kg / ${l.d}cm</span></td>
+    <td class="mn c-p">${l.e.toFixed(2)} €</td>
+    <td class="mn c-l">${l.f.toFixed(2)} €</td>
+    <td><div style="display:flex;gap:4px"><button class="btn bg bxs">✏️</button><button class="btn bd bxs" onclick="delL(${g.id},${l.id})">✕</button></div></td>
+  </tr>`).join('');
+  return bLyt(g,`
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div><div class="pt">${g.nom}</div><div class="ps">Grille poids · ${g.rayon}km · Lun–Sam</div></div>
+      <button class="btn bp bs" onclick="O('mp')">+ Ajouter une ligne</button>
+    </div>
+    <div class="info-b">ℹ️ Tarification par poids total + dimension max du colis. Valable ${g.rayon}km autour du magasin expéditeur.</div>
+    <div class="card">
+      <div class="ch"><div class="ct">⚖️ Tranches tarifaires <span class="cs">HT</span></div></div>
+      <table><thead><tr>
+        <th>Poids total</th><th>Contraintes colis</th>
+        <th style="color:var(--info)">🚚 Pied de camion</th>
+        <th style="color:var(--accent)">🛋️ Lieu du choix</th>
+        <th>Actions</th>
+      </tr></thead><tbody>${rows}</tbody></table>
+    </div>`,
+    bF(g),bO(g),bSP(g),bCL(g));
+}
+
+function bZ(g){
+  const rows=g.zones.map(z=>`<tr>
+    <td><span class="bz z-${z.c.toLowerCase()}">${z.c}</span></td>
+    <td style="font-weight:500">${z.lb}</td>
+    <td class="mn c-t1">${z.km?`<span class="c-km">${z.km.t1} €/km A+R</span>`:`${z.t1.toFixed(2)} €`}</td>
+    <td class="mn c-t2">${z.km?`<span class="c-km">${z.km.t2} €/km A+R</span>`:`${z.t2.toFixed(2)} €`}</td>
+    <td class="mn c-t3">${z.km?`<span class="c-km">${z.km.t3} €/km A+R</span>`:`${z.t3.toFixed(2)} €`}</td>
+    <td><button class="btn bg bxs">✏️</button></td>
+  </tr>`).join('');
+  return bLyt(g,`
+    <div><div class="pt">${g.nom}</div><div class="ps">Grille zone × véhicule · Créneau 3–4h</div></div>
+    <div class="info-b">ℹ️ Tarification par zone de distance × type de véhicule. Zone E : facturation au km aller-retour.</div>
+    <div class="card">
+      <div class="ch"><div class="ct">📍 Tarifs zone × véhicule <span class="cs">HT</span></div></div>
+      <table><thead><tr>
+        <th>Zone</th><th>Distance</th>
+        <th style="color:var(--info)">🚗 Break T1 · 3m³</th>
+        <th style="color:var(--accent)">🚐 Fourgon T2 · 12m³</th>
+        <th style="color:var(--purple)">🚛 Hayon T3 · 20m³</th>
+        <th></th>
+      </tr></thead><tbody>${rows}</tbody></table>
+    </div>`,
+    bF(g),bO(g),bSZ(g),bCL(g));
+}
+
+function bC(g){
+  const rows=(g.cats||[]).map(c=>`<tr>
+    <td style="font-weight:600">${c.n}</td>
+    <td><span class="bdg b-p">${c.a} → &lt;${c.b===999?'∞':c.b} colis</span></td>
+    <td class="mn">${c.p?c.p.toFixed(2)+' €':'<span class="c-km">Devis</span>'}</td>
+    <td class="mn">${c.s?c.s.toFixed(2)+' €/colis':'—'}</td>
+    <td>${c.l}</td>
+    <td>${c.ds?`<span style="background:var(--wl);color:var(--warn);font-size:11px;padding:2px 7px;border-radius:4px;font-weight:600">Devis ≥${c.ds}</span>`:'—'}</td>
+    <td><div style="display:flex;gap:4px"><button class="btn bg bxs">✏️</button><button class="btn bd bxs">✕</button></div></td>
+  </tr>`).join('');
+  const drows=(g.dist||[]).map(d=>`<tr>
+    <td class="mn">${d.a} km</td><td class="mn">${d.b} km</td>
+    <td>${d.type}</td><td class="mn c-t2">${d.p.toFixed(2)} €</td>
+    <td><button class="btn bg bxs">✏️</button></td>
+  </tr>`).join('');
+  return bLyt(g,`
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div><div class="pt">${g.nom}</div><div class="ps">Grille colis · par catégorie</div></div>
+      <button class="btn bp bs" onclick="O('mc2')">+ Ajouter une catégorie</button>
+    </div>
+    <div class="warn-b">⚠️ Les commandes dépassant le seuil configuré basculent automatiquement en <strong>mode devis</strong>.</div>
+    <div class="card">
+      <div class="ch"><div class="ct">📦 Catégories de colis <span class="cs">HT</span></div></div>
+      <table><thead><tr><th>Catégorie</th><th>Nb colis</th><th>Prix tranche</th><th>Colis supp.</th><th>Lieu</th><th>Seuil devis</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+    </div>
+    <div class="card">
+      <div class="ch"><div class="ct">🚗 Tarification distance</div><button class="btn bg bs">+ Ajouter</button></div>
+      <table><thead><tr><th>Km min</th><th>Km max</th><th>Type</th><th>Prix</th><th></th></tr></thead><tbody>${drows}</tbody></table>
+    </div>`,
+    bF(g),bO(g),bSC(g),bCL(g));
+}
+
+function bLyt(g,t1,t2,t3,t4,t5){
+  return`<div class="gtabs">
+    <button class="gtab on" onclick="sT(this,'tg')">📊 Grille</button>
+    <button class="gtab" onclick="sT(this,'tf')">➕ Frais annexes</button>
+    <button class="gtab" onclick="sT(this,'to')">⚙️ Options livraison</button>
+    <button class="gtab" onclick="sT(this,'ts')">🧮 Simulateur</button>
+    <button class="gtab" onclick="sT(this,'tc')">🏪 Clients & Permissions</button>
+  </div>
+  <div class="tp on" id="tg">${t1}</div>
+  <div class="tp" id="tf">${t2}</div>
+  <div class="tp" id="to">${t3}</div>
+  <div class="tp" id="ts">${t4}</div>
+  <div class="tp" id="tc">${t5}</div>`;
+}
+
+function bF(g){
+  const r=g.frais.map(f=>`<tr>
+    <td><div class="tgl ${f.on?'on':''}" onclick="togF(${g.id},${f.id})"></div></td>
+    <td style="font-weight:500">${f.ds}</td>
+    <td class="mn" style="color:var(--accent2)">${f.ct}</td>
+    <td style="font-size:12px;color:var(--muted)">${f.nt}</td>
+    <td><button class="btn bg bxs">✏️</button></td>
+  </tr>`).join('');
+  return`<div style="display:flex;align-items:center;justify-content:space-between">
+    <div><div class="pt" style="font-size:18px">Frais annexes</div><div class="ps">Activez/désactivez les suppléments</div></div>
+    <button class="btn bg bs">+ Ajouter</button>
+  </div>
+  <div class="card"><table><thead><tr><th style="width:50px">Actif</th><th>Description</th><th>Coût</th><th>Note</th><th></th></tr></thead><tbody>${r}</tbody></table></div>`;
+}
+
+function bO(g){
+  const r=g.opts.map(o=>`<tr>
+    <td style="font-weight:600">${o.n}</td>
+    <td class="mn c-t2">${o.p.toFixed(2)} €</td>
+    <td>${o.u}</td>
+    <td><div style="display:flex;gap:4px"><button class="btn bg bxs">✏️</button><button class="btn bd bxs" onclick="delOpt(${g.id},${o.id})">✕</button></div></td>
+  </tr>`).join('');
+  return`<div style="display:flex;align-items:center;justify-content:space-between">
+    <div><div class="pt" style="font-size:18px">Options de livraison</div><div class="ps">Proposées au vendeur lors de la saisie</div></div>
+    <button class="btn bp bs" onclick="O('mo2')">+ Ajouter</button>
+  </div>
+  <div class="card"><table><thead><tr><th>Option</th><th>Prix</th><th>Unité</th><th>Actions</th></tr></thead>
+  <tbody>${r||'<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--dim)">Aucune option</td></tr>'}</tbody></table></div>`;
+}
+
+function bCL(g){
+  const cl=CLIENTS.filter(c=>c.gid===g.id);
+  const cards=cl.map(c=>`<div class="pc ${c.devis?'on':''}">
+    <div>
+      <div class="pc-cl">${c.nom}</div>
+      <div class="pc-mt">ID #${c.id}</div>
+      <div class="pc-tg">
+        <span class="pb pb-a">✓ Grille active</span>
+        ${c.devis?'<span class="pb pb-d">💬 Mode devis autorisé</span>':''}
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+      <div style="font-size:11px;color:var(--muted);text-align:right">Mode devis</div>
+      <div class="tgl ${c.devis?'on':''}" onclick="togD(${c.id})"></div>
+    </div>
+  </div>`).join('');
+  return`<div style="display:flex;align-items:center;justify-content:space-between">
+    <div><div class="pt" style="font-size:18px">Clients & Permissions</div><div class="ps">Gérez l'accès au mode devis pour chaque client</div></div>
+    <button class="btn bg bs">+ Associer un client</button>
+  </div>
+  <div class="warn-b">💬 <strong>Mode devis</strong> — Quand activé, le client peut soumettre une demande hors grille. La commande arrive avec le statut <strong>"En attente de devis"</strong> jusqu'à validation manuelle par FISSA LIV.</div>
+  <div class="pg">${cards||'<div style="color:var(--dim);font-size:13px;padding:16px">Aucun client associé</div>'}</div>
+  <div style="display:flex;gap:8px;padding-top:8px">
+    <button class="btn bg bs" onclick="dupG(${g.id})">⧉ Dupliquer</button>
+    <button class="btn bd bs" style="margin-left:auto" onclick="delG(${g.id})">🗑 Supprimer</button>
+  </div>`;
+}
+
+// SIMULATEURS
+function bSP(g){return`
+  <div><div class="pt" style="font-size:18px">Simulateur — Poids</div></div>
+  <div class="card">
+    <div class="sim-top"><span class="sim-title">🧮 ${g.nom}</span></div>
+    <div class="sim-body">
+      <div class="sim-grid">
+        <div class="fg"><label class="fl">Poids total (kg)</label><input type="number" class="fc" id="sp-p" placeholder="Ex: 250" oninput="cP(${g.id})"></div>
+        <div class="fg"><label class="fl">Distance (km)</label><input type="number" class="fc" id="sp-k" placeholder="Ex: 15" oninput="cP(${g.id})"></div>
+        <div class="fg"><label class="fl">Option dépôt</label>
+          <select class="fc" id="sp-o" onchange="cP(${g.id})">
+            <option value="e">🚚 Pied de camion</option>
+            <option value="f">🛋️ Lieu du choix</option>
+          </select>
+        </div>
+      </div>
+      <div class="fcks">
+        <label class="fck" onclick="this.classList.toggle('on');cP(${g.id})"><input type="checkbox"> 🗓️ Dim/Férié</label>
+        <label class="fck" onclick="this.classList.toggle('on');cP(${g.id})"><input type="checkbox"> 🏋️ Produit lourd</label>
+        <label class="fck" onclick="this.classList.toggle('on');cP(${g.id})"><input type="checkbox"> 🏢 Étage</label>
+        <label class="fck" onclick="this.classList.toggle('on');cP(${g.id})"><input type="checkbox"> 📦 Déballage</label>
+      </div>
+      <div id="sp-r" style="display:none"></div>
+      <div id="sp-e" style="text-align:center;padding:20px;color:var(--dim);font-size:13px">Renseignez les informations pour calculer le prix</div>
+    </div>
+  </div>`;}
+
+function bSZ(g){return`
+  <div><div class="pt" style="font-size:18px">Simulateur — Express Zone</div></div>
+  <div class="card">
+    <div class="sim-top"><span class="sim-title">🧮 ${g.nom}</span></div>
+    <div class="sim-body">
+      <div class="sim-grid">
+        <div class="fg"><label class="fl">Distance (km)</label><input type="number" class="fc" id="sz-k" placeholder="Ex: 22" oninput="cZ(${g.id})"></div>
+        <div class="fg"><label class="fl">Véhicule</label>
+          <select class="fc" id="sz-v" onchange="cZ(${g.id})">
+            <option value="t1">🚗 Break T1 · 3m³</option>
+            <option value="t2">🚐 Fourgon T2 · 12m³</option>
+            <option value="t3">🚛 Hayon T3 · 20m³</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Jour</label>
+          <select class="fc" id="sz-j" onchange="cZ(${g.id})">
+            <option value="s">Lun–Sam</option><option value="f">Dim / Férié</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Manutention (min)</label><input type="number" class="fc" id="sz-m" placeholder="Ex: 30" oninput="cZ(${g.id})"></div>
+      </div>
+      <div id="sz-r" style="display:none"></div>
+      <div id="sz-e" style="text-align:center;padding:20px;color:var(--dim);font-size:13px">Renseignez la distance et le véhicule</div>
+    </div>
+  </div>`;}
+
+function bSC(g){
+  const cats=[...new Set((g.cats||[]).map(c=>c.n))];
+  return`<div><div class="pt" style="font-size:18px">Simulateur — Colis</div></div>
+  <div class="card">
+    <div class="sim-top"><span class="sim-title">🧮 ${g.nom}</span></div>
+    <div class="sim-body">
+      <div class="sim-grid">
+        <div class="fg"><label class="fl">Catégorie</label>
+          <select class="fc" id="sc-c" onchange="cC(${g.id})">${cats.map(n=>`<option>${n}</option>`).join('')}</select>
+        </div>
+        <div class="fg"><label class="fl">Nombre de colis</label><input type="number" class="fc" id="sc-n" placeholder="Ex: 3" oninput="cC(${g.id})"></div>
+        <div class="fg"><label class="fl">Distance (km)</label><input type="number" class="fc" id="sc-k" placeholder="Ex: 12" oninput="cC(${g.id})"></div>
+      </div>
+      <div class="fcks">
+        ${g.opts.map(o=>`<label class="fck" onclick="this.classList.toggle('on');cC(${g.id})"><input type="checkbox"> ${o.n} (${o.p}€)</label>`).join('')}
+      </div>
+      <div id="sc-r" style="display:none"></div>
+      <div id="sc-e" style="text-align:center;padding:20px;color:var(--dim);font-size:13px">Renseignez la catégorie et le nombre de colis</div>
+    </div>
+  </div>`;}
+
+// CALCULS
+function cP(gid){
+  const g=GG.find(x=>x.id===gid);
+  const p=parseFloat(V('sp-p'))||0,k=parseFloat(V('sp-k'))||0,o=V('sp-o')||'e';
+  if(!p){H('sp-r');S('sp-e');return;}
+  const l=g.lignes.find(x=>p>=x.a&&p<x.b);
+  if(!l){ge('sp-e').textContent=`⚠️ Poids ${p}kg hors grille`;H('sp-r');S('sp-e');return;}
+  let b=o==='e'?l.e:l.f,ls=[{l:`Tarif base (${p}kg · ${o==='e'?'Pied camion':'Lieu choix'})`,v:b}],tot=b;
+  if(k>g.rayon){const x=(k-g.rayon)*2*2.5;ls.push({l:`Km supp. (${(k-g.rayon)*2}km A+R × 2,50€)`,v:x});tot+=x;}
+  document.querySelectorAll('.fck.on').forEach(c=>{
+    const t=c.textContent.trim();
+    if(t.includes('Dim/Férié')){const m=tot*g.maj/100;ls.push({l:`Dim/Férié (+${g.maj}%)`,v:m});tot+=m;}
+    if(t.includes('Produit lourd')){ls.push({l:'Produit lourd ×1',v:40});tot+=40;}
+    if(t.includes('Étage')){ls.push({l:'Étage ×1',v:15});tot+=15;}
+    if(t.includes('Déballage')){ls.push({l:'Déballage/Montage',v:40});tot+=40;}
+  });
+  showR('sp-r','sp-e',ls,tot);
+}
+
+function cZ(gid){
+  const g=GG.find(x=>x.id===gid);
+  const k=parseFloat(V('sz-k'))||0,v=V('sz-v')||'t1',j=V('sz-j')||'s',m=parseFloat(V('sz-m'))||0;
+  if(!k){H('sz-r');S('sz-e');return;}
+  const z=g.zones.find(x=>x.c==='A'&&k<15||x.c==='B'&&k<25||x.c==='C'&&k<35||x.c==='D'&&k<45||x.c==='E');
+  let b=z.km?k*2*z.km[v]:z[v],ls=[{l:`Zone ${z.c} (${z.lb}) · ${v.toUpperCase()}`,v:b}],tot=b;
+  if(j==='f'){const x=tot*g.maj/100;ls.push({l:`Dim/Férié (+${g.maj}%)`,v:x});tot+=x;}
+  if(m>0){const u=Math.ceil(m/30),x=u*30;ls.push({l:`Manutention (${m}min = ${u}×30min)`,v:x});tot+=x;}
+  showR('sz-r','sz-e',ls,tot);
+}
+
+function cC(gid){
+  const g=GG.find(x=>x.id===gid);
+  const n=parseInt(V('sc-n'))||0,k=parseFloat(V('sc-k'))||0,cat=V('sc-c')||'';
+  if(!n||!cat){H('sc-r');S('sc-e');return;}
+  const tr=(g.cats||[]).filter(c=>c.n===cat).find(c=>n>=c.a&&n<c.b);
+  if(!tr||tr.ds){
+    ge('sc-r').innerHTML=`<div class="warn-b">⚠️ ${n} colis "${cat}" — commande en <strong>mode devis</strong>. Elle sera soumise en attente de validation FISSA LIV.</div>`;
+    S('sc-r');H('sc-e');return;
+  }
+  let b=tr.p,ex=n>tr.a?(n-tr.a)*tr.s:0,ls=[{l:`${cat} · ${n} colis`,v:b}],tot=b+ex;
+  if(ex>0)ls.push({l:`Colis supp. (${n-tr.a} × ${tr.s}€)`,v:ex});
+  if(k>0&&g.dist[0]){const d=k*g.dist[0].p;ls.push({l:`Distance (${k}km × ${g.dist[0].p}€)`,v:d});tot+=d;}
+  document.querySelectorAll('.fck.on').forEach(c=>{
+    g.opts.forEach(o=>{if(c.textContent.includes(o.n)){ls.push({l:`Option ${o.n}`,v:o.p});tot+=o.p;}});
+  });
+  showR('sc-r','sc-e',ls,tot);
+}
+
+function showR(rid,eid,ls,tot){
+  const tv=tot*.2,ttc=tot+tv;
+  ge(rid).innerHTML=`<div class="srp">
+    <div class="sls">
+      ${ls.map(l=>`<div class="sl"><span>${l.l}</span><span class="mn">${l.v.toFixed(2)} €</span></div>`).join('')}
+      <div class="sl sep"><span>Total HT</span><span class="mn">${tot.toFixed(2)} €</span></div>
+      <div class="sl" style="color:var(--muted);font-size:12px"><span>TVA (20%)</span><span class="mn">${tv.toFixed(2)} €</span></div>
+    </div>
+    <div class="stb">
+      <div><div class="stl">TOTAL TTC</div><div class="std">${tot.toFixed(2)} € HT · TVA ${tv.toFixed(2)} €</div></div>
+      <div class="stv">${ttc.toFixed(2)} €</div>
+    </div>
+  </div>`;S(rid);H(eid);
+}
+
+// ACTIONS
+function togF(gid,fid){const g=GG.find(x=>x.id===gid),f=g.frais.find(x=>x.id===fid);if(f){f.on=!f.on;rG(gid);T(`${f.on?'✅':'⏸'} ${f.ds}`);}}
+function togD(cid){const c=CLIENTS.find(x=>x.id===cid);if(c){c.devis=!c.devis;rG(aId);T(`${c.devis?'💬 Mode devis activé':'🔒 Désactivé'} — ${c.nom}`);}}
+function delL(gid,lid){if(!confirm('Supprimer?'))return;const g=GG.find(x=>x.id===gid);g.lignes=g.lignes.filter(l=>l.id!==lid);rG(gid);T('🗑 Ligne supprimée');}
+function delOpt(gid,oid){const g=GG.find(x=>x.id===gid);g.opts=g.opts.filter(o=>o.id!==oid);rG(gid);T('🗑 Option supprimée');}
+function delG(id){if(!confirm('Supprimer cette grille?'))return;GG=GG.filter(x=>x.id!==id);if(GG.length)selG(GG[0].id);else document.getElementById('main').innerHTML='';rSB();T('🗑 Supprimée');}
+function dupG(id){const g=GG.find(x=>x.id===id),nid=Math.max(...GG.map(x=>x.id))+1,copy=JSON.parse(JSON.stringify(g));copy.id=nid;copy.nom=g.nom+' (copie)';GG.push(copy);selG(nid);T(`⧉ "${copy.nom}" dupliquée`);}
+
+function addLP(){
+  const g=GG.find(x=>x.id===aId);
+  const a=parseFloat(V('lp-a'))||0,b=parseFloat(V('lp-b')),c=parseFloat(V('lp-c'))||130,d=parseFloat(V('lp-d'))||400,e=parseFloat(V('lp-e'))||0,f=parseFloat(V('lp-f'))||0;
+  if(!b){T('⚠️ Renseignez le poids max');return;}
+  const nid=Math.max(...g.lignes.map(l=>l.id),0)+1;
+  g.lignes.push({id:nid,a,b,c,d,e,f});g.lignes.sort((x,y)=>x.a-y.a);
+  C('mp');rG(aId);T('✅ Ligne ajoutée');
+}
+
+function addLC(){
+  const g=GG.find(x=>x.id===aId);
+  const n=V('lc-n').trim(),a=parseInt(V('lc-a'))||1,b=parseInt(V('lc-b'))||999,p=parseFloat(V('lc-c'))||0,s=parseFloat(V('lc-d'))||0,l=V('lc-e'),ds=parseInt(V('lc-f'))||null;
+  if(!n){T('⚠️ Donnez un nom');return;}
+  const nid=Math.max(...(g.cats||[]).map(c=>c.id),0)+1;
+  if(!g.cats)g.cats=[];g.cats.push({id:nid,n,a,b,p,s,l,ds});
+  C('mc2');rG(aId);T(`✅ "${n}" ajoutée`);
+}
+
+function addOpt(){
+  const g=GG.find(x=>x.id===aId);
+  const n=V('op-n').trim(),p=parseFloat(V('op-p'))||0,u=V('op-u');
+  if(!n){T('⚠️ Donnez un nom');return;}
+  const nid=Math.max(...g.opts.map(o=>o.id),0)+1;
+  g.opts.push({id:nid,n,p,u});C('mo2');rG(aId);T(`✅ "${n}" ajoutée`);
+}
+
+function creerGrille(){
+  const nom=V('nn-n').trim(),type=V('nn-t'),rayon=parseInt(V('nn-r'))||30,maj=parseInt(V('nn-m'))||20;
+  if(!nom){T('⚠️ Donnez un nom');return;}
+  const nid=Math.max(...GG.map(x=>x.id))+1;
+  GG.push({id:nid,nom,type,rayon,maj,
+    lignes:type==='poids'?[]:undefined,
+    zones:type==='zone'?[{id:1,c:'A',lb:'<15km',t1:0,t2:0,t3:0,km:null}]:undefined,
+    cats:type==='colis'?[]:undefined,
+    dist:type==='colis'?[]:undefined,
+    frais:[],opts:[]});
+  C('mn');ge('nn-n').value='';selG(nid);T(`✅ "${nom}" créée`);
+}
+
+function sT(btn,id){
+  document.querySelectorAll('.gtab').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.tp').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');ge(id)?.classList.add('on');
+}
+
+function O(id){ge(id).style.display='flex';}
+function C(id){ge(id).style.display='none';}
+document.querySelectorAll('.mo').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.style.display='none';}));
+function ge(id){return document.getElementById(id);}
+function V(id){const e=ge(id);return e?e.value:'';}
+function H(id){const e=ge(id);if(e)e.style.display='none';}
+function S(id){const e=ge(id);if(e)e.style.display='block';}
+function T(msg){const t=ge('toast');t.textContent=msg;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',3000);}
+</script>
+</body>
+</html>
