@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --bg: #0d0f14;
@@ -653,10 +654,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       🏪
       <select id="filter-magasin" onchange="applyFilters()">
         <option value="">Tous magasins</option>
-        <option>TRUFFAUT PARIS RIVE GAUCHE</option>
-        <option>TRUFFAUT LE CHESNAY</option>
-        <option>TRUFFAUT PLAISIR</option>
-        <option>TRUFFAUT DOMUS</option>
       </select>
     </div>
     <div class="filter-chip" id="chip-option" onclick="toggleFilter('option')">
@@ -788,21 +785,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         <label>Chauffeur</label>
         <select id="new-chauffeur">
           <option value="">Non assigné</option>
-          <option>TAREK MAKNI</option>
-          <option>Goré GREENCHARGEUR</option>
-          <option>Dama TRAORE</option>
-          <option>Rachid SANOU</option>
-          <option>Amine EXCEL LIV</option>
-          <option>Mohamed KLILA</option>
         </select>
       </div>
       <div class="form-group">
         <label>Véhicule</label>
         <select id="new-vehicule">
           <option value="">Non assigné</option>
-          <option>Fourgon 12m³</option>
-          <option>Grand fourgon 20m³</option>
-          <option>Camion 30m³</option>
         </select>
       </div>
       <div class="form-group">
@@ -842,15 +830,20 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 <div class="toast" id="toast"></div>
 
 <script>
+// ─── SUPABASE ───────────────────────────────────────────────
+const SUPA_URL = 'https://gwbvfohizdxwhmcoqvgh.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3YnZmb2hpemR4d2htY29xdmdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NjQ2MDksImV4cCI6MjA5MDQ0MDYwOX0.gOt8J2k7OV5W4SPtKrEV1sL6-C9eLE2hG3DuMzuaMKg';
+const db = supabase.createClient(SUPA_URL, SUPA_KEY);
+
 // ─── DONNÉES ────────────────────────────────────────────────
 const TOURNEE_COLORS = ['#4f7cff','#f43f5e','#2dd4a0','#f59e0b','#a855f7','#ec4899'];
 
-let tournees = [
+const FALLBACK_TOURNEES = [
   { id: 1, nom: 'TAREK 30/03',  couleur: '#4f7cff', date: '2026-03-30', heure: '07:30', chauffeur: 'TAREK MAKNI',        vehicule: 'Grand fourgon 20m³', statut: 'brouillon', stops: [] },
   { id: 2, nom: 'GORE 30/03',   couleur: '#f43f5e', date: '2026-03-30', heure: '08:00', chauffeur: 'Goré GREENCHARGEUR', vehicule: 'Fourgon 12m³',       statut: 'brouillon', stops: [] },
 ];
 
-let commandes = [
+const FALLBACK_COMMANDES = [
   { id: 12200, expediteur: 'TRUFFAUT PARIS RIVE GAUCHE', dest: 'Dupont Marie',      adresse: '14 Rue Bergère',         cp: '75009', ville: 'Paris',              lat: 48.873, lng: 2.348, creneau: '09:00-12:00', option: 'Pièce du choix', poids: 85,  tournee_id: null },
   { id: 12201, expediteur: 'TRUFFAUT PARIS RIVE GAUCHE', dest: 'Martin Luc',        adresse: '22 Rue Volta',           cp: '75003', ville: 'Paris',              lat: 48.862, lng: 2.354, creneau: '09:00-12:00', option: 'Trottoir',       poids: 45,  tournee_id: null },
   { id: 12202, expediteur: 'TRUFFAUT LE CHESNAY',        dest: 'Bernard Sophie',    adresse: '5 Allée des Roses',      cp: '78160', ville: 'Marly-le-Roi',      lat: 48.866, lng: 2.083, creneau: '12:00-16:00', option: 'Pièce du choix', poids: 120, tournee_id: null },
@@ -865,14 +858,105 @@ let commandes = [
   { id: 12211, expediteur: 'TRUFFAUT PARIS RIVE GAUCHE', dest: 'Simon Julien',      adresse: '36 Rue de Lozère',       cp: '91400', ville: 'Orsay',              lat: 48.695, lng: 2.191, creneau: '12:00-16:00', option: 'Trottoir',       poids: 55,  tournee_id: null },
 ];
 
+const FALLBACK_CHAUFFEURS = ['TAREK MAKNI', 'Goré GREENCHARGEUR', 'Dama TRAORE', 'Rachid SANOU', 'Amine EXCEL LIV', 'Mohamed KLILA'];
+const FALLBACK_VEHICULES = ['Fourgon 12m³', 'Grand fourgon 20m³', 'Camion 30m³'];
+const FALLBACK_ENTREPRISES = ['TRUFFAUT PARIS RIVE GAUCHE', 'TRUFFAUT LE CHESNAY', 'TRUFFAUT PLAISIR', 'TRUFFAUT DOMUS'];
+
+let tournees = [];
+let commandes = [];
+let chauffeursList = [];
+let vehiculesList = [];
+let entreprisesList = [];
+
 let selectedCmdId = null;
 let selectedColor = '#4f7cff';
-let filteredCommandes = [...commandes];
+let filteredCommandes = [];
 let map = null;
 let markers = {};
 
+async function loadDispatchData() {
+  try {
+    const [tourneesRes, commandesRes, chauffeursRes, vehiculesRes, entreprisesRes] = await Promise.allSettled([
+      db.from('tournees').select('*').order('date', { ascending: false }),
+      db.from('expeditions').select('*').eq('statut', 'en_attente').order('id', { ascending: false }),
+      db.from('chauffeurs').select('*').eq('actif', true).order('prenom'),
+      db.from('vehicules').select('*').order('nom'),
+      db.from('entreprises').select('nom').order('nom'),
+    ]);
+
+    tournees = (tourneesRes.status === 'fulfilled' && tourneesRes.value.data?.length)
+      ? tourneesRes.value.data.map(t => ({ ...t, stops: t.stops || [] }))
+      : FALLBACK_TOURNEES;
+
+    commandes = (commandesRes.status === 'fulfilled' && commandesRes.value.data?.length)
+      ? commandesRes.value.data.map(e => ({
+          id: e.id, expediteur: e.expediteur, dest: e.destinataire,
+          adresse: e.dest_adresse, cp: e.dest_cp, ville: e.dest_ville,
+          lat: e.lat || 48.85, lng: e.lng || 2.35, creneau: e.creneau,
+          option: e.lieu || 'Pièce du choix', poids: e.poids, tournee_id: null,
+        }))
+      : FALLBACK_COMMANDES;
+
+    chauffeursList = (chauffeursRes.status === 'fulfilled' && chauffeursRes.value.data?.length)
+      ? chauffeursRes.value.data
+          .filter(c => c.prenom !== 'LIVRAISONS EN ATTENTE' && c.prenom !== 'COURSE ANNULATION')
+          .map(c => `${c.prenom} ${c.nom}`.trim())
+      : FALLBACK_CHAUFFEURS;
+
+    vehiculesList = (vehiculesRes.status === 'fulfilled' && vehiculesRes.value.data?.length)
+      ? vehiculesRes.value.data.map(v => v.nom)
+      : FALLBACK_VEHICULES;
+
+    entreprisesList = (entreprisesRes.status === 'fulfilled' && entreprisesRes.value.data?.length)
+      ? entreprisesRes.value.data.map(e => e.nom)
+      : FALLBACK_ENTREPRISES;
+
+    console.log('[DISPATCH] Données chargées depuis Supabase');
+  } catch (err) {
+    console.warn('[DISPATCH] Erreur Supabase, données locales:', err);
+    tournees = FALLBACK_TOURNEES;
+    commandes = FALLBACK_COMMANDES;
+    chauffeursList = FALLBACK_CHAUFFEURS;
+    vehiculesList = FALLBACK_VEHICULES;
+    entreprisesList = FALLBACK_ENTREPRISES;
+  }
+
+  filteredCommandes = [...commandes];
+  populateDispatchDropdowns();
+}
+
+function populateDispatchDropdowns() {
+  const chauffeurSel = document.getElementById('new-chauffeur');
+  if (chauffeurSel) {
+    chauffeursList.forEach(name => {
+      const opt = document.createElement('option');
+      opt.textContent = name;
+      chauffeurSel.appendChild(opt);
+    });
+  }
+
+  const vehiculeSel = document.getElementById('new-vehicule');
+  if (vehiculeSel) {
+    vehiculesList.forEach(name => {
+      const opt = document.createElement('option');
+      opt.textContent = name;
+      vehiculeSel.appendChild(opt);
+    });
+  }
+
+  const magasinSel = document.getElementById('filter-magasin');
+  if (magasinSel) {
+    entreprisesList.forEach(name => {
+      const opt = document.createElement('option');
+      opt.textContent = name;
+      magasinSel.appendChild(opt);
+    });
+  }
+}
+
 // ─── INIT ────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadDispatchData();
   initMap();
   renderAll();
 });
@@ -1279,7 +1363,7 @@ function autoDispatchIA() {
 
     // Créer ou réutiliser les tournées existantes
     let tourneeIdx = 0;
-    const chauffeurs = ['TAREK MAKNI', 'Goré GREENCHARGEUR', 'Dama TRAORE', 'Rachid SANOU'];
+    const chauffeurs = chauffeursList.length ? chauffeursList.slice(0, 4) : ['TAREK MAKNI', 'Goré GREENCHARGEUR', 'Dama TRAORE', 'Rachid SANOU'];
 
     Object.entries(groupes).forEach(([key, cmds]) => {
       if (cmds.length === 0) return;

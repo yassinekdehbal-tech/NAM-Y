@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --bg: #0d0f14;
@@ -562,10 +563,7 @@ canvas#sig-canvas {
     <div class="form-field">
       <div class="form-label">🚐 Véhicule utilisé</div>
       <select class="form-input" id="ci-vehicule">
-        <option>Fourgon 20m³ — ES105XL</option>
-        <option>Fourgon 12m³ — AB456CD</option>
-        <option>Break — CD789EF</option>
-        <option>Autre</option>
+        <option>Chargement...</option>
       </select>
     </div>
 
@@ -699,14 +697,19 @@ canvas#sig-canvas {
 <div class="toast" id="toast"></div>
 
 <script>
+// ─── SUPABASE ───────────────────────────────────────────────
+const SUPA_URL = 'https://gwbvfohizdxwhmcoqvgh.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3YnZmb2hpemR4d2htY29xdmdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NjQ2MDksImV4cCI6MjA5MDQ0MDYwOX0.gOt8J2k7OV5W4SPtKrEV1sL6-C9eLE2hG3DuMzuaMKg';
+const db = supabase.createClient(SUPA_URL, SUPA_KEY);
+
 // ─── DATA ─────────────────────────────────────────────────────
 let checkinData = {};
 let currentStopId = 1;
 let stopMap = null;
 
-const CHAUFFEUR = { nom: 'TAREK MAKNI', initiales: 'TM', color: '#4f7cff' };
+let CHAUFFEUR = { nom: 'TAREK MAKNI', initiales: 'TM', color: '#4f7cff' };
 
-const STOPS = [
+const FALLBACK_STOPS = [
   { id:1, done:false, collected:false, nom:'Pluntz Sophie',    adresse:'15 Rue des Roses',       cp:'94200', ville:'Ivry-sur-Seine',    lat:48.815, lng:2.387, creneau:'09:00-13:00', option:'Pièce du choix', poids:80, desc:'Arbustes + pot céramique', tel:'0678901234', nb_colis:5,  eta:'09:15' },
   { id:2, done:false, collected:false, nom:'Abouriy Mahjouba', adresse:'14 Rue Bergère',          cp:'75009', ville:'Paris 9ème',         lat:48.873, lng:2.348, creneau:'09:00-13:00', option:'Pièce du choix', poids:7,  desc:'Plante verte',            tel:'0612345678', nb_colis:1,  eta:'10:00' },
   { id:3, done:false, collected:false, nom:'Lacourt',          adresse:'22 Rue des Lilas',        cp:'75013', ville:'Paris 13ème',        lat:48.832, lng:2.372, creneau:'13:00-16:00', option:'Trottoir',       poids:60, desc:'Sacs de terreau × 6',     tel:'0699887766', nb_colis:6,  eta:'10:45' },
@@ -719,8 +722,16 @@ const STOPS = [
   { id:10,done:true,  collected:true,  nom:'Craft Kate',       adresse:'Saint-Germain-en-Laye',   cp:'78100', ville:'Saint-Germain',      lat:48.898, lng:2.094, creneau:'09:00-13:00', option:'Pièce du choix', poids:50, desc:'Meubles de jardin',       tel:'0622334455', nb_colis:3,  eta:'✓ Livré', status:'livre' },
 ];
 
+const FALLBACK_VEHICULES = [
+  { nom: 'Fourgon 20m³', plaque: 'ES105XL' },
+  { nom: 'Fourgon 12m³', plaque: 'AB456CD' },
+  { nom: 'Break', plaque: 'CD789EF' },
+];
+
+let STOPS = [...FALLBACK_STOPS];
+
 const PLANNING = [
-  { id:1, nom:'TAREK 30/03', couleur:'#4f7cff', date:'Aujourd\'hui · 30 mars', heure:'08:00', vehicule:'Fourgon 20m³', statut:'today', nb_stops:10, stops: STOPS.slice(0,5) },
+  { id:1, nom:'TAREK 30/03', couleur:'#4f7cff', date:'Aujourd\'hui · 30 mars', heure:'08:00', vehicule:'Fourgon 20m³', statut:'today', nb_stops:10, stops: FALLBACK_STOPS.slice(0,5) },
   { id:2, nom:'TAREK 31/03', couleur:'#2dd4a0', date:'Demain · 31 mars',       heure:'08:00', vehicule:'Fourgon 20m³', statut:'next',  nb_stops:7,  stops: [
     {nom:'Bernard Sophie',  adresse:'5 Allée des Roses',  cp:'78160',ville:'Marly-le-Roi', eta:'09:00',creneau:'09:00-13:00'},
     {nom:'Leroy Thomas',    adresse:'33 Rue Louis Siou',  cp:'78890',ville:'Garancières',  eta:'10:00',creneau:'09:00-13:00'},
@@ -728,6 +739,82 @@ const PLANNING = [
     {nom:'Garcia Fernando', adresse:'2 Rue de la Paix',   cp:'75002',ville:'Paris',        eta:'13:30',creneau:'13:00-16:00'},
   ]},
 ];
+
+async function loadChauffeurData() {
+  try {
+    // Charger le profil chauffeur depuis la session
+    const sessionUser = JSON.parse(sessionStorage.getItem('namy_user') || 'null');
+    if (sessionUser) {
+      CHAUFFEUR = {
+        nom: `${sessionUser.prenom} ${sessionUser.nom}`.trim(),
+        initiales: `${(sessionUser.prenom||'')[0]||''}${(sessionUser.nom||'')[0]||''}`.toUpperCase(),
+        color: '#4f7cff'
+      };
+    }
+
+    // Charger les véhicules
+    const { data: vehicules } = await db.from('vehicules').select('*').order('nom');
+    const vehSel = document.getElementById('ci-vehicule');
+    if (vehSel) {
+      vehSel.innerHTML = '';
+      const vList = (vehicules && vehicules.length) ? vehicules : FALLBACK_VEHICULES;
+      vList.forEach(v => {
+        const opt = document.createElement('option');
+        opt.textContent = `${v.nom} — ${v.plaque}`;
+        vehSel.appendChild(opt);
+      });
+      const other = document.createElement('option');
+      other.textContent = 'Autre';
+      vehSel.appendChild(other);
+    }
+
+    // Charger les stops de la tournée du jour
+    if (sessionUser) {
+      const today = new Date().toISOString().split('T')[0];
+      const { data: tourneeData } = await db
+        .from('tournees')
+        .select('*')
+        .eq('chauffeur', CHAUFFEUR.nom)
+        .eq('date', today)
+        .limit(1)
+        .single();
+
+      if (tourneeData && tourneeData.id) {
+        const { data: stopsData } = await db
+          .from('tournee_stops')
+          .select('*')
+          .eq('tournee_id', tourneeData.id)
+          .order('ordre');
+
+        if (stopsData && stopsData.length) {
+          STOPS = stopsData;
+        }
+      }
+    }
+
+    console.log('[CHAUFFEUR] Données chargées depuis Supabase');
+  } catch (err) {
+    console.warn('[CHAUFFEUR] Erreur Supabase, données locales:', err);
+    STOPS = [...FALLBACK_STOPS];
+    const vehSel = document.getElementById('ci-vehicule');
+    if (vehSel) {
+      vehSel.innerHTML = '';
+      FALLBACK_VEHICULES.forEach(v => {
+        const opt = document.createElement('option');
+        opt.textContent = `${v.nom} — ${v.plaque}`;
+        vehSel.appendChild(opt);
+      });
+      const other = document.createElement('option');
+      other.textContent = 'Autre';
+      vehSel.appendChild(other);
+    }
+  }
+}
+
+// ─── INIT CHAUFFEUR ──────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadChauffeurData();
+});
 
 // ─── CHECK-IN ─────────────────────────────────────────────────
 document.getElementById('checkin-date').textContent =

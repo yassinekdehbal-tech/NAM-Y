@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --bg: #0d0f14;
@@ -374,43 +375,8 @@ tr:hover td{background:rgba(79,124,255,.04)}
           <div class="ct">🗂️ Tournées du jour</div>
           <button class="btn bg bs" onclick="nav('dispatch')">+ Créer</button>
         </div>
-        <div class="tournee-strip">
-          <div class="tournee-item">
-            <div class="t-color" style="background:#4f7cff"></div>
-            <div class="t-info">
-              <div class="t-name">TAREK 30/03</div>
-              <div class="t-meta">TAREK MAKNI · 08:00 · Fourgon 20m³</div>
-            </div>
-            <div class="t-progress">
-              <div class="t-prog-val" style="color:var(--primary)">7/10 stops</div>
-              <div class="t-prog-bar"><div class="t-prog-fill" style="width:70%;background:#4f7cff"></div></div>
-            </div>
-            <span class="bdg b-run">En cours</span>
-          </div>
-          <div class="tournee-item">
-            <div class="t-color" style="background:#f43f5e"></div>
-            <div class="t-info">
-              <div class="t-name">GORE 30/03</div>
-              <div class="t-meta">Goré GREENCHARGEUR · 08:00 · Fourgon</div>
-            </div>
-            <div class="t-progress">
-              <div class="t-prog-val" style="color:var(--success)">7/7 stops</div>
-              <div class="t-prog-bar"><div class="t-prog-fill" style="width:100%;background:var(--success)"></div></div>
-            </div>
-            <span class="bdg b-done">Terminée</span>
-          </div>
-          <div class="tournee-item">
-            <div class="t-color" style="background:#2dd4a0"></div>
-            <div class="t-info">
-              <div class="t-name">DAMA 31/03</div>
-              <div class="t-meta">Dama TRAORE · Demain 08:00</div>
-            </div>
-            <div class="t-progress">
-              <div class="t-prog-val" style="color:var(--muted)">0/5 stops</div>
-              <div class="t-prog-bar"><div class="t-prog-fill" style="width:0%;background:var(--success)"></div></div>
-            </div>
-            <span class="bdg b-plan">Planifiée</span>
-          </div>
+        <div class="tournee-strip" id="dash-tournees">
+          <!-- Rempli dynamiquement -->
         </div>
       </div>
 
@@ -420,39 +386,8 @@ tr:hover td{background:rgba(79,124,255,.04)}
           <div class="ct">🚚 Chauffeurs</div>
           <div class="cs">4 actifs aujourd'hui</div>
         </div>
-        <div class="chauff-list">
-          <div class="chauff-item">
-            <div class="chauff-av" style="background:#4f7cff">TM</div>
-            <div class="chauff-info">
-              <div class="chauff-name">TAREK MAKNI</div>
-              <div class="chauff-meta">📍 Paris 15ème · 3 stops restants</div>
-            </div>
-            <span class="chauff-status cs-active">● En tournée</span>
-          </div>
-          <div class="chauff-item">
-            <div class="chauff-av" style="background:#f43f5e">GG</div>
-            <div class="chauff-info">
-              <div class="chauff-name">Goré GREENCHARGEUR</div>
-              <div class="chauff-meta">📍 Retour dépôt · Terminé</div>
-            </div>
-            <span class="chauff-status cs-pause">✓ Terminé</span>
-          </div>
-          <div class="chauff-item">
-            <div class="chauff-av" style="background:#2dd4a0">DT</div>
-            <div class="chauff-info">
-              <div class="chauff-name">Dama TRAORE</div>
-              <div class="chauff-meta">📍 Drancy · Demain</div>
-            </div>
-            <span class="chauff-status cs-off">Repos</span>
-          </div>
-          <div class="chauff-item">
-            <div class="chauff-av" style="background:#f59e0b">RS</div>
-            <div class="chauff-info">
-              <div class="chauff-name">Rachid SANOU</div>
-              <div class="chauff-meta">📍 Versailles · 2 stops restants</div>
-            </div>
-            <span class="chauff-status cs-active">● En tournée</span>
-          </div>
+        <div class="chauff-list" id="dash-chauffeurs">
+          <!-- Rempli dynamiquement -->
         </div>
       </div>
     </div>
@@ -666,11 +601,8 @@ tr:hover td{background:rgba(79,124,255,.04)}
       <div class="ch"><div class="ct">🚚 Performance chauffeurs — Ce mois</div></div>
       <table>
         <thead><tr><th>Chauffeur</th><th>Livraisons</th><th>Taux succès</th><th>Retards</th><th>Litiges</th><th>CA généré</th></tr></thead>
-        <tbody>
-          <tr><td><div style="display:flex;align-items:center;gap:8px"><div style="width:24px;height:24px;background:#4f7cff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">TM</div>TAREK MAKNI</div></td><td style="font-family:'DM Mono',monospace">52</td><td><span class="bdg b-done">98%</span></td><td style="color:var(--warning);font-family:'DM Mono',monospace">1</td><td style="color:var(--danger);font-family:'DM Mono',monospace">0</td><td style="font-family:'DM Mono',monospace;color:var(--success)">1 340 €</td></tr>
-          <tr><td><div style="display:flex;align-items:center;gap:8px"><div style="width:24px;height:24px;background:#f43f5e;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">GG</div>Goré GREENCHARGEUR</div></td><td style="font-family:'DM Mono',monospace">48</td><td><span class="bdg b-done">96%</span></td><td style="color:var(--warning);font-family:'DM Mono',monospace">2</td><td style="color:var(--danger);font-family:'DM Mono',monospace">1</td><td style="font-family:'DM Mono',monospace;color:var(--success)">1 180 €</td></tr>
-          <tr><td><div style="display:flex;align-items:center;gap:8px"><div style="width:24px;height:24px;background:#2dd4a0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">DT</div>Dama TRAORE</div></td><td style="font-family:'DM Mono',monospace">45</td><td><span class="bdg b-run">94%</span></td><td style="color:var(--warning);font-family:'DM Mono',monospace">3</td><td style="color:var(--danger);font-family:'DM Mono',monospace">0</td><td style="font-family:'DM Mono',monospace;color:var(--success)">1 120 €</td></tr>
-          <tr><td><div style="display:flex;align-items:center;gap:8px"><div style="width:24px;height:24px;background:#f59e0b;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">RS</div>Rachid SANOU</div></td><td style="font-family:'DM Mono',monospace">42</td><td><span class="bdg b-run">95%</span></td><td style="color:var(--warning);font-family:'DM Mono',monospace">2</td><td style="color:var(--danger);font-family:'DM Mono',monospace">1</td><td style="font-family:'DM Mono',monospace;color:var(--success)">1 180 €</td></tr>
+        <tbody id="dash-perf-tbody">
+          <!-- Rempli dynamiquement -->
         </tbody>
       </table>
     </div>
@@ -784,7 +716,124 @@ function showNotif(msg) {
   n._t = setTimeout(() => n.style.display = 'none', 3000);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+// ─── SUPABASE DASHBOARD ─────────────────────────────────────
+const SUPA_URL = 'https://gwbvfohizdxwhmcoqvgh.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3YnZmb2hpemR4d2htY29xdmdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NjQ2MDksImV4cCI6MjA5MDQ0MDYwOX0.gOt8J2k7OV5W4SPtKrEV1sL6-C9eLE2hG3DuMzuaMKg';
+const db = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+const COLORS = ['#4f7cff','#f43f5e','#2dd4a0','#f59e0b','#a855f7','#ec4899'];
+
+async function loadDashboardData() {
+  // Fallback data
+  const fallbackTournees = [
+    { nom:'TAREK 30/03', chauffeur:'TAREK MAKNI', heure:'08:00', vehicule:'Fourgon 20m³', couleur:'#4f7cff', nb_courses:10, nb_done:7, statut:'En cours' },
+    { nom:'GORE 30/03', chauffeur:'Goré GREENCHARGEUR', heure:'08:00', vehicule:'Fourgon', couleur:'#f43f5e', nb_courses:7, nb_done:7, statut:'Terminée' },
+    { nom:'DAMA 31/03', chauffeur:'Dama TRAORE', heure:'08:00', vehicule:'', couleur:'#2dd4a0', nb_courses:5, nb_done:0, statut:'Planifiée' },
+  ];
+  const fallbackChauffeurs = [
+    { prenom:'Tarek', nom:'MAKNI', color:'#4f7cff', meta:'Paris 15ème · 3 stops restants', status:'active' },
+    { prenom:'Goré', nom:'GREENCHARGEUR', color:'#f43f5e', meta:'Retour dépôt · Terminé', status:'pause' },
+    { prenom:'Dama', nom:'TRAORE', color:'#2dd4a0', meta:'Drancy · Demain', status:'off' },
+    { prenom:'Rachid', nom:'SANOU', color:'#f59e0b', meta:'Versailles · 2 stops restants', status:'active' },
+  ];
+  const fallbackPerf = [
+    { nom:'TAREK MAKNI', initiales:'TM', color:'#4f7cff', livraisons:52, taux:98, retards:1, litiges:0, ca:'1 340' },
+    { nom:'Goré GREENCHARGEUR', initiales:'GG', color:'#f43f5e', livraisons:48, taux:96, retards:2, litiges:1, ca:'1 180' },
+    { nom:'Dama TRAORE', initiales:'DT', color:'#2dd4a0', livraisons:45, taux:94, retards:3, litiges:0, ca:'1 120' },
+    { nom:'Rachid SANOU', initiales:'RS', color:'#f59e0b', livraisons:42, taux:95, retards:2, litiges:1, ca:'1 180' },
+  ];
+
+  let tournees = fallbackTournees;
+  let chauffeurs = fallbackChauffeurs;
+  let perf = fallbackPerf;
+
+  try {
+    const [tourneesRes, chauffeursRes] = await Promise.allSettled([
+      db.from('tournees').select('*').order('date', { ascending: false }).limit(5),
+      db.from('chauffeurs').select('*').eq('actif', true).order('prenom'),
+    ]);
+
+    if (tourneesRes.status === 'fulfilled' && tourneesRes.value.data?.length) {
+      tournees = tourneesRes.value.data.map((t, i) => ({
+        nom: t.nom, chauffeur: t.chauffeur, heure: t.heure, vehicule: t.vehicule || '',
+        couleur: t.couleur || COLORS[i % COLORS.length],
+        nb_courses: t.nb_courses || 0, nb_done: t.nb_done || 0, statut: t.statut || 'Planifiée',
+      }));
+    }
+
+    if (chauffeursRes.status === 'fulfilled' && chauffeursRes.value.data?.length) {
+      chauffeurs = chauffeursRes.value.data
+        .filter(c => c.prenom !== 'LIVRAISONS EN ATTENTE' && c.prenom !== 'COURSE ANNULATION')
+        .slice(0, 6)
+        .map((c, i) => ({
+          prenom: c.prenom, nom: c.nom, color: COLORS[i % COLORS.length],
+          meta: '', status: 'off',
+        }));
+    }
+
+    console.log('[DASHBOARD] Données chargées depuis Supabase');
+  } catch(err) {
+    console.warn('[DASHBOARD] Erreur Supabase, données locales:', err);
+  }
+
+  // Render tournées
+  const tEl = document.getElementById('dash-tournees');
+  if (tEl) {
+    tEl.innerHTML = tournees.map(t => {
+      const pct = t.nb_courses > 0 ? Math.round(t.nb_done / t.nb_courses * 100) : 0;
+      const statClass = t.statut === 'Terminée' ? 'b-done' : t.statut === 'En cours' ? 'b-run' : 'b-plan';
+      return `<div class="tournee-item">
+        <div class="t-color" style="background:${t.couleur}"></div>
+        <div class="t-info">
+          <div class="t-name">${t.nom}</div>
+          <div class="t-meta">${t.chauffeur} · ${t.heure}${t.vehicule ? ' · '+t.vehicule : ''}</div>
+        </div>
+        <div class="t-progress">
+          <div class="t-prog-val" style="color:${pct===100?'var(--success)':'var(--primary)'}">${t.nb_done}/${t.nb_courses} stops</div>
+          <div class="t-prog-bar"><div class="t-prog-fill" style="width:${pct}%;background:${pct===100?'var(--success)':t.couleur}"></div></div>
+        </div>
+        <span class="bdg ${statClass}">${t.statut}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Render chauffeurs
+  const cEl = document.getElementById('dash-chauffeurs');
+  if (cEl) {
+    cEl.innerHTML = chauffeurs.map(c => {
+      const initiales = `${(c.prenom||'')[0]||''}${(c.nom||'')[0]||''}`.toUpperCase();
+      const statusMap = { active: ['cs-active','● En tournée'], pause: ['cs-pause','✓ Terminé'], off: ['cs-off','Repos'] };
+      const [cls, label] = statusMap[c.status] || statusMap.off;
+      return `<div class="chauff-item">
+        <div class="chauff-av" style="background:${c.color}">${initiales}</div>
+        <div class="chauff-info">
+          <div class="chauff-name">${c.prenom} ${c.nom}</div>
+          <div class="chauff-meta">${c.meta ? '📍 '+c.meta : ''}</div>
+        </div>
+        <span class="chauff-status ${cls}">${label}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Render perf
+  const pEl = document.getElementById('dash-perf-tbody');
+  if (pEl) {
+    pEl.innerHTML = perf.map(p => {
+      const tauxClass = p.taux >= 96 ? 'b-done' : 'b-run';
+      return `<tr>
+        <td><div style="display:flex;align-items:center;gap:8px"><div style="width:24px;height:24px;background:${p.color};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">${p.initiales}</div>${p.nom}</div></td>
+        <td style="font-family:'DM Mono',monospace">${p.livraisons}</td>
+        <td><span class="bdg ${tauxClass}">${p.taux}%</span></td>
+        <td style="color:var(--warning);font-family:'DM Mono',monospace">${p.retards}</td>
+        <td style="color:var(--danger);font-family:'DM Mono',monospace">${p.litiges}</td>
+        <td style="font-family:'DM Mono',monospace;color:var(--success)">${p.ca} €</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadDashboardData();
   initMap();
   initBars();
   initMagBars();

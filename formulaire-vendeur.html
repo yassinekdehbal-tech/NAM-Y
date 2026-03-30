@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NAMY — Nouvelle expédition</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --bg: #f5f4f0;
@@ -1199,8 +1200,13 @@ select {
 </div>
 
 <script>
+// ─── SUPABASE ───────────────────────────────────────────────
+const SUPA_URL = 'https://gwbvfohizdxwhmcoqvgh.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3YnZmb2hpemR4d2htY29xdmdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NjQ2MDksImV4cCI6MjA5MDQ0MDYwOX0.gOt8J2k7OV5W4SPtKrEV1sL6-C9eLE2hG3DuMzuaMKg';
+const db_fv = supabase.createClient(SUPA_URL, SUPA_KEY);
+
 // ─── DONNÉES ────────────────────────────────────────────────
-const MAGASIN = {
+let MAGASIN = {
   nom: 'TRUFFAUT PARIS RIVE GAUCHE',
   adresse: '85 Quai de la Gare',
   cp: '75013',
@@ -1211,12 +1217,77 @@ const MAGASIN = {
   grille: 'TRUFFAUT PIECE DU CHOIX STD'
 };
 
-const GRILLE = [
+let GRILLE = [
   { poids_max: 150, dim_max: 140, colis_max: 30,  prix: 25 },
   { poids_max: 150, dim_max: 240, colis_max: 131, prix: 50 },
   { poids_max: 350, dim_max: 320, colis_max: 131, prix: 86 },
   { poids_max: 1200, dim_max: 400, colis_max: 131, prix: 160 },
 ];
+
+async function loadVendeurData() {
+  try {
+    const sessionUser = JSON.parse(sessionStorage.getItem('namy_user') || 'null');
+    if (sessionUser && sessionUser.entreprise_id) {
+      const { data: entreprise } = await db_fv
+        .from('entreprises')
+        .select('*')
+        .eq('id', sessionUser.entreprise_id)
+        .single();
+
+      if (entreprise) {
+        MAGASIN = {
+          nom: entreprise.nom,
+          adresse: entreprise.adresse,
+          cp: entreprise.cp,
+          ville: entreprise.ville,
+          tel: entreprise.tel || MAGASIN.tel,
+          horaires: entreprise.horaires || MAGASIN.horaires,
+          contact: entreprise.contact || MAGASIN.contact,
+          grille: entreprise.grille || MAGASIN.grille,
+        };
+
+        // Mettre à jour l'interface
+        document.getElementById('magasin-name').textContent = MAGASIN.nom;
+        document.getElementById('pickup-name').textContent = MAGASIN.nom;
+        document.getElementById('pickup-address').textContent = `${MAGASIN.adresse} · ${MAGASIN.cp} ${MAGASIN.ville}`;
+        document.getElementById('pickup-tel').textContent = MAGASIN.tel;
+        document.getElementById('pickup-horaires').textContent = MAGASIN.horaires;
+        document.getElementById('pickup-contact').textContent = MAGASIN.contact;
+      }
+    }
+
+    // Charger la grille tarifaire
+    const { data: grille } = await db_fv
+      .from('grilles_tarifaires')
+      .select('*')
+      .order('id');
+
+    if (grille && grille.length) {
+      GRILLE = grille.map(g => ({
+        poids_max: g.poids_fin,
+        dim_max: g.dim_max,
+        colis_max: g.colis_unique,
+        prix: g.prix,
+      }));
+    }
+
+    // Charger le nom de l'utilisateur
+    if (sessionUser) {
+      const avatarEl = document.querySelector('.avatar');
+      const nameEl = document.querySelector('.header-user span:last-child');
+      if (avatarEl && sessionUser.prenom && sessionUser.nom) {
+        avatarEl.textContent = `${sessionUser.prenom[0]}${sessionUser.nom[0]}`.toUpperCase();
+      }
+      if (nameEl && sessionUser.prenom) {
+        nameEl.textContent = `${sessionUser.prenom} ${(sessionUser.nom||'')[0]||''}.`;
+      }
+    }
+
+    console.log('[VENDEUR] Données chargées depuis Supabase');
+  } catch (err) {
+    console.warn('[VENDEUR] Erreur Supabase, données locales:', err);
+  }
+}
 
 // Adresses fictives pour l'autocomplétion demo
 const ADRESSES_DEMO = [
@@ -1672,6 +1743,9 @@ function resetForm() {
 }
 
 function updatePoidsEstime() { /* Placeholder pour feedback temps réel */ }
+
+// ─── INIT ───────────────────────────────────────────────────
+loadVendeurData();
 </script>
 </body>
 </html>

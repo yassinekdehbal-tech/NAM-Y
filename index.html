@@ -7,6 +7,7 @@
 <title>NAMY — TMS</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div id="app">
@@ -89,12 +90,6 @@
         </select>
         <select class="filter-select" id="filter-chauffeur">
           <option value="">Tous les chauffeurs</option>
-          <option value="tarek">TAREK MAKNI</option>
-          <option value="gore">Goré GREENCHARGEUR</option>
-          <option value="dama">Dama TRAORE</option>
-          <option value="rachid">Rachid SANOU</option>
-          <option value="amine">Amine EXCEL LIV</option>
-          <option value="mohamed">Mohamed KLILA</option>
         </select>
         <button class="btn btn-secondary btn-sm" onclick="filterExpeditions()">Filtrer</button>
         <button class="btn btn-ghost btn-sm" onclick="resetFilters()">Réinitialiser</button>
@@ -268,12 +263,6 @@
           <label>Entreprise</label>
           <select class="form-control" id="extract-entreprise">
             <option value="">Toutes les entreprises</option>
-            <option>TRUFFAUT LE CHESNAY</option>
-            <option>TRUFFAUT PLAISIR</option>
-            <option>TRUFFAUT DOMUS</option>
-            <option>TRUFFAUT PARIS RIVE GAUCHE</option>
-            <option>TRUFFAUT FOURQUEUX</option>
-            <option>FISSA LIV</option>
           </select>
         </div>
         <div class="form-row">
@@ -380,12 +369,6 @@
             <label>Client payeur <span class="required">*</span></label>
             <select class="form-control" id="new-client" onchange="updateClientForm()">
               <option value="">Sélectionner...</option>
-              <option value="TRUFFAUT LE CHESNAY">TRUFFAUT LE CHESNAY</option>
-              <option value="TRUFFAUT PLAISIR">TRUFFAUT PLAISIR</option>
-              <option value="TRUFFAUT DOMUS">TRUFFAUT DOMUS</option>
-              <option value="TRUFFAUT PARIS RIVE GAUCHE">TRUFFAUT PARIS RIVE GAUCHE</option>
-              <option value="TRUFFAUT FOURQUEUX">TRUFFAUT FOURQUEUX</option>
-              <option value="FISSA LIV">FISSA LIV</option>
             </select>
           </div>
           <div class="form-group">
@@ -584,12 +567,6 @@
         <label>Chauffeur</label>
         <select class="form-control" id="new-tournee-chauffeur">
           <option value="">Non assigné</option>
-          <option>TAREK MAKNI</option>
-          <option>Goré GREENCHARGEUR</option>
-          <option>Dama TRAORE</option>
-          <option>Rachid SANOU</option>
-          <option>Amine EXCEL LIV</option>
-          <option>Mohamed KLILA</option>
         </select>
       </div>
       <div class="form-group">

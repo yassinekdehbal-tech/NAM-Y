@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NAMY — Grilles tarifaires</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--bg:#f7f6f2;--surface:#fff;--surface2:#f0efe9;--border:#dddbd2;--text:#1a1a18;--muted:#6b6960;--dim:#a8a69e;--accent:#1a472a;--al:#eaf2ec;--accent2:#c47a1a;--a2l:#fef3e2;--danger:#c43a2a;--dl:#fef0ee;--info:#1a5c8c;--il:#e8f2fb;--purple:#6d28d9;--pl:#f0eeff;--warn:#b45309;--wl:#fffbeb;--r:8px;--rl:14px;--sh:0 1px 4px rgba(0,0,0,.07);--shl:0 8px 32px rgba(0,0,0,.12)}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -211,8 +212,13 @@ tr:hover td{background:rgba(0,0,0,.015)}
 <div class="toast" id="toast"></div>
 
 <script>
+// ─── SUPABASE ───────────────────────────────────────────────
+const SUPA_URL = 'https://gwbvfohizdxwhmcoqvgh.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3YnZmb2hpemR4d2htY29xdmdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NjQ2MDksImV4cCI6MjA5MDQ0MDYwOX0.gOt8J2k7OV5W4SPtKrEV1sL6-C9eLE2hG3DuMzuaMKg';
+const db_gt = supabase.createClient(SUPA_URL, SUPA_KEY);
+
 let aId=1;
-const CLIENTS=[
+let CLIENTS=[
   {id:1,nom:'TRUFFAUT LE CHESNAY',       gid:1,devis:false},
   {id:2,nom:'TRUFFAUT PLAISIR',          gid:1,devis:false},
   {id:3,nom:'TRUFFAUT DOMUS',            gid:1,devis:true},
@@ -278,7 +284,24 @@ let GG=[
   }
 ];
 
-document.addEventListener('DOMContentLoaded',()=>{rSB();rG(aId);});
+document.addEventListener('DOMContentLoaded', async ()=>{
+  try {
+    const [clientsRes, grillesRes] = await Promise.allSettled([
+      db_gt.from('clients_tarifs').select('*').order('id'),
+      db_gt.from('grilles_detail').select('*').order('id'),
+    ]);
+    if (clientsRes.status === 'fulfilled' && clientsRes.value.data?.length) {
+      CLIENTS = clientsRes.value.data;
+    }
+    if (grillesRes.status === 'fulfilled' && grillesRes.value.data?.length) {
+      GG = grillesRes.value.data;
+    }
+    console.log('[GRILLES] Données chargées depuis Supabase');
+  } catch(err) {
+    console.warn('[GRILLES] Erreur Supabase, données locales:', err);
+  }
+  rSB();rG(aId);
+});
 
 function rSB(){
   document.getElementById('gl').innerHTML=GG.map(g=>{
