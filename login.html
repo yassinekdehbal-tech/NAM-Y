@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NAMY — Connexion</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0d0f14;--s1:#151820;--s2:#1c2030;--s3:#252a3a;--border:#2a3050;--text:#e8eaf4;--muted:#6b7599;--primary:#4f7cff;--success:#2dd4a0;--danger:#f43f5e;--r:10px;--rl:16px}
@@ -102,12 +103,6 @@ body{font-family:'DM Sans',sans-serif;background:radial-gradient(ellipse at 20% 
 </div>
 
 <script>
-// ── SUPABASE ──────────────────────────────────────────────────
-const SUPA_URL = 'https://gwbvfohizdxwhmcoqvgh.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3YnZmb2hpemR4d2htY29xdmdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NjQ2MDksImV4cCI6MjA5MDQ0MDYwOX0.gOt8J2k7OV5W4SPtKrEV1sL6-C9eLE2hG3DuMzuaMKg';
-const { createClient } = supabase;
-const db = createClient(SUPA_URL, SUPA_KEY);
-
 // Redirect par rôle
 const REDIRECTS = {
   admin:      'dashboard.html',

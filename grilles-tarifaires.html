@@ -7,6 +7,8 @@
 <title>NAMY — Grilles tarifaires</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="utils.js"></script>
 <style>
 :root{--bg:#f7f6f2;--surface:#fff;--surface2:#f0efe9;--border:#dddbd2;--text:#1a1a18;--muted:#6b6960;--dim:#a8a69e;--accent:#1a472a;--al:#eaf2ec;--accent2:#c47a1a;--a2l:#fef3e2;--danger:#c43a2a;--dl:#fef0ee;--info:#1a5c8c;--il:#e8f2fb;--purple:#6d28d9;--pl:#f0eeff;--warn:#b45309;--wl:#fffbeb;--r:8px;--rl:14px;--sh:0 1px 4px rgba(0,0,0,.07);--shl:0 8px 32px rgba(0,0,0,.12)}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -112,12 +114,12 @@ tr:hover td{background:rgba(0,0,0,.015)}
   <div class="logo">N A M Y</div>
   <span class="hdr-sub">/ Grilles tarifaires</span>
   <div class="hdr-act">
-    <button class="btn bg bs" style="color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.15)" onclick="O('mn')">+ Nouvelle grille</button>
+    <button class="btn bg bs" style="color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.15)" onclick="showModal('mn')">+ Nouvelle grille</button>
   </div>
 </header>
 <div class="layout">
   <div class="sb">
-    <div class="sb-hd"><span class="sb-title">Grilles tarifaires</span><button class="btn bp bs" style="padding:3px 10px;font-size:11px" onclick="O('mn')">+</button></div>
+    <div class="sb-hd"><span class="sb-title">Grilles tarifaires</span><button class="btn bp bs" style="padding:3px 10px;font-size:11px" onclick="showModal('mn')">+</button></div>
     <div class="gl" id="gl"></div>
   </div>
   <div class="main" id="main"></div>
@@ -126,32 +128,32 @@ tr:hover td{background:rgba(0,0,0,.015)}
 <!-- Modal nouvelle grille -->
 <div class="mo" id="mn" style="display:none">
   <div class="md">
-    <div class="mh"><span class="mt">Nouvelle grille tarifaire</span><button class="mc" onclick="C('mn')">✕</button></div>
+    <div class="mh"><span class="mt">Nouvelle grille tarifaire</span><button class="mc" onclick="hideModal('mn')">&#10005;</button></div>
     <div class="mb">
       <div class="fg"><label class="fl">Nom *</label><input type="text" class="fc" id="nn-n" placeholder="Ex: TRUFFAUT STANDARD"></div>
       <div class="fg"><label class="fl">Type de calcul *</label>
         <select class="fc" id="nn-t">
-          <option value="poids">⚖️ Poids + Dimensions</option>
-          <option value="zone">📍 Zone géographique + Véhicule</option>
-          <option value="colis">📦 Nombre de colis / Catégorie</option>
+          <option value="poids">&#9878;&#65039; Poids + Dimensions</option>
+          <option value="zone">&#128205; Zone g&eacute;ographique + V&eacute;hicule</option>
+          <option value="colis">&#128230; Nombre de colis / Cat&eacute;gorie</option>
         </select>
       </div>
       <div class="fr">
         <div class="fg"><label class="fl">Rayon inclus (km)</label><input type="number" class="fc" id="nn-r" value="30"></div>
-        <div class="fg"><label class="fl">Majoration dim/fériés (%)</label><input type="number" class="fc" id="nn-m" value="20"></div>
+        <div class="fg"><label class="fl">Majoration dim/f&eacute;ri&eacute;s (%)</label><input type="number" class="fc" id="nn-m" value="20"></div>
       </div>
     </div>
-    <div class="mf"><button class="btn bg" onclick="C('mn')">Annuler</button><button class="btn bp" onclick="creerGrille()">Créer</button></div>
+    <div class="mf"><button class="btn bg" onclick="hideModal('mn')">Annuler</button><button class="btn bp" onclick="createGrille()">Cr&eacute;er</button></div>
   </div>
 </div>
 
 <!-- Modal ligne poids -->
 <div class="mo" id="mp" style="display:none">
   <div class="md">
-    <div class="mh"><span class="mt">Ajouter une ligne — Poids</span><button class="mc" onclick="C('mp')">✕</button></div>
+    <div class="mh"><span class="mt">Ajouter une ligne — Poids</span><button class="mc" onclick="hideModal('mp')">&#10005;</button></div>
     <div class="mb">
       <div class="fr">
-        <div class="fg"><label class="fl">Poids min (kg) ≥</label><input type="number" class="fc" id="lp-a" value="0"></div>
+        <div class="fg"><label class="fl">Poids min (kg) &ge;</label><input type="number" class="fc" id="lp-a" value="0"></div>
         <div class="fg"><label class="fl">Poids max (kg) &lt;</label><input type="number" class="fc" id="lp-b" placeholder="Ex: 200"></div>
       </div>
       <div class="fr">
@@ -159,528 +161,1262 @@ tr:hover td{background:rgba(0,0,0,.015)}
         <div class="fg"><label class="fl">Dimension max (cm)</label><input type="number" class="fc" id="lp-d" placeholder="Ex: 320"></div>
       </div>
       <div class="fr">
-        <div class="fg"><label class="fl">Prix Pied camion (€HT)</label><input type="number" class="fc" id="lp-e" step="0.01"></div>
-        <div class="fg"><label class="fl">Prix Lieu du choix (€HT)</label><input type="number" class="fc" id="lp-f" step="0.01"></div>
+        <div class="fg"><label class="fl">Prix Pied camion (&euro;HT)</label><input type="number" class="fc" id="lp-e" step="0.01"></div>
+        <div class="fg"><label class="fl">Prix Lieu du choix (&euro;HT)</label><input type="number" class="fc" id="lp-f" step="0.01"></div>
       </div>
     </div>
-    <div class="mf"><button class="btn bg" onclick="C('mp')">Annuler</button><button class="btn bp" onclick="addLP()">Ajouter</button></div>
+    <div class="mf"><button class="btn bg" onclick="hideModal('mp')">Annuler</button><button class="btn bp" onclick="addLignePoids()">Ajouter</button></div>
   </div>
 </div>
 
-<!-- Modal catégorie colis -->
+<!-- Modal categorie colis -->
 <div class="mo" id="mc2" style="display:none">
   <div class="md">
-    <div class="mh"><span class="mt">Ajouter une catégorie de colis</span><button class="mc" onclick="C('mc2')">✕</button></div>
+    <div class="mh"><span class="mt">Ajouter une cat&eacute;gorie de colis</span><button class="mc" onclick="hideModal('mc2')">&#10005;</button></div>
     <div class="mb">
-      <div class="fg"><label class="fl">Nom de la catégorie *</label><input type="text" class="fc" id="lc-n" placeholder="Ex: LITERIE, ELECTROMÉNAGER"></div>
+      <div class="fg"><label class="fl">Nom de la cat&eacute;gorie *</label><input type="text" class="fc" id="lc-n" placeholder="Ex: LITERIE, ELECTROM&Eacute;NAGER"></div>
       <div class="fr">
-        <div class="fg"><label class="fl">Nb colis min (≥)</label><input type="number" class="fc" id="lc-a" value="1"></div>
+        <div class="fg"><label class="fl">Nb colis min (&ge;)</label><input type="number" class="fc" id="lc-a" value="1"></div>
         <div class="fg"><label class="fl">Nb colis max (&lt;)</label><input type="number" class="fc" id="lc-b" placeholder="Ex: 5"></div>
       </div>
       <div class="fr">
-        <div class="fg"><label class="fl">Prix de base (€HT)</label><input type="number" class="fc" id="lc-c" step="0.01"></div>
-        <div class="fg"><label class="fl">Prix colis supp. (€HT)</label><input type="number" class="fc" id="lc-d" step="0.01"></div>
+        <div class="fg"><label class="fl">Prix de base (&euro;HT)</label><input type="number" class="fc" id="lc-c" step="0.01"></div>
+        <div class="fg"><label class="fl">Prix colis supp. (&euro;HT)</label><input type="number" class="fc" id="lc-d" step="0.01"></div>
       </div>
       <div class="fr">
         <div class="fg"><label class="fl">Lieu de livraison</label>
-          <select class="fc" id="lc-e"><option>Pied de camion</option><option>Pièce du choix</option><option>Tous</option></select>
+          <select class="fc" id="lc-e"><option>Pied de camion</option><option>Pi&egrave;ce du choix</option><option>Tous</option></select>
         </div>
         <div class="fg"><label class="fl">Seuil devis auto (nb colis)</label><input type="number" class="fc" id="lc-f" placeholder="Laisser vide = pas de seuil"></div>
       </div>
     </div>
-    <div class="mf"><button class="btn bg" onclick="C('mc2')">Annuler</button><button class="btn bp" onclick="addLC()">Ajouter</button></div>
+    <div class="mf"><button class="btn bg" onclick="hideModal('mc2')">Annuler</button><button class="btn bp" onclick="addCategorieColis()">Ajouter</button></div>
   </div>
 </div>
 
 <!-- Modal option -->
 <div class="mo" id="mo2" style="display:none">
   <div class="md">
-    <div class="mh"><span class="mt">Ajouter une option de livraison</span><button class="mc" onclick="C('mo2')">✕</button></div>
+    <div class="mh"><span class="mt">Ajouter une option de livraison</span><button class="mc" onclick="hideModal('mo2')">&#10005;</button></div>
     <div class="mb">
       <div class="fg"><label class="fl">Nom *</label><input type="text" class="fc" id="op-n" placeholder="Ex: Manutention, Installation"></div>
       <div class="fr">
-        <div class="fg"><label class="fl">Prix (€HT)</label><input type="number" class="fc" id="op-p" step="0.01"></div>
-        <div class="fg"><label class="fl">Unité</label>
-          <select class="fc" id="op-u"><option>Forfait</option><option>Par 30 minutes</option><option>Par colis</option><option>Par étage</option></select>
+        <div class="fg"><label class="fl">Prix (&euro;HT)</label><input type="number" class="fc" id="op-p" step="0.01"></div>
+        <div class="fg"><label class="fl">Unit&eacute;</label>
+          <select class="fc" id="op-u"><option>Forfait</option><option>Par 30 minutes</option><option>Par colis</option><option>Par &eacute;tage</option></select>
         </div>
       </div>
     </div>
-    <div class="mf"><button class="btn bg" onclick="C('mo2')">Annuler</button><button class="btn bp" onclick="addOpt()">Ajouter</button></div>
+    <div class="mf"><button class="btn bg" onclick="hideModal('mo2')">Annuler</button><button class="btn bp" onclick="addOption()">Ajouter</button></div>
+  </div>
+</div>
+
+<!-- Modal associer client -->
+<div class="mo" id="modal-associate-client" style="display:none">
+  <div class="md">
+    <div class="mh"><span class="mt">Associer un client</span><button class="mc" onclick="hideModal('modal-associate-client')">&#10005;</button></div>
+    <div class="mb">
+      <div class="fg">
+        <label class="fl">Entreprise *</label>
+        <select class="fc" id="assoc-entreprise">
+          <option value="">-- S&eacute;lectionnez une entreprise --</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="assoc-devis"> Activer le mode devis
+        </label>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn bg" onclick="hideModal('modal-associate-client')">Annuler</button>
+      <button class="btn bp" onclick="associateClient()">Associer</button>
+    </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ─── SUPABASE ───────────────────────────────────────────────
-const SUPA_URL = 'https://gwbvfohizdxwhmcoqvgh.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3YnZmb2hpemR4d2htY29xdmdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NjQ2MDksImV4cCI6MjA5MDQ0MDYwOX0.gOt8J2k7OV5W4SPtKrEV1sL6-C9eLE2hG3DuMzuaMKg';
-const db_gt = supabase.createClient(SUPA_URL, SUPA_KEY);
+/* ================================================================
+   NAMY TMS — Grilles tarifaires
+   FISSA LIV — Code source lisible
+   ================================================================ */
 
-let aId=1;
-let CLIENTS=[
-  {id:1,nom:'TRUFFAUT LE CHESNAY',       gid:1,devis:false},
-  {id:2,nom:'TRUFFAUT PLAISIR',          gid:1,devis:false},
-  {id:3,nom:'TRUFFAUT DOMUS',            gid:1,devis:true},
-  {id:4,nom:'TRUFFAUT PARIS RIVE GAUCHE',gid:1,devis:false},
-  {id:5,nom:'TRUFFAUT FOURQUEUX',        gid:1,devis:false},
-  {id:6,nom:'FISSA LIV',                 gid:2,devis:true},
-  {id:7,nom:'CLIENT EXPRESS DEMO',       gid:2,devis:false},
-  {id:8,nom:'LITERIE PARTENAIRE',        gid:3,devis:true},
+// ─── STATE ─────────────────────────────────────────────────────
+let activeGrilleId = 1;
+let entreprisesList = [];
+
+let CLIENTS = [
+  { id: 1, nom: 'TRUFFAUT LE CHESNAY',        gid: 1, devis: false },
+  { id: 2, nom: 'TRUFFAUT PLAISIR',           gid: 1, devis: false },
+  { id: 3, nom: 'TRUFFAUT DOMUS',             gid: 1, devis: true },
+  { id: 4, nom: 'TRUFFAUT PARIS RIVE GAUCHE', gid: 1, devis: false },
+  { id: 5, nom: 'TRUFFAUT FOURQUEUX',         gid: 1, devis: false },
+  { id: 6, nom: 'FISSA LIV',                  gid: 2, devis: true },
+  { id: 7, nom: 'CLIENT EXPRESS DEMO',        gid: 2, devis: false },
+  { id: 8, nom: 'LITERIE PARTENAIRE',         gid: 3, devis: true },
 ];
 
-let GG=[
-  {id:1,nom:'TRUFFAUT STANDARD',type:'poids',rayon:30,maj:20,
-   lignes:[
-    {id:1,a:0,  b:5,  c:5,  d:150,e:10, f:10 },
-    {id:2,a:5,  b:20, c:20, d:200,e:15, f:15 },
-    {id:3,a:20, b:100,c:30, d:200,e:25, f:25 },
-    {id:4,a:100,b:200,c:130,d:320,e:40, f:60 },
-    {id:5,a:200,b:500,c:130,d:400,e:60, f:100},
-    {id:6,a:500,b:800,c:130,d:400,e:80, f:130},
-    {id:7,a:800,b:1200,c:130,d:400,e:100,f:150},
-   ],
-   frais:[
-    {id:1,on:true, ds:'Km supplémentaire (>30km)',       ct:'2,50 €/km',  nt:'A+R au-delà du rayon'},
-    {id:2,on:true, ds:'Dimanche et jours fériés',        ct:'+20%',        nt:'Sur tarif de base'},
-    {id:3,on:true, ds:'Produit lourd (90–130kg)',         ct:'40 €/produit',nt:'Par article'},
-    {id:4,on:true, ds:'Étage sans ascenseur',             ct:'15 €/étage',  nt:'À partir du 5ème'},
-    {id:5,on:true, ds:'Échec retrait / annulation JJ',   ct:'50% course',  nt:''},
-    {id:6,on:true, ds:'Échec livraison + retour magasin',ct:'150% course', nt:''},
-    {id:7,on:false,ds:'Déballage et montage mobilier',   ct:'40 €/30min',  nt:'Jardin, barbecue'},
-    {id:8,on:false,ds:'Rempotage plante (<50kg)',         ct:'10 €/plante', nt:''},
-    {id:9,on:false,ds:'Plateau grue (131–500kg)',         ct:'180€+45€/suiv.',nt:'Transport spécialisé'},
-   ],
-   opts:[{id:1,n:'Manutention',p:40,u:'Par 30 minutes'}]
+let grilles = [
+  {
+    id: 1, nom: 'TRUFFAUT STANDARD', type: 'poids', rayon: 30, maj: 20,
+    lignes: [
+      { id: 1, poidsMin: 0,   poidsMax: 5,    colisMax: 5,   dimMax: 150, prixPiedCamion: 10,  prixLieuChoix: 10 },
+      { id: 2, poidsMin: 5,   poidsMax: 20,   colisMax: 20,  dimMax: 200, prixPiedCamion: 15,  prixLieuChoix: 15 },
+      { id: 3, poidsMin: 20,  poidsMax: 100,  colisMax: 30,  dimMax: 200, prixPiedCamion: 25,  prixLieuChoix: 25 },
+      { id: 4, poidsMin: 100, poidsMax: 200,  colisMax: 130, dimMax: 320, prixPiedCamion: 40,  prixLieuChoix: 60 },
+      { id: 5, poidsMin: 200, poidsMax: 500,  colisMax: 130, dimMax: 400, prixPiedCamion: 60,  prixLieuChoix: 100 },
+      { id: 6, poidsMin: 500, poidsMax: 800,  colisMax: 130, dimMax: 400, prixPiedCamion: 80,  prixLieuChoix: 130 },
+      { id: 7, poidsMin: 800, poidsMax: 1200, colisMax: 130, dimMax: 400, prixPiedCamion: 100, prixLieuChoix: 150 },
+    ],
+    frais: [
+      { id: 1, actif: true,  description: 'Km suppl\u00e9mentaire (>30km)',        cout: '2,50 \u20ac/km',    note: 'A+R au-del\u00e0 du rayon' },
+      { id: 2, actif: true,  description: 'Dimanche et jours f\u00e9ri\u00e9s',    cout: '+20%',              note: 'Sur tarif de base' },
+      { id: 3, actif: true,  description: 'Produit lourd (90\u2013130kg)',          cout: '40 \u20ac/produit', note: 'Par article' },
+      { id: 4, actif: true,  description: '\u00c9tage sans ascenseur',              cout: '15 \u20ac/\u00e9tage',  note: '\u00c0 partir du 5\u00e8me' },
+      { id: 5, actif: true,  description: '\u00c9chec retrait / annulation JJ',     cout: '50% course',        note: '' },
+      { id: 6, actif: true,  description: '\u00c9chec livraison + retour magasin',  cout: '150% course',       note: '' },
+      { id: 7, actif: false, description: 'D\u00e9ballage et montage mobilier',     cout: '40 \u20ac/30min',   note: 'Jardin, barbecue' },
+      { id: 8, actif: false, description: 'Rempotage plante (<50kg)',               cout: '10 \u20ac/plante',  note: '' },
+      { id: 9, actif: false, description: 'Plateau grue (131\u2013500kg)',           cout: '180\u20ac+45\u20ac/suiv.', note: 'Transport sp\u00e9cialis\u00e9' },
+    ],
+    opts: [{ id: 1, n: 'Manutention', p: 40, u: 'Par 30 minutes' }]
   },
-  {id:2,nom:'EXPRESS ZONE',type:'zone',rayon:45,maj:30,
-   zones:[
-    {id:1,c:'A',lb:'< 15km',t1:30,t2:50, t3:70, km:null},
-    {id:2,c:'B',lb:'< 25km',t1:40,t2:70, t3:100,km:null},
-    {id:3,c:'C',lb:'< 35km',t1:50,t2:90, t3:130,km:null},
-    {id:4,c:'D',lb:'< 45km',t1:60,t2:110,t3:160,km:null},
-    {id:5,c:'E',lb:'> 45km',t1:null,t2:null,t3:null,km:{t1:.65,t2:.85,t3:1}},
-   ],
-   frais:[
-    {id:1,on:true,ds:'Dimanche et jours fériés',         ct:'+30%',       nt:''},
-    {id:2,on:true,ds:'Échec retrait / annulation JJ',    ct:'50% course', nt:''},
-    {id:3,on:true,ds:'Échec livraison + retour',         ct:'150% course',nt:''},
-    {id:4,on:true,ds:'Manutention',                      ct:'30 €/30min', nt:'15 min incluses enlèvement+livraison'},
-   ],
-   opts:[{id:1,n:'Manutention supplémentaire',p:30,u:'Par 30 minutes'}]
+  {
+    id: 2, nom: 'EXPRESS ZONE', type: 'zone', rayon: 45, maj: 30,
+    zones: [
+      { id: 1, c: 'A', lb: '< 15km', t1: 30, t2: 50,  t3: 70,  km: null },
+      { id: 2, c: 'B', lb: '< 25km', t1: 40, t2: 70,  t3: 100, km: null },
+      { id: 3, c: 'C', lb: '< 35km', t1: 50, t2: 90,  t3: 130, km: null },
+      { id: 4, c: 'D', lb: '< 45km', t1: 60, t2: 110, t3: 160, km: null },
+      { id: 5, c: 'E', lb: '> 45km', t1: null, t2: null, t3: null, km: { t1: .65, t2: .85, t3: 1 } },
+    ],
+    frais: [
+      { id: 1, actif: true, description: 'Dimanche et jours f\u00e9ri\u00e9s',      cout: '+30%',        note: '' },
+      { id: 2, actif: true, description: '\u00c9chec retrait / annulation JJ',       cout: '50% course',  note: '' },
+      { id: 3, actif: true, description: '\u00c9chec livraison + retour',            cout: '150% course', note: '' },
+      { id: 4, actif: true, description: 'Manutention',                              cout: '30 \u20ac/30min', note: '15 min incluses enl\u00e8vement+livraison' },
+    ],
+    opts: [{ id: 1, n: 'Manutention suppl\u00e9mentaire', p: 30, u: 'Par 30 minutes' }]
   },
-  {id:3,nom:'COLIS LITERIE',type:'colis',rayon:30,maj:20,
-   cats:[
-    {id:1,n:'LITERIE',a:1,b:2,  p:10,s:10,l:'Pied de camion',ds:null},
-    {id:2,n:'LITERIE',a:2,b:5,  p:20,s:10,l:'Pied de camion',ds:null},
-    {id:3,n:'LITERIE',a:5,b:999,p:null,s:null,l:'Pied de camion',ds:5},
-   ],
-   dist:[{id:1,a:1,b:30,type:'Au kilomètre',p:2}],
-   frais:[
-    {id:1,on:true,ds:'Dimanche et jours fériés',         ct:'+20%',       nt:''},
-    {id:2,on:true,ds:'Échec retrait / annulation JJ',    ct:'50% course', nt:''},
-   ],
-   opts:[{id:1,n:'Installation',p:10,u:'Forfait'}]
+  {
+    id: 3, nom: 'COLIS LITERIE', type: 'colis', rayon: 30, maj: 20,
+    cats: [
+      { id: 1, n: 'LITERIE', a: 1, b: 2,   p: 10,   s: 10, l: 'Pied de camion', ds: null },
+      { id: 2, n: 'LITERIE', a: 2, b: 5,   p: 20,   s: 10, l: 'Pied de camion', ds: null },
+      { id: 3, n: 'LITERIE', a: 5, b: 999, p: null,  s: null, l: 'Pied de camion', ds: 5 },
+    ],
+    dist: [{ id: 1, a: 1, b: 30, type: 'Au kilom\u00e8tre', p: 2 }],
+    frais: [
+      { id: 1, actif: true, description: 'Dimanche et jours f\u00e9ri\u00e9s',  cout: '+20%',       note: '' },
+      { id: 2, actif: true, description: '\u00c9chec retrait / annulation JJ',   cout: '50% course', note: '' },
+    ],
+    opts: [{ id: 1, n: 'Installation', p: 10, u: 'Forfait' }]
   }
 ];
 
-document.addEventListener('DOMContentLoaded', async ()=>{
+
+// ─── HELPERS ───────────────────────────────────────────────────
+function getEl(id) {
+  return document.getElementById(id);
+}
+
+function getVal(id) {
+  const el = getEl(id);
+  return el ? el.value : '';
+}
+
+function hideEl(id) {
+  const el = getEl(id);
+  if (el) el.style.display = 'none';
+}
+
+function showEl(id) {
+  const el = getEl(id);
+  if (el) el.style.display = 'block';
+}
+
+function showModal(id) {
+  getEl(id).style.display = 'flex';
+}
+
+function hideModal(id) {
+  getEl(id).style.display = 'none';
+}
+
+
+// ─── DATA LOADING ──────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
   try {
-    const [clientsRes, grillesRes] = await Promise.allSettled([
-      db_gt.from('clients_tarifs').select('*').order('id'),
-      db_gt.from('grilles_detail').select('*').order('id'),
+    const [
+      configRes,
+      lignesRes,
+      zonesRes,
+      categoriesRes,
+      fraisRes,
+      optionsRes,
+      clientsGrillesRes,
+      entreprisesRes
+    ] = await Promise.allSettled([
+      db.from('grilles_tarifaires_config').select('*').order('id'),
+      db.from('grilles_lignes').select('*').order('grille_id, poids_min'),
+      db.from('grilles_zones').select('*').order('grille_id, code'),
+      db.from('grilles_categories').select('*').order('grille_id, id'),
+      db.from('grilles_frais').select('*').order('grille_id, id'),
+      db.from('grilles_options').select('*').order('grille_id, id'),
+      db.from('clients_grilles').select('*').order('id'),
+      db.from('entreprises').select('*').order('nom')
     ]);
-    if (clientsRes.status === 'fulfilled' && clientsRes.value.data?.length) {
-      CLIENTS = clientsRes.value.data;
+
+    // Load grilles from Supabase if available
+    if (configRes.status === 'fulfilled' && configRes.value.data?.length) {
+      const configs = configRes.value.data;
+      const lignesData = lignesRes.status === 'fulfilled' ? (lignesRes.value.data || []) : [];
+      const zonesData = zonesRes.status === 'fulfilled' ? (zonesRes.value.data || []) : [];
+      const catsData = categoriesRes.status === 'fulfilled' ? (categoriesRes.value.data || []) : [];
+      const fraisData = fraisRes.status === 'fulfilled' ? (fraisRes.value.data || []) : [];
+      const optsData = optionsRes.status === 'fulfilled' ? (optionsRes.value.data || []) : [];
+
+      grilles = configs.map(cfg => {
+        const g = {
+          id: cfg.id,
+          nom: cfg.nom,
+          type: cfg.type,
+          rayon: cfg.rayon,
+          maj: cfg.maj
+        };
+
+        // Attach lignes (poids)
+        if (cfg.type === 'poids') {
+          g.lignes = lignesData
+            .filter(l => l.grille_id === cfg.id)
+            .map(l => ({
+              id: l.id,
+              poidsMin: l.poids_min,
+              poidsMax: l.poids_max,
+              colisMax: l.colis_max,
+              dimMax: l.dim_max,
+              prixPiedCamion: l.prix_pied_camion,
+              prixLieuChoix: l.prix_lieu_choix
+            }));
+        }
+
+        // Attach zones
+        if (cfg.type === 'zone') {
+          g.zones = zonesData
+            .filter(z => z.grille_id === cfg.id)
+            .map(z => ({
+              id: z.id,
+              c: z.code,
+              lb: z.label,
+              t1: z.t1,
+              t2: z.t2,
+              t3: z.t3,
+              km: (z.km_t1 != null) ? { t1: z.km_t1, t2: z.km_t2, t3: z.km_t3 } : null
+            }));
+        }
+
+        // Attach categories (colis)
+        if (cfg.type === 'colis') {
+          g.cats = catsData
+            .filter(c => c.grille_id === cfg.id)
+            .map(c => ({
+              id: c.id,
+              n: c.nom,
+              a: c.nb_min,
+              b: c.nb_max,
+              p: c.prix_base,
+              s: c.prix_supp,
+              l: c.lieu,
+              ds: c.seuil_devis
+            }));
+          g.dist = []; // distance rules could be loaded separately
+        }
+
+        // Attach frais
+        g.frais = fraisData
+          .filter(f => f.grille_id === cfg.id)
+          .map(f => ({
+            id: f.id,
+            actif: f.actif,
+            description: f.description,
+            cout: f.cout,
+            note: f.note
+          }));
+
+        // Attach options
+        g.opts = optsData
+          .filter(o => o.grille_id === cfg.id)
+          .map(o => ({
+            id: o.id,
+            n: o.nom,
+            p: o.prix,
+            u: o.unite
+          }));
+
+        return g;
+      });
+
+      console.log('[GRILLES] Config charg\u00e9e depuis Supabase');
     }
-    if (grillesRes.status === 'fulfilled' && grillesRes.value.data?.length) {
-      GG = grillesRes.value.data;
+
+    // Load clients_grilles
+    if (clientsGrillesRes.status === 'fulfilled' && clientsGrillesRes.value.data?.length) {
+      CLIENTS = clientsGrillesRes.value.data.map(c => ({
+        id: c.id,
+        nom: c.client_id, // will be resolved later
+        gid: c.grille_id,
+        devis: c.mode_devis
+      }));
+      console.log('[GRILLES] Clients charg\u00e9s depuis Supabase');
     }
-    console.log('[GRILLES] Données chargées depuis Supabase');
-  } catch(err) {
-    console.warn('[GRILLES] Erreur Supabase, données locales:', err);
+
+    // Load entreprises
+    if (entreprisesRes.status === 'fulfilled' && entreprisesRes.value.data?.length) {
+      entreprisesList = entreprisesRes.value.data;
+    }
+
+    console.log('[GRILLES] Donn\u00e9es charg\u00e9es depuis Supabase');
+  } catch (err) {
+    console.warn('[GRILLES] Erreur Supabase, donn\u00e9es locales:', err);
   }
-  rSB();rG(aId);
+
+  renderSidebar();
+  renderGrid(activeGrilleId);
 });
 
-function rSB(){
-  document.getElementById('gl').innerHTML=GG.map(g=>{
-    const cl=CLIENTS.filter(c=>c.gid===g.id);
-    return`<div class="gi ${g.id===aId?'on':''}" onclick="selG(${g.id})">
+
+// ─── SIDEBAR ───────────────────────────────────────────────────
+function renderSidebar() {
+  getEl('gl').innerHTML = grilles.map(g => {
+    const clientsForGrille = CLIENTS.filter(c => c.gid === g.id);
+    return `<div class="gi ${g.id === activeGrilleId ? 'on' : ''}" onclick="selectGrille(${g.id})">
       <div class="gi-nm">${g.nom}</div>
-      <div class="gi-mt">${cl.length} client(s) · ${g.rayon}km inclus</div>
+      <div class="gi-mt">${clientsForGrille.length} client(s) \u00b7 ${g.rayon}km inclus</div>
       <div class="gi-tg">
-        <span class="tbadge t-${g.type}">${g.type==='poids'?'⚖️ Poids':g.type==='zone'?'📍 Zone':'📦 Colis'}</span>
-        ${cl.some(c=>c.devis)?'<span class="tbadge" style="background:var(--wl);color:var(--warn)">💬 Devis</span>':''}
+        <span class="tbadge t-${g.type}">${g.type === 'poids' ? '\u2696\ufe0f Poids' : g.type === 'zone' ? '\ud83d\udccd Zone' : '\ud83d\udce6 Colis'}</span>
+        ${clientsForGrille.some(c => c.devis) ? '<span class="tbadge" style="background:var(--wl);color:var(--warn)">\ud83d\udcac Devis</span>' : ''}
       </div>
     </div>`;
   }).join('');
 }
 
-function selG(id){aId=id;rSB();rG(id);}
 
-function rG(id){
-  const g=GG.find(x=>x.id===id);if(!g)return;
-  const m=document.getElementById('main');
-  if(g.type==='poids')m.innerHTML=bP(g);
-  else if(g.type==='zone')m.innerHTML=bZ(g);
-  else m.innerHTML=bC(g);
+// ─── GRILLE SELECTION ──────────────────────────────────────────
+function selectGrille(id) {
+  activeGrilleId = id;
+  renderSidebar();
+  renderGrid(id);
 }
 
-function bP(g){
-  const rows=g.lignes.map(l=>`<tr>
-    <td><span class="bdg b-p">${l.a}kg → &lt;${l.b}kg</span></td>
-    <td><span class="bdg b-d">max ${l.c}kg / ${l.d}cm</span></td>
-    <td class="mn c-p">${l.e.toFixed(2)} €</td>
-    <td class="mn c-l">${l.f.toFixed(2)} €</td>
-    <td><div style="display:flex;gap:4px"><button class="btn bg bxs">✏️</button><button class="btn bd bxs" onclick="delL(${g.id},${l.id})">✕</button></div></td>
+
+// ─── RENDER GRID ───────────────────────────────────────────────
+function renderGrid(id) {
+  const g = grilles.find(x => x.id === id);
+  if (!g) return;
+  const mainEl = getEl('main');
+  if (g.type === 'poids') {
+    mainEl.innerHTML = buildPoidsPanel(g);
+  } else if (g.type === 'zone') {
+    mainEl.innerHTML = buildZonePanel(g);
+  } else {
+    mainEl.innerHTML = buildColisPanel(g);
+  }
+}
+
+
+// ─── BUILD POIDS PANEL ─────────────────────────────────────────
+function buildPoidsPanel(g) {
+  const rows = g.lignes.map(l => `<tr>
+    <td><span class="bdg b-p">${l.poidsMin}kg \u2192 &lt;${l.poidsMax}kg</span></td>
+    <td><span class="bdg b-d">max ${l.colisMax}kg / ${l.dimMax}cm</span></td>
+    <td class="mn c-p">${l.prixPiedCamion.toFixed(2)} \u20ac</td>
+    <td class="mn c-l">${l.prixLieuChoix.toFixed(2)} \u20ac</td>
+    <td><div style="display:flex;gap:4px"><button class="btn bg bxs">\u270f\ufe0f</button><button class="btn bd bxs" onclick="deleteLigne(${g.id},${l.id})">\u2715</button></div></td>
   </tr>`).join('');
-  return bLyt(g,`
+
+  return buildLayout(g, `
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-      <div><div class="pt">${g.nom}</div><div class="ps">Grille poids · ${g.rayon}km · Lun–Sam</div></div>
-      <button class="btn bp bs" onclick="O('mp')">+ Ajouter une ligne</button>
+      <div><div class="pt">${g.nom}</div><div class="ps">Grille poids \u00b7 ${g.rayon}km \u00b7 Lun\u2013Sam</div></div>
+      <button class="btn bp bs" onclick="showModal('mp')">+ Ajouter une ligne</button>
     </div>
-    <div class="info-b">ℹ️ Tarification par poids total + dimension max du colis. Valable ${g.rayon}km autour du magasin expéditeur.</div>
+    <div class="info-b">\u2139\ufe0f Tarification par poids total + dimension max du colis. Valable ${g.rayon}km autour du magasin exp\u00e9diteur.</div>
     <div class="card">
-      <div class="ch"><div class="ct">⚖️ Tranches tarifaires <span class="cs">HT</span></div></div>
+      <div class="ch"><div class="ct">\u2696\ufe0f Tranches tarifaires <span class="cs">HT</span></div></div>
       <table><thead><tr>
         <th>Poids total</th><th>Contraintes colis</th>
-        <th style="color:var(--info)">🚚 Pied de camion</th>
-        <th style="color:var(--accent)">🛋️ Lieu du choix</th>
+        <th style="color:var(--info)">\ud83d\ude9a Pied de camion</th>
+        <th style="color:var(--accent)">\ud83d\udecb\ufe0f Lieu du choix</th>
         <th>Actions</th>
       </tr></thead><tbody>${rows}</tbody></table>
     </div>`,
-    bF(g),bO(g),bSP(g),bCL(g));
+    buildFraisPanel(g), buildOptionsPanel(g), buildSimulateurPoids(g), buildClientsPanel(g));
 }
 
-function bZ(g){
-  const rows=g.zones.map(z=>`<tr>
+
+// ─── BUILD ZONE PANEL ──────────────────────────────────────────
+function buildZonePanel(g) {
+  const rows = g.zones.map(z => `<tr>
     <td><span class="bz z-${z.c.toLowerCase()}">${z.c}</span></td>
     <td style="font-weight:500">${z.lb}</td>
-    <td class="mn c-t1">${z.km?`<span class="c-km">${z.km.t1} €/km A+R</span>`:`${z.t1.toFixed(2)} €`}</td>
-    <td class="mn c-t2">${z.km?`<span class="c-km">${z.km.t2} €/km A+R</span>`:`${z.t2.toFixed(2)} €`}</td>
-    <td class="mn c-t3">${z.km?`<span class="c-km">${z.km.t3} €/km A+R</span>`:`${z.t3.toFixed(2)} €`}</td>
-    <td><button class="btn bg bxs">✏️</button></td>
+    <td class="mn c-t1">${z.km ? `<span class="c-km">${z.km.t1} \u20ac/km A+R</span>` : `${z.t1.toFixed(2)} \u20ac`}</td>
+    <td class="mn c-t2">${z.km ? `<span class="c-km">${z.km.t2} \u20ac/km A+R</span>` : `${z.t2.toFixed(2)} \u20ac`}</td>
+    <td class="mn c-t3">${z.km ? `<span class="c-km">${z.km.t3} \u20ac/km A+R</span>` : `${z.t3.toFixed(2)} \u20ac`}</td>
+    <td><button class="btn bg bxs">\u270f\ufe0f</button></td>
   </tr>`).join('');
-  return bLyt(g,`
-    <div><div class="pt">${g.nom}</div><div class="ps">Grille zone × véhicule · Créneau 3–4h</div></div>
-    <div class="info-b">ℹ️ Tarification par zone de distance × type de véhicule. Zone E : facturation au km aller-retour.</div>
+
+  return buildLayout(g, `
+    <div><div class="pt">${g.nom}</div><div class="ps">Grille zone \u00d7 v\u00e9hicule \u00b7 Cr\u00e9neau 3\u20134h</div></div>
+    <div class="info-b">\u2139\ufe0f Tarification par zone de distance \u00d7 type de v\u00e9hicule. Zone E : facturation au km aller-retour.</div>
     <div class="card">
-      <div class="ch"><div class="ct">📍 Tarifs zone × véhicule <span class="cs">HT</span></div></div>
+      <div class="ch"><div class="ct">\ud83d\udccd Tarifs zone \u00d7 v\u00e9hicule <span class="cs">HT</span></div></div>
       <table><thead><tr>
         <th>Zone</th><th>Distance</th>
-        <th style="color:var(--info)">🚗 Break T1 · 3m³</th>
-        <th style="color:var(--accent)">🚐 Fourgon T2 · 12m³</th>
-        <th style="color:var(--purple)">🚛 Hayon T3 · 20m³</th>
+        <th style="color:var(--info)">\ud83d\ude97 Break T1 \u00b7 3m\u00b3</th>
+        <th style="color:var(--accent)">\ud83d\ude90 Fourgon T2 \u00b7 12m\u00b3</th>
+        <th style="color:var(--purple)">\ud83d\ude9b Hayon T3 \u00b7 20m\u00b3</th>
         <th></th>
       </tr></thead><tbody>${rows}</tbody></table>
     </div>`,
-    bF(g),bO(g),bSZ(g),bCL(g));
+    buildFraisPanel(g), buildOptionsPanel(g), buildSimulateurZone(g), buildClientsPanel(g));
 }
 
-function bC(g){
-  const rows=(g.cats||[]).map(c=>`<tr>
+
+// ─── BUILD COLIS PANEL ─────────────────────────────────────────
+function buildColisPanel(g) {
+  const rows = (g.cats || []).map(c => `<tr>
     <td style="font-weight:600">${c.n}</td>
-    <td><span class="bdg b-p">${c.a} → &lt;${c.b===999?'∞':c.b} colis</span></td>
-    <td class="mn">${c.p?c.p.toFixed(2)+' €':'<span class="c-km">Devis</span>'}</td>
-    <td class="mn">${c.s?c.s.toFixed(2)+' €/colis':'—'}</td>
+    <td><span class="bdg b-p">${c.a} \u2192 &lt;${c.b === 999 ? '\u221e' : c.b} colis</span></td>
+    <td class="mn">${c.p ? c.p.toFixed(2) + ' \u20ac' : '<span class="c-km">Devis</span>'}</td>
+    <td class="mn">${c.s ? c.s.toFixed(2) + ' \u20ac/colis' : '\u2014'}</td>
     <td>${c.l}</td>
-    <td>${c.ds?`<span style="background:var(--wl);color:var(--warn);font-size:11px;padding:2px 7px;border-radius:4px;font-weight:600">Devis ≥${c.ds}</span>`:'—'}</td>
-    <td><div style="display:flex;gap:4px"><button class="btn bg bxs">✏️</button><button class="btn bd bxs">✕</button></div></td>
+    <td>${c.ds ? `<span style="background:var(--wl);color:var(--warn);font-size:11px;padding:2px 7px;border-radius:4px;font-weight:600">Devis \u2265${c.ds}</span>` : '\u2014'}</td>
+    <td><div style="display:flex;gap:4px"><button class="btn bg bxs">\u270f\ufe0f</button><button class="btn bd bxs">\u2715</button></div></td>
   </tr>`).join('');
-  const drows=(g.dist||[]).map(d=>`<tr>
+
+  const drows = (g.dist || []).map(d => `<tr>
     <td class="mn">${d.a} km</td><td class="mn">${d.b} km</td>
-    <td>${d.type}</td><td class="mn c-t2">${d.p.toFixed(2)} €</td>
-    <td><button class="btn bg bxs">✏️</button></td>
+    <td>${d.type}</td><td class="mn c-t2">${d.p.toFixed(2)} \u20ac</td>
+    <td><button class="btn bg bxs">\u270f\ufe0f</button></td>
   </tr>`).join('');
-  return bLyt(g,`
+
+  return buildLayout(g, `
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-      <div><div class="pt">${g.nom}</div><div class="ps">Grille colis · par catégorie</div></div>
-      <button class="btn bp bs" onclick="O('mc2')">+ Ajouter une catégorie</button>
+      <div><div class="pt">${g.nom}</div><div class="ps">Grille colis \u00b7 par cat\u00e9gorie</div></div>
+      <button class="btn bp bs" onclick="showModal('mc2')">+ Ajouter une cat\u00e9gorie</button>
     </div>
-    <div class="warn-b">⚠️ Les commandes dépassant le seuil configuré basculent automatiquement en <strong>mode devis</strong>.</div>
+    <div class="warn-b">\u26a0\ufe0f Les commandes d\u00e9passant le seuil configur\u00e9 basculent automatiquement en <strong>mode devis</strong>.</div>
     <div class="card">
-      <div class="ch"><div class="ct">📦 Catégories de colis <span class="cs">HT</span></div></div>
-      <table><thead><tr><th>Catégorie</th><th>Nb colis</th><th>Prix tranche</th><th>Colis supp.</th><th>Lieu</th><th>Seuil devis</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="ch"><div class="ct">\ud83d\udce6 Cat\u00e9gories de colis <span class="cs">HT</span></div></div>
+      <table><thead><tr><th>Cat\u00e9gorie</th><th>Nb colis</th><th>Prix tranche</th><th>Colis supp.</th><th>Lieu</th><th>Seuil devis</th><th></th></tr></thead><tbody>${rows}</tbody></table>
     </div>
     <div class="card">
-      <div class="ch"><div class="ct">🚗 Tarification distance</div><button class="btn bg bs">+ Ajouter</button></div>
+      <div class="ch"><div class="ct">\ud83d\ude97 Tarification distance</div><button class="btn bg bs">+ Ajouter</button></div>
       <table><thead><tr><th>Km min</th><th>Km max</th><th>Type</th><th>Prix</th><th></th></tr></thead><tbody>${drows}</tbody></table>
     </div>`,
-    bF(g),bO(g),bSC(g),bCL(g));
+    buildFraisPanel(g), buildOptionsPanel(g), buildSimulateurColis(g), buildClientsPanel(g));
 }
 
-function bLyt(g,t1,t2,t3,t4,t5){
-  return`<div class="gtabs">
-    <button class="gtab on" onclick="sT(this,'tg')">📊 Grille</button>
-    <button class="gtab" onclick="sT(this,'tf')">➕ Frais annexes</button>
-    <button class="gtab" onclick="sT(this,'to')">⚙️ Options livraison</button>
-    <button class="gtab" onclick="sT(this,'ts')">🧮 Simulateur</button>
-    <button class="gtab" onclick="sT(this,'tc')">🏪 Clients & Permissions</button>
+
+// ─── BUILD LAYOUT ──────────────────────────────────────────────
+function buildLayout(g, tabGrille, tabFrais, tabOptions, tabSimulateur, tabClients) {
+  return `<div class="gtabs">
+    <button class="gtab on" onclick="switchTab(this,'tg')">\ud83d\udcca Grille</button>
+    <button class="gtab" onclick="switchTab(this,'tf')">\u2795 Frais annexes</button>
+    <button class="gtab" onclick="switchTab(this,'to')">\u2699\ufe0f Options livraison</button>
+    <button class="gtab" onclick="switchTab(this,'ts')">\ud83e\uddee Simulateur</button>
+    <button class="gtab" onclick="switchTab(this,'tc')">\ud83c\udfea Clients & Permissions</button>
   </div>
-  <div class="tp on" id="tg">${t1}</div>
-  <div class="tp" id="tf">${t2}</div>
-  <div class="tp" id="to">${t3}</div>
-  <div class="tp" id="ts">${t4}</div>
-  <div class="tp" id="tc">${t5}</div>`;
+  <div class="tp on" id="tg">${tabGrille}</div>
+  <div class="tp" id="tf">${tabFrais}</div>
+  <div class="tp" id="to">${tabOptions}</div>
+  <div class="tp" id="ts">${tabSimulateur}</div>
+  <div class="tp" id="tc">${tabClients}</div>`;
 }
 
-function bF(g){
-  const r=g.frais.map(f=>`<tr>
-    <td><div class="tgl ${f.on?'on':''}" onclick="togF(${g.id},${f.id})"></div></td>
-    <td style="font-weight:500">${f.ds}</td>
-    <td class="mn" style="color:var(--accent2)">${f.ct}</td>
-    <td style="font-size:12px;color:var(--muted)">${f.nt}</td>
-    <td><button class="btn bg bxs">✏️</button></td>
+
+// ─── BUILD FRAIS PANEL ─────────────────────────────────────────
+function buildFraisPanel(g) {
+  const rows = g.frais.map(f => `<tr>
+    <td><div class="tgl ${f.actif ? 'on' : ''}" onclick="toggleFrais(${g.id},${f.id})"></div></td>
+    <td style="font-weight:500">${f.description}</td>
+    <td class="mn" style="color:var(--accent2)">${f.cout}</td>
+    <td style="font-size:12px;color:var(--muted)">${f.note}</td>
+    <td><button class="btn bg bxs">\u270f\ufe0f</button></td>
   </tr>`).join('');
-  return`<div style="display:flex;align-items:center;justify-content:space-between">
-    <div><div class="pt" style="font-size:18px">Frais annexes</div><div class="ps">Activez/désactivez les suppléments</div></div>
+
+  return `<div style="display:flex;align-items:center;justify-content:space-between">
+    <div><div class="pt" style="font-size:18px">Frais annexes</div><div class="ps">Activez/d\u00e9sactivez les suppl\u00e9ments</div></div>
     <button class="btn bg bs">+ Ajouter</button>
   </div>
-  <div class="card"><table><thead><tr><th style="width:50px">Actif</th><th>Description</th><th>Coût</th><th>Note</th><th></th></tr></thead><tbody>${r}</tbody></table></div>`;
+  <div class="card"><table><thead><tr><th style="width:50px">Actif</th><th>Description</th><th>Co\u00fbt</th><th>Note</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
-function bO(g){
-  const r=g.opts.map(o=>`<tr>
+
+// ─── BUILD OPTIONS PANEL ───────────────────────────────────────
+function buildOptionsPanel(g) {
+  const rows = g.opts.map(o => `<tr>
     <td style="font-weight:600">${o.n}</td>
-    <td class="mn c-t2">${o.p.toFixed(2)} €</td>
+    <td class="mn c-t2">${o.p.toFixed(2)} \u20ac</td>
     <td>${o.u}</td>
-    <td><div style="display:flex;gap:4px"><button class="btn bg bxs">✏️</button><button class="btn bd bxs" onclick="delOpt(${g.id},${o.id})">✕</button></div></td>
+    <td><div style="display:flex;gap:4px"><button class="btn bg bxs">\u270f\ufe0f</button><button class="btn bd bxs" onclick="deleteOption(${g.id},${o.id})">\u2715</button></div></td>
   </tr>`).join('');
-  return`<div style="display:flex;align-items:center;justify-content:space-between">
-    <div><div class="pt" style="font-size:18px">Options de livraison</div><div class="ps">Proposées au vendeur lors de la saisie</div></div>
-    <button class="btn bp bs" onclick="O('mo2')">+ Ajouter</button>
+
+  return `<div style="display:flex;align-items:center;justify-content:space-between">
+    <div><div class="pt" style="font-size:18px">Options de livraison</div><div class="ps">Propos\u00e9es au vendeur lors de la saisie</div></div>
+    <button class="btn bp bs" onclick="showModal('mo2')">+ Ajouter</button>
   </div>
-  <div class="card"><table><thead><tr><th>Option</th><th>Prix</th><th>Unité</th><th>Actions</th></tr></thead>
-  <tbody>${r||'<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--dim)">Aucune option</td></tr>'}</tbody></table></div>`;
+  <div class="card"><table><thead><tr><th>Option</th><th>Prix</th><th>Unit\u00e9</th><th>Actions</th></tr></thead>
+  <tbody>${rows || '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--dim)">Aucune option</td></tr>'}</tbody></table></div>`;
 }
 
-function bCL(g){
-  const cl=CLIENTS.filter(c=>c.gid===g.id);
-  const cards=cl.map(c=>`<div class="pc ${c.devis?'on':''}">
+
+// ─── BUILD CLIENTS PANEL ───────────────────────────────────────
+function buildClientsPanel(g) {
+  const clientsForGrille = CLIENTS.filter(c => c.gid === g.id);
+  const cards = clientsForGrille.map(c => `<div class="pc ${c.devis ? 'on' : ''}">
     <div>
       <div class="pc-cl">${c.nom}</div>
       <div class="pc-mt">ID #${c.id}</div>
       <div class="pc-tg">
-        <span class="pb pb-a">✓ Grille active</span>
-        ${c.devis?'<span class="pb pb-d">💬 Mode devis autorisé</span>':''}
+        <span class="pb pb-a">\u2713 Grille active</span>
+        ${c.devis ? '<span class="pb pb-d">\ud83d\udcac Mode devis autoris\u00e9</span>' : ''}
       </div>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
       <div style="font-size:11px;color:var(--muted);text-align:right">Mode devis</div>
-      <div class="tgl ${c.devis?'on':''}" onclick="togD(${c.id})"></div>
+      <div class="tgl ${c.devis ? 'on' : ''}" onclick="toggleDevis(${c.id})"></div>
+      <button class="btn bd bxs" onclick="removeClientFromGrille(${c.id}, ${g.id})" style="margin-top:4px">\u2715 Retirer</button>
     </div>
   </div>`).join('');
-  return`<div style="display:flex;align-items:center;justify-content:space-between">
-    <div><div class="pt" style="font-size:18px">Clients & Permissions</div><div class="ps">Gérez l'accès au mode devis pour chaque client</div></div>
-    <button class="btn bg bs">+ Associer un client</button>
+
+  return `<div style="display:flex;align-items:center;justify-content:space-between">
+    <div><div class="pt" style="font-size:18px">Clients & Permissions</div><div class="ps">G\u00e9rez l'acc\u00e8s au mode devis pour chaque client</div></div>
+    <button class="btn bp bs" onclick="openAssociateClientModal(${g.id})">+ Associer un client</button>
   </div>
-  <div class="warn-b">💬 <strong>Mode devis</strong> — Quand activé, le client peut soumettre une demande hors grille. La commande arrive avec le statut <strong>"En attente de devis"</strong> jusqu'à validation manuelle par FISSA LIV.</div>
-  <div class="pg">${cards||'<div style="color:var(--dim);font-size:13px;padding:16px">Aucun client associé</div>'}</div>
+  <div class="warn-b">\ud83d\udcac <strong>Mode devis</strong> \u2014 Quand activ\u00e9, le client peut soumettre une demande hors grille. La commande arrive avec le statut <strong>\u201cEn attente de devis\u201d</strong> jusqu'\u00e0 validation manuelle par FISSA LIV.</div>
+  <div class="pg">${cards || '<div style="color:var(--dim);font-size:13px;padding:16px">Aucun client associ\u00e9</div>'}</div>
   <div style="display:flex;gap:8px;padding-top:8px">
-    <button class="btn bg bs" onclick="dupG(${g.id})">⧉ Dupliquer</button>
-    <button class="btn bd bs" style="margin-left:auto" onclick="delG(${g.id})">🗑 Supprimer</button>
+    <button class="btn bg bs" onclick="duplicateGrille(${g.id})">\u29c9 Dupliquer</button>
+    <button class="btn bd bs" style="margin-left:auto" onclick="deleteGrille(${g.id})">\ud83d\uddd1 Supprimer</button>
   </div>`;
 }
 
-// SIMULATEURS
-function bSP(g){return`
-  <div><div class="pt" style="font-size:18px">Simulateur — Poids</div></div>
+
+// ─── SIMULATEURS ───────────────────────────────────────────────
+function buildSimulateurPoids(g) {
+  return `
+  <div><div class="pt" style="font-size:18px">Simulateur \u2014 Poids</div></div>
   <div class="card">
-    <div class="sim-top"><span class="sim-title">🧮 ${g.nom}</span></div>
+    <div class="sim-top"><span class="sim-title">\ud83e\uddee ${g.nom}</span></div>
     <div class="sim-body">
       <div class="sim-grid">
-        <div class="fg"><label class="fl">Poids total (kg)</label><input type="number" class="fc" id="sp-p" placeholder="Ex: 250" oninput="cP(${g.id})"></div>
-        <div class="fg"><label class="fl">Distance (km)</label><input type="number" class="fc" id="sp-k" placeholder="Ex: 15" oninput="cP(${g.id})"></div>
-        <div class="fg"><label class="fl">Option dépôt</label>
-          <select class="fc" id="sp-o" onchange="cP(${g.id})">
-            <option value="e">🚚 Pied de camion</option>
-            <option value="f">🛋️ Lieu du choix</option>
+        <div class="fg"><label class="fl">Poids total (kg)</label><input type="number" class="fc" id="sp-p" placeholder="Ex: 250" oninput="calculatePoids(${g.id})"></div>
+        <div class="fg"><label class="fl">Distance (km)</label><input type="number" class="fc" id="sp-k" placeholder="Ex: 15" oninput="calculatePoids(${g.id})"></div>
+        <div class="fg"><label class="fl">Option d\u00e9p\u00f4t</label>
+          <select class="fc" id="sp-o" onchange="calculatePoids(${g.id})">
+            <option value="pied">\ud83d\ude9a Pied de camion</option>
+            <option value="lieu">\ud83d\udecb\ufe0f Lieu du choix</option>
           </select>
         </div>
       </div>
       <div class="fcks">
-        <label class="fck" onclick="this.classList.toggle('on');cP(${g.id})"><input type="checkbox"> 🗓️ Dim/Férié</label>
-        <label class="fck" onclick="this.classList.toggle('on');cP(${g.id})"><input type="checkbox"> 🏋️ Produit lourd</label>
-        <label class="fck" onclick="this.classList.toggle('on');cP(${g.id})"><input type="checkbox"> 🏢 Étage</label>
-        <label class="fck" onclick="this.classList.toggle('on');cP(${g.id})"><input type="checkbox"> 📦 Déballage</label>
+        <label class="fck" onclick="this.classList.toggle('on');calculatePoids(${g.id})"><input type="checkbox"> \ud83d\udcc5 Dim/F\u00e9ri\u00e9</label>
+        <label class="fck" onclick="this.classList.toggle('on');calculatePoids(${g.id})"><input type="checkbox"> \ud83c\udfcb\ufe0f Produit lourd</label>
+        <label class="fck" onclick="this.classList.toggle('on');calculatePoids(${g.id})"><input type="checkbox"> \ud83c\udfe2 \u00c9tage</label>
+        <label class="fck" onclick="this.classList.toggle('on');calculatePoids(${g.id})"><input type="checkbox"> \ud83d\udce6 D\u00e9ballage</label>
       </div>
       <div id="sp-r" style="display:none"></div>
       <div id="sp-e" style="text-align:center;padding:20px;color:var(--dim);font-size:13px">Renseignez les informations pour calculer le prix</div>
     </div>
-  </div>`;}
+  </div>`;
+}
 
-function bSZ(g){return`
-  <div><div class="pt" style="font-size:18px">Simulateur — Express Zone</div></div>
+function buildSimulateurZone(g) {
+  return `
+  <div><div class="pt" style="font-size:18px">Simulateur \u2014 Express Zone</div></div>
   <div class="card">
-    <div class="sim-top"><span class="sim-title">🧮 ${g.nom}</span></div>
+    <div class="sim-top"><span class="sim-title">\ud83e\uddee ${g.nom}</span></div>
     <div class="sim-body">
       <div class="sim-grid">
-        <div class="fg"><label class="fl">Distance (km)</label><input type="number" class="fc" id="sz-k" placeholder="Ex: 22" oninput="cZ(${g.id})"></div>
-        <div class="fg"><label class="fl">Véhicule</label>
-          <select class="fc" id="sz-v" onchange="cZ(${g.id})">
-            <option value="t1">🚗 Break T1 · 3m³</option>
-            <option value="t2">🚐 Fourgon T2 · 12m³</option>
-            <option value="t3">🚛 Hayon T3 · 20m³</option>
+        <div class="fg"><label class="fl">Distance (km)</label><input type="number" class="fc" id="sz-k" placeholder="Ex: 22" oninput="calculateZone(${g.id})"></div>
+        <div class="fg"><label class="fl">V\u00e9hicule</label>
+          <select class="fc" id="sz-v" onchange="calculateZone(${g.id})">
+            <option value="t1">\ud83d\ude97 Break T1 \u00b7 3m\u00b3</option>
+            <option value="t2">\ud83d\ude90 Fourgon T2 \u00b7 12m\u00b3</option>
+            <option value="t3">\ud83d\ude9b Hayon T3 \u00b7 20m\u00b3</option>
           </select>
         </div>
         <div class="fg"><label class="fl">Jour</label>
-          <select class="fc" id="sz-j" onchange="cZ(${g.id})">
-            <option value="s">Lun–Sam</option><option value="f">Dim / Férié</option>
+          <select class="fc" id="sz-j" onchange="calculateZone(${g.id})">
+            <option value="s">Lun\u2013Sam</option><option value="f">Dim / F\u00e9ri\u00e9</option>
           </select>
         </div>
-        <div class="fg"><label class="fl">Manutention (min)</label><input type="number" class="fc" id="sz-m" placeholder="Ex: 30" oninput="cZ(${g.id})"></div>
+        <div class="fg"><label class="fl">Manutention (min)</label><input type="number" class="fc" id="sz-m" placeholder="Ex: 30" oninput="calculateZone(${g.id})"></div>
       </div>
       <div id="sz-r" style="display:none"></div>
-      <div id="sz-e" style="text-align:center;padding:20px;color:var(--dim);font-size:13px">Renseignez la distance et le véhicule</div>
+      <div id="sz-e" style="text-align:center;padding:20px;color:var(--dim);font-size:13px">Renseignez la distance et le v\u00e9hicule</div>
     </div>
-  </div>`;}
+  </div>`;
+}
 
-function bSC(g){
-  const cats=[...new Set((g.cats||[]).map(c=>c.n))];
-  return`<div><div class="pt" style="font-size:18px">Simulateur — Colis</div></div>
+function buildSimulateurColis(g) {
+  const cats = [...new Set((g.cats || []).map(c => c.n))];
+  return `<div><div class="pt" style="font-size:18px">Simulateur \u2014 Colis</div></div>
   <div class="card">
-    <div class="sim-top"><span class="sim-title">🧮 ${g.nom}</span></div>
+    <div class="sim-top"><span class="sim-title">\ud83e\uddee ${g.nom}</span></div>
     <div class="sim-body">
       <div class="sim-grid">
-        <div class="fg"><label class="fl">Catégorie</label>
-          <select class="fc" id="sc-c" onchange="cC(${g.id})">${cats.map(n=>`<option>${n}</option>`).join('')}</select>
+        <div class="fg"><label class="fl">Cat\u00e9gorie</label>
+          <select class="fc" id="sc-c" onchange="calculateColis(${g.id})">${cats.map(n => `<option>${n}</option>`).join('')}</select>
         </div>
-        <div class="fg"><label class="fl">Nombre de colis</label><input type="number" class="fc" id="sc-n" placeholder="Ex: 3" oninput="cC(${g.id})"></div>
-        <div class="fg"><label class="fl">Distance (km)</label><input type="number" class="fc" id="sc-k" placeholder="Ex: 12" oninput="cC(${g.id})"></div>
+        <div class="fg"><label class="fl">Nombre de colis</label><input type="number" class="fc" id="sc-n" placeholder="Ex: 3" oninput="calculateColis(${g.id})"></div>
+        <div class="fg"><label class="fl">Distance (km)</label><input type="number" class="fc" id="sc-k" placeholder="Ex: 12" oninput="calculateColis(${g.id})"></div>
       </div>
       <div class="fcks">
-        ${g.opts.map(o=>`<label class="fck" onclick="this.classList.toggle('on');cC(${g.id})"><input type="checkbox"> ${o.n} (${o.p}€)</label>`).join('')}
+        ${g.opts.map(o => `<label class="fck" onclick="this.classList.toggle('on');calculateColis(${g.id})"><input type="checkbox"> ${o.n} (${o.p}\u20ac)</label>`).join('')}
       </div>
       <div id="sc-r" style="display:none"></div>
-      <div id="sc-e" style="text-align:center;padding:20px;color:var(--dim);font-size:13px">Renseignez la catégorie et le nombre de colis</div>
+      <div id="sc-e" style="text-align:center;padding:20px;color:var(--dim);font-size:13px">Renseignez la cat\u00e9gorie et le nombre de colis</div>
     </div>
-  </div>`;}
-
-// CALCULS
-function cP(gid){
-  const g=GG.find(x=>x.id===gid);
-  const p=parseFloat(V('sp-p'))||0,k=parseFloat(V('sp-k'))||0,o=V('sp-o')||'e';
-  if(!p){H('sp-r');S('sp-e');return;}
-  const l=g.lignes.find(x=>p>=x.a&&p<x.b);
-  if(!l){ge('sp-e').textContent=`⚠️ Poids ${p}kg hors grille`;H('sp-r');S('sp-e');return;}
-  let b=o==='e'?l.e:l.f,ls=[{l:`Tarif base (${p}kg · ${o==='e'?'Pied camion':'Lieu choix'})`,v:b}],tot=b;
-  if(k>g.rayon){const x=(k-g.rayon)*2*2.5;ls.push({l:`Km supp. (${(k-g.rayon)*2}km A+R × 2,50€)`,v:x});tot+=x;}
-  document.querySelectorAll('.fck.on').forEach(c=>{
-    const t=c.textContent.trim();
-    if(t.includes('Dim/Férié')){const m=tot*g.maj/100;ls.push({l:`Dim/Férié (+${g.maj}%)`,v:m});tot+=m;}
-    if(t.includes('Produit lourd')){ls.push({l:'Produit lourd ×1',v:40});tot+=40;}
-    if(t.includes('Étage')){ls.push({l:'Étage ×1',v:15});tot+=15;}
-    if(t.includes('Déballage')){ls.push({l:'Déballage/Montage',v:40});tot+=40;}
-  });
-  showR('sp-r','sp-e',ls,tot);
+  </div>`;
 }
 
-function cZ(gid){
-  const g=GG.find(x=>x.id===gid);
-  const k=parseFloat(V('sz-k'))||0,v=V('sz-v')||'t1',j=V('sz-j')||'s',m=parseFloat(V('sz-m'))||0;
-  if(!k){H('sz-r');S('sz-e');return;}
-  const z=g.zones.find(x=>x.c==='A'&&k<15||x.c==='B'&&k<25||x.c==='C'&&k<35||x.c==='D'&&k<45||x.c==='E');
-  let b=z.km?k*2*z.km[v]:z[v],ls=[{l:`Zone ${z.c} (${z.lb}) · ${v.toUpperCase()}`,v:b}],tot=b;
-  if(j==='f'){const x=tot*g.maj/100;ls.push({l:`Dim/Férié (+${g.maj}%)`,v:x});tot+=x;}
-  if(m>0){const u=Math.ceil(m/30),x=u*30;ls.push({l:`Manutention (${m}min = ${u}×30min)`,v:x});tot+=x;}
-  showR('sz-r','sz-e',ls,tot);
-}
 
-function cC(gid){
-  const g=GG.find(x=>x.id===gid);
-  const n=parseInt(V('sc-n'))||0,k=parseFloat(V('sc-k'))||0,cat=V('sc-c')||'';
-  if(!n||!cat){H('sc-r');S('sc-e');return;}
-  const tr=(g.cats||[]).filter(c=>c.n===cat).find(c=>n>=c.a&&n<c.b);
-  if(!tr||tr.ds){
-    ge('sc-r').innerHTML=`<div class="warn-b">⚠️ ${n} colis "${cat}" — commande en <strong>mode devis</strong>. Elle sera soumise en attente de validation FISSA LIV.</div>`;
-    S('sc-r');H('sc-e');return;
+// ─── CALCULATEURS ──────────────────────────────────────────────
+function calculatePoids(gid) {
+  const g = grilles.find(x => x.id === gid);
+  const poids = parseFloat(getVal('sp-p')) || 0;
+  const km = parseFloat(getVal('sp-k')) || 0;
+  const option = getVal('sp-o') || 'pied';
+
+  if (!poids) {
+    hideEl('sp-r');
+    showEl('sp-e');
+    return;
   }
-  let b=tr.p,ex=n>tr.a?(n-tr.a)*tr.s:0,ls=[{l:`${cat} · ${n} colis`,v:b}],tot=b+ex;
-  if(ex>0)ls.push({l:`Colis supp. (${n-tr.a} × ${tr.s}€)`,v:ex});
-  if(k>0&&g.dist[0]){const d=k*g.dist[0].p;ls.push({l:`Distance (${k}km × ${g.dist[0].p}€)`,v:d});tot+=d;}
-  document.querySelectorAll('.fck.on').forEach(c=>{
-    g.opts.forEach(o=>{if(c.textContent.includes(o.n)){ls.push({l:`Option ${o.n}`,v:o.p});tot+=o.p;}});
+
+  const ligne = g.lignes.find(x => poids >= x.poidsMin && poids < x.poidsMax);
+  if (!ligne) {
+    getEl('sp-e').textContent = `\u26a0\ufe0f Poids ${poids}kg hors grille`;
+    hideEl('sp-r');
+    showEl('sp-e');
+    return;
+  }
+
+  let base = (option === 'pied') ? ligne.prixPiedCamion : ligne.prixLieuChoix;
+  let lines = [{ l: `Tarif base (${poids}kg \u00b7 ${option === 'pied' ? 'Pied camion' : 'Lieu choix'})`, v: base }];
+  let total = base;
+
+  if (km > g.rayon) {
+    const supp = (km - g.rayon) * 2 * 2.5;
+    lines.push({ l: `Km supp. (${(km - g.rayon) * 2}km A+R \u00d7 2,50\u20ac)`, v: supp });
+    total += supp;
+  }
+
+  document.querySelectorAll('.fck.on').forEach(chip => {
+    const text = chip.textContent.trim();
+    if (text.includes('Dim/F\u00e9ri\u00e9')) {
+      const majoration = total * g.maj / 100;
+      lines.push({ l: `Dim/F\u00e9ri\u00e9 (+${g.maj}%)`, v: majoration });
+      total += majoration;
+    }
+    if (text.includes('Produit lourd')) {
+      lines.push({ l: 'Produit lourd \u00d71', v: 40 });
+      total += 40;
+    }
+    if (text.includes('\u00c9tage')) {
+      lines.push({ l: '\u00c9tage \u00d71', v: 15 });
+      total += 15;
+    }
+    if (text.includes('D\u00e9ballage')) {
+      lines.push({ l: 'D\u00e9ballage/Montage', v: 40 });
+      total += 40;
+    }
   });
-  showR('sc-r','sc-e',ls,tot);
+
+  showResult('sp-r', 'sp-e', lines, total);
 }
 
-function showR(rid,eid,ls,tot){
-  const tv=tot*.2,ttc=tot+tv;
-  ge(rid).innerHTML=`<div class="srp">
+function calculateZone(gid) {
+  const g = grilles.find(x => x.id === gid);
+  const km = parseFloat(getVal('sz-k')) || 0;
+  const vehicule = getVal('sz-v') || 't1';
+  const jour = getVal('sz-j') || 's';
+  const manut = parseFloat(getVal('sz-m')) || 0;
+
+  if (!km) {
+    hideEl('sz-r');
+    showEl('sz-e');
+    return;
+  }
+
+  const zone = g.zones.find(x =>
+    (x.c === 'A' && km < 15) ||
+    (x.c === 'B' && km < 25) ||
+    (x.c === 'C' && km < 35) ||
+    (x.c === 'D' && km < 45) ||
+    (x.c === 'E')
+  );
+
+  let base = zone.km ? km * 2 * zone.km[vehicule] : zone[vehicule];
+  let lines = [{ l: `Zone ${zone.c} (${zone.lb}) \u00b7 ${vehicule.toUpperCase()}`, v: base }];
+  let total = base;
+
+  if (jour === 'f') {
+    const majoration = total * g.maj / 100;
+    lines.push({ l: `Dim/F\u00e9ri\u00e9 (+${g.maj}%)`, v: majoration });
+    total += majoration;
+  }
+
+  if (manut > 0) {
+    const units = Math.ceil(manut / 30);
+    const cost = units * 30;
+    lines.push({ l: `Manutention (${manut}min = ${units}\u00d730min)`, v: cost });
+    total += cost;
+  }
+
+  showResult('sz-r', 'sz-e', lines, total);
+}
+
+function calculateColis(gid) {
+  const g = grilles.find(x => x.id === gid);
+  const nbColis = parseInt(getVal('sc-n')) || 0;
+  const km = parseFloat(getVal('sc-k')) || 0;
+  const cat = getVal('sc-c') || '';
+
+  if (!nbColis || !cat) {
+    hideEl('sc-r');
+    showEl('sc-e');
+    return;
+  }
+
+  const tranche = (g.cats || []).filter(c => c.n === cat).find(c => nbColis >= c.a && nbColis < c.b);
+  if (!tranche || tranche.ds) {
+    getEl('sc-r').innerHTML = `<div class="warn-b">\u26a0\ufe0f ${nbColis} colis "${cat}" \u2014 commande en <strong>mode devis</strong>. Elle sera soumise en attente de validation FISSA LIV.</div>`;
+    showEl('sc-r');
+    hideEl('sc-e');
+    return;
+  }
+
+  let base = tranche.p;
+  let extra = nbColis > tranche.a ? (nbColis - tranche.a) * tranche.s : 0;
+  let lines = [{ l: `${cat} \u00b7 ${nbColis} colis`, v: base }];
+  let total = base + extra;
+
+  if (extra > 0) {
+    lines.push({ l: `Colis supp. (${nbColis - tranche.a} \u00d7 ${tranche.s}\u20ac)`, v: extra });
+  }
+
+  if (km > 0 && g.dist[0]) {
+    const distCost = km * g.dist[0].p;
+    lines.push({ l: `Distance (${km}km \u00d7 ${g.dist[0].p}\u20ac)`, v: distCost });
+    total += distCost;
+  }
+
+  document.querySelectorAll('.fck.on').forEach(chip => {
+    g.opts.forEach(o => {
+      if (chip.textContent.includes(o.n)) {
+        lines.push({ l: `Option ${o.n}`, v: o.p });
+        total += o.p;
+      }
+    });
+  });
+
+  showResult('sc-r', 'sc-e', lines, total);
+}
+
+
+// ─── SHOW RESULT ───────────────────────────────────────────────
+function showResult(resultId, emptyId, lines, total) {
+  const tva = total * 0.2;
+  const ttc = total + tva;
+
+  getEl(resultId).innerHTML = `<div class="srp">
     <div class="sls">
-      ${ls.map(l=>`<div class="sl"><span>${l.l}</span><span class="mn">${l.v.toFixed(2)} €</span></div>`).join('')}
-      <div class="sl sep"><span>Total HT</span><span class="mn">${tot.toFixed(2)} €</span></div>
-      <div class="sl" style="color:var(--muted);font-size:12px"><span>TVA (20%)</span><span class="mn">${tv.toFixed(2)} €</span></div>
+      ${lines.map(l => `<div class="sl"><span>${l.l}</span><span class="mn">${l.v.toFixed(2)} \u20ac</span></div>`).join('')}
+      <div class="sl sep"><span>Total HT</span><span class="mn">${total.toFixed(2)} \u20ac</span></div>
+      <div class="sl" style="color:var(--muted);font-size:12px"><span>TVA (20%)</span><span class="mn">${tva.toFixed(2)} \u20ac</span></div>
     </div>
     <div class="stb">
-      <div><div class="stl">TOTAL TTC</div><div class="std">${tot.toFixed(2)} € HT · TVA ${tv.toFixed(2)} €</div></div>
-      <div class="stv">${ttc.toFixed(2)} €</div>
+      <div><div class="stl">TOTAL TTC</div><div class="std">${total.toFixed(2)} \u20ac HT \u00b7 TVA ${tva.toFixed(2)} \u20ac</div></div>
+      <div class="stv">${ttc.toFixed(2)} \u20ac</div>
     </div>
-  </div>`;S(rid);H(eid);
+  </div>`;
+  showEl(resultId);
+  hideEl(emptyId);
 }
 
-// ACTIONS
-function togF(gid,fid){const g=GG.find(x=>x.id===gid),f=g.frais.find(x=>x.id===fid);if(f){f.on=!f.on;rG(gid);T(`${f.on?'✅':'⏸'} ${f.ds}`);}}
-function togD(cid){const c=CLIENTS.find(x=>x.id===cid);if(c){c.devis=!c.devis;rG(aId);T(`${c.devis?'💬 Mode devis activé':'🔒 Désactivé'} — ${c.nom}`);}}
-function delL(gid,lid){if(!confirm('Supprimer?'))return;const g=GG.find(x=>x.id===gid);g.lignes=g.lignes.filter(l=>l.id!==lid);rG(gid);T('🗑 Ligne supprimée');}
-function delOpt(gid,oid){const g=GG.find(x=>x.id===gid);g.opts=g.opts.filter(o=>o.id!==oid);rG(gid);T('🗑 Option supprimée');}
-function delG(id){if(!confirm('Supprimer cette grille?'))return;GG=GG.filter(x=>x.id!==id);if(GG.length)selG(GG[0].id);else document.getElementById('main').innerHTML='';rSB();T('🗑 Supprimée');}
-function dupG(id){const g=GG.find(x=>x.id===id),nid=Math.max(...GG.map(x=>x.id))+1,copy=JSON.parse(JSON.stringify(g));copy.id=nid;copy.nom=g.nom+' (copie)';GG.push(copy);selG(nid);T(`⧉ "${copy.nom}" dupliquée`);}
 
-function addLP(){
-  const g=GG.find(x=>x.id===aId);
-  const a=parseFloat(V('lp-a'))||0,b=parseFloat(V('lp-b')),c=parseFloat(V('lp-c'))||130,d=parseFloat(V('lp-d'))||400,e=parseFloat(V('lp-e'))||0,f=parseFloat(V('lp-f'))||0;
-  if(!b){T('⚠️ Renseignez le poids max');return;}
-  const nid=Math.max(...g.lignes.map(l=>l.id),0)+1;
-  g.lignes.push({id:nid,a,b,c,d,e,f});g.lignes.sort((x,y)=>x.a-y.a);
-  C('mp');rG(aId);T('✅ Ligne ajoutée');
+// ─── ACTIONS: TOGGLE FRAIS ─────────────────────────────────────
+async function toggleFrais(gid, fid) {
+  const g = grilles.find(x => x.id === gid);
+  const frais = g.frais.find(x => x.id === fid);
+  if (!frais) return;
+
+  const newState = !frais.actif;
+
+  try {
+    await db.from('grilles_frais').update({ actif: newState }).eq('id', fid);
+  } catch (err) {
+    console.warn('[GRILLES] Supabase update frais failed:', err);
+  }
+
+  frais.actif = newState;
+  renderGrid(gid);
+  showToast(`${newState ? '\u2705' : '\u23f8'} ${frais.description}`);
 }
 
-function addLC(){
-  const g=GG.find(x=>x.id===aId);
-  const n=V('lc-n').trim(),a=parseInt(V('lc-a'))||1,b=parseInt(V('lc-b'))||999,p=parseFloat(V('lc-c'))||0,s=parseFloat(V('lc-d'))||0,l=V('lc-e'),ds=parseInt(V('lc-f'))||null;
-  if(!n){T('⚠️ Donnez un nom');return;}
-  const nid=Math.max(...(g.cats||[]).map(c=>c.id),0)+1;
-  if(!g.cats)g.cats=[];g.cats.push({id:nid,n,a,b,p,s,l,ds});
-  C('mc2');rG(aId);T(`✅ "${n}" ajoutée`);
+
+// ─── ACTIONS: TOGGLE DEVIS ─────────────────────────────────────
+async function toggleDevis(cid) {
+  const client = CLIENTS.find(x => x.id === cid);
+  if (!client) return;
+
+  const newState = !client.devis;
+
+  try {
+    await db.from('clients_grilles').update({ mode_devis: newState }).eq('id', cid);
+  } catch (err) {
+    console.warn('[GRILLES] Supabase update devis failed:', err);
+  }
+
+  client.devis = newState;
+  renderGrid(activeGrilleId);
+  showToast(`${newState ? '\ud83d\udcac Mode devis activ\u00e9' : '\ud83d\udd12 D\u00e9sactiv\u00e9'} \u2014 ${client.nom}`);
 }
 
-function addOpt(){
-  const g=GG.find(x=>x.id===aId);
-  const n=V('op-n').trim(),p=parseFloat(V('op-p'))||0,u=V('op-u');
-  if(!n){T('⚠️ Donnez un nom');return;}
-  const nid=Math.max(...g.opts.map(o=>o.id),0)+1;
-  g.opts.push({id:nid,n,p,u});C('mo2');rG(aId);T(`✅ "${n}" ajoutée`);
+
+// ─── ACTIONS: DELETE LIGNE ─────────────────────────────────────
+async function deleteLigne(gid, lid) {
+  if (!confirm('Supprimer?')) return;
+
+  try {
+    await db.from('grilles_lignes').delete().eq('id', lid);
+  } catch (err) {
+    console.warn('[GRILLES] Supabase delete ligne failed:', err);
+  }
+
+  const g = grilles.find(x => x.id === gid);
+  g.lignes = g.lignes.filter(l => l.id !== lid);
+  renderGrid(gid);
+  showToast('\ud83d\uddd1 Ligne supprim\u00e9e');
 }
 
-function creerGrille(){
-  const nom=V('nn-n').trim(),type=V('nn-t'),rayon=parseInt(V('nn-r'))||30,maj=parseInt(V('nn-m'))||20;
-  if(!nom){T('⚠️ Donnez un nom');return;}
-  const nid=Math.max(...GG.map(x=>x.id))+1;
-  GG.push({id:nid,nom,type,rayon,maj,
-    lignes:type==='poids'?[]:undefined,
-    zones:type==='zone'?[{id:1,c:'A',lb:'<15km',t1:0,t2:0,t3:0,km:null}]:undefined,
-    cats:type==='colis'?[]:undefined,
-    dist:type==='colis'?[]:undefined,
-    frais:[],opts:[]});
-  C('mn');ge('nn-n').value='';selG(nid);T(`✅ "${nom}" créée`);
+
+// ─── ACTIONS: DELETE OPTION ────────────────────────────────────
+async function deleteOption(gid, oid) {
+  try {
+    await db.from('grilles_options').delete().eq('id', oid);
+  } catch (err) {
+    console.warn('[GRILLES] Supabase delete option failed:', err);
+  }
+
+  const g = grilles.find(x => x.id === gid);
+  g.opts = g.opts.filter(o => o.id !== oid);
+  renderGrid(gid);
+  showToast('\ud83d\uddd1 Option supprim\u00e9e');
 }
 
-function sT(btn,id){
-  document.querySelectorAll('.gtab').forEach(b=>b.classList.remove('on'));
-  document.querySelectorAll('.tp').forEach(p=>p.classList.remove('on'));
-  btn.classList.add('on');ge(id)?.classList.add('on');
+
+// ─── ACTIONS: DELETE GRILLE ────────────────────────────────────
+async function deleteGrille(id) {
+  if (!confirm('Supprimer cette grille?')) return;
+
+  try {
+    // Delete related data first
+    await Promise.allSettled([
+      db.from('grilles_lignes').delete().eq('grille_id', id),
+      db.from('grilles_zones').delete().eq('grille_id', id),
+      db.from('grilles_categories').delete().eq('grille_id', id),
+      db.from('grilles_frais').delete().eq('grille_id', id),
+      db.from('grilles_options').delete().eq('grille_id', id),
+      db.from('clients_grilles').delete().eq('grille_id', id),
+    ]);
+    await db.from('grilles_tarifaires_config').delete().eq('id', id);
+  } catch (err) {
+    console.warn('[GRILLES] Supabase delete grille failed:', err);
+  }
+
+  grilles = grilles.filter(x => x.id !== id);
+  if (grilles.length) {
+    selectGrille(grilles[0].id);
+  } else {
+    getEl('main').innerHTML = '';
+  }
+  renderSidebar();
+  showToast('\ud83d\uddd1 Supprim\u00e9e');
 }
 
-function O(id){ge(id).style.display='flex';}
-function C(id){ge(id).style.display='none';}
-document.querySelectorAll('.mo').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.style.display='none';}));
-function ge(id){return document.getElementById(id);}
-function V(id){const e=ge(id);return e?e.value:'';}
-function H(id){const e=ge(id);if(e)e.style.display='none';}
-function S(id){const e=ge(id);if(e)e.style.display='block';}
-function T(msg){const t=ge('toast');t.textContent=msg;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',3000);}
+
+// ─── ACTIONS: DUPLICATE GRILLE ─────────────────────────────────
+async function duplicateGrille(id) {
+  const g = grilles.find(x => x.id === id);
+  const copy = JSON.parse(JSON.stringify(g));
+  const localId = Math.max(...grilles.map(x => x.id)) + 1;
+  copy.nom = g.nom + ' (copie)';
+
+  try {
+    const { data, error } = await db.from('grilles_tarifaires_config').insert({
+      nom: copy.nom,
+      type: copy.type,
+      rayon: copy.rayon,
+      maj: copy.maj
+    }).select().single();
+
+    if (data && !error) {
+      copy.id = data.id;
+
+      // Duplicate related data
+      if (copy.lignes && copy.lignes.length) {
+        await db.from('grilles_lignes').insert(copy.lignes.map(l => ({
+          grille_id: copy.id,
+          poids_min: l.poidsMin,
+          poids_max: l.poidsMax,
+          colis_max: l.colisMax,
+          dim_max: l.dimMax,
+          prix_pied_camion: l.prixPiedCamion,
+          prix_lieu_choix: l.prixLieuChoix
+        })));
+      }
+      if (copy.zones && copy.zones.length) {
+        await db.from('grilles_zones').insert(copy.zones.map(z => ({
+          grille_id: copy.id,
+          code: z.c,
+          label: z.lb,
+          t1: z.t1,
+          t2: z.t2,
+          t3: z.t3,
+          km_t1: z.km ? z.km.t1 : null,
+          km_t2: z.km ? z.km.t2 : null,
+          km_t3: z.km ? z.km.t3 : null
+        })));
+      }
+      if (copy.frais && copy.frais.length) {
+        await db.from('grilles_frais').insert(copy.frais.map(f => ({
+          grille_id: copy.id,
+          actif: f.actif,
+          description: f.description,
+          cout: f.cout,
+          note: f.note
+        })));
+      }
+      if (copy.opts && copy.opts.length) {
+        await db.from('grilles_options').insert(copy.opts.map(o => ({
+          grille_id: copy.id,
+          nom: o.n,
+          prix: o.p,
+          unite: o.u
+        })));
+      }
+    } else {
+      copy.id = localId;
+    }
+  } catch (err) {
+    console.warn('[GRILLES] Supabase duplicate failed:', err);
+    copy.id = localId;
+  }
+
+  grilles.push(copy);
+  selectGrille(copy.id);
+  showToast(`\u29c9 "${copy.nom}" dupliqu\u00e9e`);
+}
+
+
+// ─── ACTIONS: ADD LIGNE POIDS ──────────────────────────────────
+async function addLignePoids() {
+  const g = grilles.find(x => x.id === activeGrilleId);
+  const poidsMin = parseFloat(getVal('lp-a')) || 0;
+  const poidsMax = parseFloat(getVal('lp-b'));
+  const colisMax = parseFloat(getVal('lp-c')) || 130;
+  const dimMax = parseFloat(getVal('lp-d')) || 400;
+  const prixPiedCamion = parseFloat(getVal('lp-e')) || 0;
+  const prixLieuChoix = parseFloat(getVal('lp-f')) || 0;
+
+  if (!poidsMax) {
+    showToast('\u26a0\ufe0f Renseignez le poids max', 'warning');
+    return;
+  }
+
+  let newId;
+  try {
+    const { data, error } = await db.from('grilles_lignes').insert({
+      grille_id: activeGrilleId,
+      poids_min: poidsMin,
+      poids_max: poidsMax,
+      colis_max: colisMax,
+      dim_max: dimMax,
+      prix_pied_camion: prixPiedCamion,
+      prix_lieu_choix: prixLieuChoix
+    }).select().single();
+
+    if (data && !error) {
+      newId = data.id;
+    }
+  } catch (err) {
+    console.warn('[GRILLES] Supabase insert ligne failed:', err);
+  }
+
+  if (!newId) {
+    newId = Math.max(...g.lignes.map(l => l.id), 0) + 1;
+  }
+
+  g.lignes.push({ id: newId, poidsMin, poidsMax, colisMax, dimMax, prixPiedCamion, prixLieuChoix });
+  g.lignes.sort((a, b) => a.poidsMin - b.poidsMin);
+  hideModal('mp');
+  renderGrid(activeGrilleId);
+  showToast('\u2705 Ligne ajout\u00e9e');
+}
+
+
+// ─── ACTIONS: ADD CATEGORIE COLIS ──────────────────────────────
+async function addCategorieColis() {
+  const g = grilles.find(x => x.id === activeGrilleId);
+  const nom = getVal('lc-n').trim();
+  const nbMin = parseInt(getVal('lc-a')) || 1;
+  const nbMax = parseInt(getVal('lc-b')) || 999;
+  const prixBase = parseFloat(getVal('lc-c')) || 0;
+  const prixSupp = parseFloat(getVal('lc-d')) || 0;
+  const lieu = getVal('lc-e');
+  const seuilDevis = parseInt(getVal('lc-f')) || null;
+
+  if (!nom) {
+    showToast('\u26a0\ufe0f Donnez un nom', 'warning');
+    return;
+  }
+
+  let newId;
+  try {
+    const { data, error } = await db.from('grilles_categories').insert({
+      grille_id: activeGrilleId,
+      nom: nom,
+      nb_min: nbMin,
+      nb_max: nbMax,
+      prix_base: prixBase,
+      prix_supp: prixSupp,
+      lieu: lieu,
+      seuil_devis: seuilDevis
+    }).select().single();
+
+    if (data && !error) {
+      newId = data.id;
+    }
+  } catch (err) {
+    console.warn('[GRILLES] Supabase insert cat failed:', err);
+  }
+
+  if (!newId) {
+    newId = Math.max(...(g.cats || []).map(c => c.id), 0) + 1;
+  }
+
+  if (!g.cats) g.cats = [];
+  g.cats.push({ id: newId, n: nom, a: nbMin, b: nbMax, p: prixBase, s: prixSupp, l: lieu, ds: seuilDevis });
+  hideModal('mc2');
+  renderGrid(activeGrilleId);
+  showToast(`\u2705 "${nom}" ajout\u00e9e`);
+}
+
+
+// ─── ACTIONS: ADD OPTION ───────────────────────────────────────
+async function addOption() {
+  const g = grilles.find(x => x.id === activeGrilleId);
+  const nom = getVal('op-n').trim();
+  const prix = parseFloat(getVal('op-p')) || 0;
+  const unite = getVal('op-u');
+
+  if (!nom) {
+    showToast('\u26a0\ufe0f Donnez un nom', 'warning');
+    return;
+  }
+
+  let newId;
+  try {
+    const { data, error } = await db.from('grilles_options').insert({
+      grille_id: activeGrilleId,
+      nom: nom,
+      prix: prix,
+      unite: unite
+    }).select().single();
+
+    if (data && !error) {
+      newId = data.id;
+    }
+  } catch (err) {
+    console.warn('[GRILLES] Supabase insert option failed:', err);
+  }
+
+  if (!newId) {
+    newId = Math.max(...g.opts.map(o => o.id), 0) + 1;
+  }
+
+  g.opts.push({ id: newId, n: nom, p: prix, u: unite });
+  hideModal('mo2');
+  renderGrid(activeGrilleId);
+  showToast(`\u2705 "${nom}" ajout\u00e9e`);
+}
+
+
+// ─── ACTIONS: CREATE GRILLE ────────────────────────────────────
+async function createGrille() {
+  const nom = getVal('nn-n').trim();
+  const type = getVal('nn-t');
+  const rayon = parseInt(getVal('nn-r')) || 30;
+  const maj = parseInt(getVal('nn-m')) || 20;
+
+  if (!nom) {
+    showToast('\u26a0\ufe0f Donnez un nom', 'warning');
+    return;
+  }
+
+  let newId;
+  try {
+    const { data, error } = await db.from('grilles_tarifaires_config').insert({
+      nom: nom,
+      type: type,
+      rayon: rayon,
+      maj: maj
+    }).select().single();
+
+    if (data && !error) {
+      newId = data.id;
+    }
+  } catch (err) {
+    console.warn('[GRILLES] Supabase create grille failed:', err);
+  }
+
+  if (!newId) {
+    newId = Math.max(...grilles.map(x => x.id)) + 1;
+  }
+
+  grilles.push({
+    id: newId, nom, type, rayon, maj,
+    lignes: type === 'poids' ? [] : undefined,
+    zones: type === 'zone' ? [{ id: 1, c: 'A', lb: '<15km', t1: 0, t2: 0, t3: 0, km: null }] : undefined,
+    cats: type === 'colis' ? [] : undefined,
+    dist: type === 'colis' ? [] : undefined,
+    frais: [],
+    opts: []
+  });
+
+  hideModal('mn');
+  getEl('nn-n').value = '';
+  selectGrille(newId);
+  showToast(`\u2705 "${nom}" cr\u00e9\u00e9e`);
+}
+
+
+// ─── ACTIONS: ASSOCIATE CLIENT ─────────────────────────────────
+function openAssociateClientModal(gid) {
+  // Populate the entreprises dropdown
+  const select = getEl('assoc-entreprise');
+  select.innerHTML = '<option value="">-- S\u00e9lectionnez une entreprise --</option>';
+
+  // Use entreprises from Supabase, or fall back to existing CLIENTS not yet assigned
+  const sources = entreprisesList.length > 0 ? entreprisesList : [];
+  const alreadyAssigned = CLIENTS.filter(c => c.gid === gid).map(c => c.nom);
+
+  if (sources.length > 0) {
+    sources.forEach(e => {
+      if (!alreadyAssigned.includes(e.nom)) {
+        select.innerHTML += `<option value="${e.id}">${e.nom}</option>`;
+      }
+    });
+  } else {
+    // Fallback: allow typing a custom name or show all known client names not yet assigned
+    const allKnownNames = [...new Set(CLIENTS.map(c => c.nom))];
+    allKnownNames.forEach(nom => {
+      if (!alreadyAssigned.includes(nom)) {
+        select.innerHTML += `<option value="${nom}">${nom}</option>`;
+      }
+    });
+  }
+
+  // Reset checkbox
+  getEl('assoc-devis').checked = false;
+
+  // Store the target grille id for the modal
+  getEl('modal-associate-client').dataset.grilleId = gid;
+  showModal('modal-associate-client');
+}
+
+async function associateClient() {
+  const modal = getEl('modal-associate-client');
+  const grilleId = parseInt(modal.dataset.grilleId);
+  const selectEl = getEl('assoc-entreprise');
+  const selectedValue = selectEl.value;
+  const selectedText = selectEl.options[selectEl.selectedIndex]?.text || '';
+  const modeDevis = getEl('assoc-devis').checked;
+
+  if (!selectedValue) {
+    showToast('\u26a0\ufe0f S\u00e9lectionnez une entreprise', 'warning');
+    return;
+  }
+
+  let newId;
+  try {
+    const insertData = {
+      grille_id: grilleId,
+      client_id: selectedValue,
+      mode_devis: modeDevis
+    };
+    const { data, error } = await db.from('clients_grilles').insert(insertData).select().single();
+
+    if (data && !error) {
+      newId = data.id;
+    }
+  } catch (err) {
+    console.warn('[GRILLES] Supabase associate client failed:', err);
+  }
+
+  if (!newId) {
+    newId = Math.max(...CLIENTS.map(c => c.id), 0) + 1;
+  }
+
+  CLIENTS.push({
+    id: newId,
+    nom: selectedText,
+    gid: grilleId,
+    devis: modeDevis
+  });
+
+  hideModal('modal-associate-client');
+  renderSidebar();
+  renderGrid(activeGrilleId);
+  showToast(`\u2705 "${selectedText}" associ\u00e9 \u00e0 la grille`);
+}
+
+async function removeClientFromGrille(clientId, grilleId) {
+  if (!confirm('Retirer ce client de la grille?')) return;
+
+  try {
+    await db.from('clients_grilles').delete().eq('id', clientId);
+  } catch (err) {
+    console.warn('[GRILLES] Supabase remove client failed:', err);
+  }
+
+  CLIENTS = CLIENTS.filter(c => !(c.id === clientId && c.gid === grilleId));
+  renderSidebar();
+  renderGrid(activeGrilleId);
+  showToast('\ud83d\uddd1 Client retir\u00e9');
+}
+
+
+// ─── TAB SWITCHING ─────────────────────────────────────────────
+function switchTab(btn, id) {
+  document.querySelectorAll('.gtab').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.tp').forEach(p => p.classList.remove('on'));
+  btn.classList.add('on');
+  getEl(id)?.classList.add('on');
+}
+
+
+// ─── MODAL OVERLAY CLOSE ──────────────────────────────────────
+document.querySelectorAll('.mo').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.style.display = 'none';
+  });
+});
 </script>
 </body>
 </html>

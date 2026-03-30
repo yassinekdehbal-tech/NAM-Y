@@ -9,6 +9,8 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="utils.js"></script>
 <style>
 :root {
   --bg: #0d0f14;
@@ -715,11 +717,6 @@ function showNotif(msg) {
   clearTimeout(n._t);
   n._t = setTimeout(() => n.style.display = 'none', 3000);
 }
-
-// ─── SUPABASE DASHBOARD ─────────────────────────────────────
-const SUPA_URL = 'https://gwbvfohizdxwhmcoqvgh.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3YnZmb2hpemR4d2htY29xdmdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NjQ2MDksImV4cCI6MjA5MDQ0MDYwOX0.gOt8J2k7OV5W4SPtKrEV1sL6-C9eLE2hG3DuMzuaMKg';
-const db = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 const COLORS = ['#4f7cff','#f43f5e','#2dd4a0','#f59e0b','#a855f7','#ec4899'];
 

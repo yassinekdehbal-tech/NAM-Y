@@ -7,6 +7,7 @@
 <title>NAMY — Nouvelle expédition</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
 <style>
 :root {
   --bg: #f5f4f0;
@@ -1200,11 +1201,6 @@ select {
 </div>
 
 <script>
-// ─── SUPABASE ───────────────────────────────────────────────
-const SUPA_URL = 'https://gwbvfohizdxwhmcoqvgh.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3YnZmb2hpemR4d2htY29xdmdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NjQ2MDksImV4cCI6MjA5MDQ0MDYwOX0.gOt8J2k7OV5W4SPtKrEV1sL6-C9eLE2hG3DuMzuaMKg';
-const db_fv = supabase.createClient(SUPA_URL, SUPA_KEY);
-
 // ─── DONNÉES ────────────────────────────────────────────────
 let MAGASIN = {
   nom: 'TRUFFAUT PARIS RIVE GAUCHE',
@@ -1228,7 +1224,7 @@ async function loadVendeurData() {
   try {
     const sessionUser = JSON.parse(sessionStorage.getItem('namy_user') || 'null');
     if (sessionUser && sessionUser.entreprise_id) {
-      const { data: entreprise } = await db_fv
+      const { data: entreprise } = await db
         .from('entreprises')
         .select('*')
         .eq('id', sessionUser.entreprise_id)
@@ -1256,19 +1252,50 @@ async function loadVendeurData() {
       }
     }
 
-    // Charger la grille tarifaire
-    const { data: grille } = await db_fv
-      .from('grilles_tarifaires')
-      .select('*')
-      .order('id');
+    // Charger la grille tarifaire assignée au magasin
+    if (sessionUser && sessionUser.entreprise_id) {
+      // 1. Trouver la grille assignée à cette entreprise
+      const { data: assignment } = await db
+        .from('clients_grilles')
+        .select('grille_id')
+        .eq('client_id', sessionUser.entreprise_id)
+        .limit(1)
+        .single();
 
-    if (grille && grille.length) {
-      GRILLE = grille.map(g => ({
-        poids_max: g.poids_fin,
-        dim_max: g.dim_max,
-        colis_max: g.colis_unique,
-        prix: g.prix,
-      }));
+      if (assignment && assignment.grille_id) {
+        // 2. Charger les lignes de cette grille
+        const { data: lignes } = await db
+          .from('grilles_lignes')
+          .select('*')
+          .eq('grille_id', assignment.grille_id)
+          .order('poids_min');
+
+        if (lignes && lignes.length) {
+          GRILLE = lignes.map(l => ({
+            poids_max: l.poids_max,
+            dim_max: l.dim_max,
+            colis_max: l.colis_max,
+            prix: l.prix_lieu_choix || l.prix_pied_camion,
+          }));
+        }
+      }
+    }
+
+    // Fallback : charger depuis l'ancienne table si pas d'assignation
+    if (GRILLE.length === 4 && GRILLE[0].prix === 25) {
+      const { data: grille } = await db
+        .from('grilles_tarifaires')
+        .select('*')
+        .order('id');
+
+      if (grille && grille.length) {
+        GRILLE = grille.map(g => ({
+          poids_max: g.poids_fin,
+          dim_max: g.dim_max,
+          colis_max: g.colis_unique,
+          prix: g.prix,
+        }));
+      }
     }
 
     // Charger le nom de l'utilisateur
@@ -1741,8 +1768,6 @@ function resetForm() {
   updateSidebar();
   updatePrix();
 }
-
-function updatePoidsEstime() { /* Placeholder pour feedback temps réel */ }
 
 // ─── INIT ───────────────────────────────────────────────────
 loadVendeurData();

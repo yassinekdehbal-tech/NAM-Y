@@ -88,11 +88,6 @@ function renderStatutBadge(statut) {
   return `<span class="badge ${cls}">${label}</span>`;
 }
 
-function formatDate(dateStr) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('fr-FR');
-}
-
 function filterExpeditions() {
   const id = document.getElementById('filter-id').value.trim();
   const exp = document.getElementById('filter-expediteur').value.toLowerCase().trim();
@@ -816,34 +811,6 @@ function generateExport(format) {
   const from = document.getElementById('extract-from').value;
   const to = document.getElementById('extract-to').value;
   showToast(`📥 Export ${format.toUpperCase()} généré pour ${entreprise} du ${from} au ${to}`);
-}
-
-// ─── MODALS ──────────────────────────────────────────────────
-function openModal(id) {
-  const el = document.getElementById(id);
-  if (el) el.style.display = 'flex';
-}
-
-function closeModal(id) {
-  const el = document.getElementById(id);
-  if (el) el.style.display = 'none';
-}
-
-// Fermer en cliquant sur l'overlay
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay) overlay.style.display = 'none';
-  });
-});
-
-// ─── TOAST ───────────────────────────────────────────────────
-function showToast(message, type = 'success') {
-  const toast = document.getElementById('toast');
-  toast.textContent = message;
-  toast.style.display = 'block';
-  toast.style.borderLeft = `3px solid ${type === 'warning' ? 'var(--warning)' : type === 'info' ? 'var(--info)' : 'var(--success)'}`;
-  clearTimeout(toast._timeout);
-  toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
 }
 
 // ─── INIT ────────────────────────────────────────────────────

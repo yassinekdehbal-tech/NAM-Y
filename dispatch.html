@@ -9,6 +9,8 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="utils.js"></script>
 <style>
 :root {
   --bg: #0d0f14;
@@ -830,11 +832,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 <div class="toast" id="toast"></div>
 
 <script>
-// ─── SUPABASE ───────────────────────────────────────────────
-const SUPA_URL = 'https://gwbvfohizdxwhmcoqvgh.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3YnZmb2hpemR4d2htY29xdmdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NjQ2MDksImV4cCI6MjA5MDQ0MDYwOX0.gOt8J2k7OV5W4SPtKrEV1sL6-C9eLE2hG3DuMzuaMKg';
-const db = supabase.createClient(SUPA_URL, SUPA_KEY);
-
 // ─── DONNÉES ────────────────────────────────────────────────
 const TOURNEE_COLORS = ['#4f7cff','#f43f5e','#2dd4a0','#f59e0b','#a855f7','#ec4899'];
 
@@ -1116,10 +1113,6 @@ function applyFilters(fromSearch = false) {
 
 function selectAll() {
   showToast('💡 Sélectionnez une commande puis assignez-la à une tournée');
-}
-
-function formatDate(cmd) {
-  return new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
 }
 
 // ─── ASSIGNATION ─────────────────────────────────────────────
@@ -1419,20 +1412,6 @@ function toggleFilter(name) {
   document.getElementById(`chip-${name}`).classList.toggle('active');
 }
 
-function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
-document.querySelectorAll('.modal-overlay').forEach(o => {
-  o.addEventListener('click', e => { if (e.target === o) o.style.display = 'none'; });
-});
-
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.style.display = 'block';
-  clearTimeout(t._t);
-  t._t = setTimeout(() => t.style.display = 'none', 3000);
-}
 </script>
 </body>
 </html>
