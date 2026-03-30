@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d0f14">
+<title>NAMY — Chauffeur</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  --bg: #0d0f14;
+  --s1: #151820;
+  --s2: #1c2030;
+  --s3: #252a3a;
+  --border: #2a3050;
+  --text: #e8eaf4;
+  --muted: #6b7599;
+  --dim: #4a5270;
+  --primary: #4f7cff;
+  --pd: rgba(79,124,255,.15);
+  --success: #2dd4a0;
+  --sd: rgba(45,212,160,.15);
+  --warning: #f59e0b;
+  --wd: rgba(245,158,11,.15);
+  --danger: #f43f5e;
+  --dd: rgba(244,63,94,.15);
+  --r: 12px; --rl: 18px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  overscroll-behavior: none;
+}
+
+/* ── SCREENS ── */
+.screen { display: none; height: 100vh; flex-direction: column; }
+.screen.on { display: flex; }
+
+/* ── CHECK-IN ── */
+.checkin-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 28px 24px;
+  gap: 20px;
+  overflow-y: auto;
+}
+
+.checkin-logo {
+  font-family: 'DM Mono', monospace;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 6px;
+  color: var(--text);
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.checkin-title {
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.checkin-sub {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.checkin-date {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 12px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--muted);
+}
+
+.form-input {
+  background: var(--s1);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 16px;
+  outline: none;
+  transition: border-color .15s;
+  width: 100%;
+  -webkit-appearance: none;
+}
+
+.form-input:focus { border-color: var(--primary); background: var(--s2); }
+
+.time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.btn-big {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: var(--r);
+  font-size: 16px;
+  font-weight: 700;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:active { background: #3d6aec; transform: scale(.98); }
+.btn-success { background: var(--success); color: #0d1a14; }
+.btn-success:active { transform: scale(.98); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:active { transform: scale(.98); }
+.btn-ghost { background: var(--s2); border: 1px solid var(--border); color: var(--muted); }
+.btn-ghost:active { background: var(--s3); }
+
+/* ── TOP BAR ── */
+.topbar {
+  background: var(--s1);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+}
+
+.tb-logo { font-family: 'DM Mono', monospace; font-size: 13px; letter-spacing: 4px; color: var(--text); font-weight: 500; }
+.tb-user { font-size: 12px; color: var(--muted); }
+.tb-badge { background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  background: var(--s1);
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  flex-shrink: 0;
+  padding-bottom: calc(8px + var(--safe-bottom));
+}
+
+.nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 4px 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all .15s;
+  position: relative;
+}
+
+.nav-btn.on .nav-icon { color: var(--primary); }
+.nav-btn.on .nav-label { color: var(--primary); }
+.nav-icon { font-size: 20px; transition: transform .15s; }
+.nav-btn.on .nav-icon { transform: scale(1.1); }
+.nav-label { font-size: 10px; font-weight: 600; color: var(--muted); font-family: 'DM Sans', sans-serif; }
+.nav-dot { position: absolute; top: 6px; right: calc(50% - 14px); width: 8px; height: 8px; background: var(--danger); border-radius: 50%; border: 2px solid var(--s1); }
+
+/* ── PAGE CONTENT ── */
+.page-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── TOURNÉE PAGE ── */
+.tournee-header {
+  padding: 16px;
+  background: var(--s1);
+  border-bottom: 1px solid var(--border);
+}
+
+.t-progress-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.t-progress-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 3px;
+  transition: width .5s ease;
+}
+
+.stops-list {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stop-card {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: var(--rl);
+  overflow: hidden;
+  transition: all .2s;
+}
+
+.stop-card.current { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.stop-card.done { opacity: .5; }
+.stop-card.done .stop-num { background: var(--success); }
+
+.stop-header {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.stop-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.stop-num.done-num { background: var(--success); color: #0d1a14; }
+.stop-num.fail-num { background: var(--danger); }
+
+.stop-info { flex: 1; min-width: 0; }
+.stop-name { font-size: 15px; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stop-addr { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stop-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.stop-eta { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--primary); font-weight: 600; }
+.stop-creneau { font-size: 10px; color: var(--muted); }
+
+/* Stop expanded */
+.stop-body {
+  display: none;
+  border-top: 1px solid var(--border);
+  padding: 14px 16px;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stop-body.on { display: flex; }
+
+.info-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.info-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.info-content { flex: 1; }
+.info-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 2px; }
+.info-val { font-size: 14px; font-weight: 500; }
+
+.action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.action-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+.btn-action {
+  padding: 12px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  background: var(--s2);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: all .15s;
+}
+
+.btn-action:active { transform: scale(.96); }
+.btn-action .ba-icon { font-size: 20px; }
+.ba-call { border-color: var(--success); color: var(--success); }
+.ba-call:active { background: var(--sd); }
+.ba-nav { border-color: var(--primary); color: var(--primary); }
+.ba-nav:active { background: var(--pd); }
+.ba-photo { border-color: var(--warning); color: var(--warning); }
+.ba-photo:active { background: var(--wd); }
+.ba-sign { border-color: var(--purple, #a855f7); color: var(--purple, #a855f7); }
+.ba-sign:active { background: rgba(168,85,247,.15); }
+
+.status-btns { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
+
+/* Collecte banner */
+.collect-banner {
+  background: var(--sd);
+  border: 1px solid rgba(45,212,160,.3);
+  border-radius: var(--r);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--success);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── MAP PAGE ── */
+#stop-map { width: 100%; height: 100%; }
+
+/* ── PLANNING PAGE ── */
+.planning-content { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+.planning-card {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: var(--rl);
+  overflow: hidden;
+}
+
+.pc-header {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pc-color { width: 4px; height: 40px; border-radius: 2px; flex-shrink: 0; }
+.pc-info { flex: 1; }
+.pc-date { font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+.pc-name { font-size: 16px; font-weight: 700; }
+.pc-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.pc-badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; }
+.pcb-today { background: var(--pd); color: var(--primary); }
+.pcb-next { background: var(--s3); color: var(--muted); }
+
+.pc-stops {
+  padding: 0 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pc-stop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--s2);
+  border-radius: var(--r);
+}
+
+.pc-stop-num {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--s3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  flex-shrink: 0;
+}
+
+.pc-stop-info { flex: 1; }
+.pc-stop-name { font-size: 13px; font-weight: 600; }
+.pc-stop-addr { font-size: 11px; color: var(--muted); }
+.pc-stop-eta { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--primary); }
+
+/* ── PROFIL PAGE ── */
+.profil-content { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+.profil-hero {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: var(--rl);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.profil-av {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; color: #fff;
+}
+
+.profil-name { font-size: 20px; font-weight: 700; }
+.profil-sub { font-size: 13px; color: var(--muted); }
+
+.stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.stat-item { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; text-align: center; }
+.stat-val { font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 700; margin-bottom: 2px; }
+.stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+
+.checkin-info {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: var(--rl);
+  overflow: hidden;
+}
+
+.ci-header { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: space-between; }
+.ci-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.ci-row { display: flex; justify-content: space-between; font-size: 13px; }
+.ci-row span:first-child { color: var(--muted); }
+.ci-row span:last-child { font-family: 'DM Mono', monospace; font-weight: 600; }
+
+/* ── SIGNATURE MODAL ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.8);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 16px;
+  padding-bottom: calc(16px + var(--safe-bottom));
+}
+
+.modal-sheet {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: var(--rl);
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+  animation: slideUp .3s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.ms-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.ms-title { font-size: 16px; font-weight: 700; }
+.ms-close { font-size: 20px; background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px; }
+
+canvas#sig-canvas {
+  width: 100%;
+  height: 180px;
+  background: var(--s2);
+  display: block;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.ms-footer { padding: 12px 16px; display: flex; gap: 8px; }
+
+/* ── PHOTO MODAL ── */
+.photo-preview {
+  background: var(--s2);
+  border-radius: var(--r);
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  margin: 14px 16px;
+  border: 2px dashed var(--border);
+}
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: calc(80px + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 2000;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  display: none;
+  animation: toastIn .2s ease;
+}
+
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ═══ CHECK-IN SCREEN ═══ -->
+<div class="screen on" id="screen-checkin">
+  <div class="checkin-wrap">
+    <div>
+      <div class="checkin-logo">N A M Y</div>
+      <div class="checkin-title">👋 Bonjour, Tarek !</div>
+      <div class="checkin-sub">Avant de commencer, quelques informations</div>
+    </div>
+
+    <div class="checkin-date" id="checkin-date"></div>
+
+    <div class="form-field">
+      <div class="form-label">🚗 Plaque d'immatriculation</div>
+      <input type="text" class="form-input" id="ci-plaque" placeholder="Ex: AB-123-CD" style="text-transform:uppercase;font-family:'DM Mono',monospace;letter-spacing:2px" maxlength="9">
+    </div>
+
+    <div class="time-row">
+      <div class="form-field">
+        <div class="form-label">🕐 Heure de début</div>
+        <input type="time" class="form-input" id="ci-debut" value="08:00">
+      </div>
+      <div class="form-field">
+        <div class="form-label">🕔 Heure de fin prévue</div>
+        <input type="time" class="form-input" id="ci-fin" value="17:00">
+      </div>
+    </div>
+
+    <div class="form-field">
+      <div class="form-label">🚐 Véhicule utilisé</div>
+      <select class="form-input" id="ci-vehicule">
+        <option>Fourgon 20m³ — ES105XL</option>
+        <option>Fourgon 12m³ — AB456CD</option>
+        <option>Break — CD789EF</option>
+        <option>Autre</option>
+      </select>
+    </div>
+
+    <button class="btn-big btn-primary" onclick="startDay()">
+      ✅ Commencer ma journée
+    </button>
+  </div>
+</div>
+
+<!-- ═══ MAIN APP ═══ -->
+<div class="screen" id="screen-app">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="tb-logo">N A M Y</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="tb-badge" id="stops-badge">10</span>
+      <span class="tb-user" id="tb-user">TAREK</span>
+    </div>
+  </div>
+
+  <!-- Pages -->
+  <div class="page-content" id="page-tournee" style="display:block">
+    <!-- Tournée header -->
+    <div class="tournee-header">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:2px">Tournée du jour</div>
+          <div style="font-size:18px;font-weight:800;font-family:'DM Sans',sans-serif">TAREK 30/03</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:700" id="progress-txt">3/10</div>
+          <div style="font-size:11px;color:var(--muted)">stops complétés</div>
+        </div>
+      </div>
+      <div class="t-progress-bar">
+        <div class="t-progress-fill" id="progress-bar" style="width:30%"></div>
+      </div>
+    </div>
+
+    <!-- Stops list -->
+    <div class="stops-list" id="stops-list"></div>
+  </div>
+
+  <div class="page-content" id="page-map" style="display:none;height:calc(100vh - 115px)">
+    <div id="stop-map" style="height:100%"></div>
+  </div>
+
+  <div class="page-content" id="page-planning" style="display:none">
+    <div class="planning-content" id="planning-content"></div>
+  </div>
+
+  <div class="page-content" id="page-profil" style="display:none">
+    <div class="profil-content" id="profil-content"></div>
+  </div>
+
+  <!-- Bottom nav -->
+  <div class="bottom-nav">
+    <button class="nav-btn on" id="nav-tournee" onclick="showPage('tournee')">
+      <span class="nav-icon">🗂️</span>
+      <span class="nav-label">Tournée</span>
+      <div class="nav-dot"></div>
+    </button>
+    <button class="nav-btn" id="nav-map" onclick="showPage('map')">
+      <span class="nav-icon">🗺️</span>
+      <span class="nav-label">Carte</span>
+    </button>
+    <button class="nav-btn" id="nav-planning" onclick="showPage('planning')">
+      <span class="nav-icon">📅</span>
+      <span class="nav-label">Planning</span>
+    </button>
+    <button class="nav-btn" id="nav-profil" onclick="showPage('profil')">
+      <span class="nav-icon">👤</span>
+      <span class="nav-label">Profil</span>
+    </button>
+  </div>
+</div>
+
+<!-- ═══ MODALS ═══ -->
+<!-- Signature -->
+<div class="modal-overlay" id="modal-sig" style="display:none" onclick="if(event.target===this)closeModal('modal-sig')">
+  <div class="modal-sheet">
+    <div class="ms-header">
+      <span class="ms-title">✍️ Signature du client</span>
+      <button class="ms-close" onclick="closeModal('modal-sig')">✕</button>
+    </div>
+    <canvas id="sig-canvas" width="480" height="180"></canvas>
+    <div class="ms-footer">
+      <button class="btn-big btn-ghost" style="flex:1;padding:12px" onclick="clearSig()">🗑 Effacer</button>
+      <button class="btn-big btn-success" style="flex:2;padding:12px" onclick="saveSig()">✅ Valider la signature</button>
+    </div>
+  </div>
+</div>
+
+<!-- Photo -->
+<div class="modal-overlay" id="modal-photo" style="display:none" onclick="if(event.target===this)closeModal('modal-photo')">
+  <div class="modal-sheet">
+    <div class="ms-header">
+      <span class="ms-title">📷 Photo de livraison</span>
+      <button class="ms-close" onclick="closeModal('modal-photo')">✕</button>
+    </div>
+    <div class="photo-preview" id="photo-preview">📷</div>
+    <div class="ms-footer" style="flex-direction:column;gap:8px">
+      <label class="btn-big btn-ghost" style="padding:12px;cursor:pointer">
+        📷 Prendre une photo
+        <input type="file" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
+      </label>
+      <button class="btn-big btn-success" style="padding:12px" onclick="savePhoto()">✅ Valider la photo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Échec -->
+<div class="modal-overlay" id="modal-echec" style="display:none" onclick="if(event.target===this)closeModal('modal-echec')">
+  <div class="modal-sheet">
+    <div class="ms-header">
+      <span class="ms-title">❌ Déclarer un échec</span>
+      <button class="ms-close" onclick="closeModal('modal-echec')">✕</button>
+    </div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:13px;color:var(--muted)">Raison de l'échec :</div>
+      <button class="btn-big btn-ghost" style="padding:14px;justify-content:flex-start" onclick="declareEchec('Absent — pas de réponse')">😶 Absent — pas de réponse</button>
+      <button class="btn-big btn-ghost" style="padding:14px;justify-content:flex-start" onclick="declareEchec('Adresse introuvable')">📍 Adresse introuvable</button>
+      <button class="btn-big btn-ghost" style="padding:14px;justify-content:flex-start" onclick="declareEchec('Refus du client')">🚫 Refus du client</button>
+      <button class="btn-big btn-ghost" style="padding:14px;justify-content:flex-start" onclick="declareEchec('Problème d\'accès')">🔒 Problème d'accès</button>
+      <button class="btn-big btn-ghost" style="padding:14px;justify-content:flex-start" onclick="declareEchec('Autre')">💬 Autre</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── DATA ─────────────────────────────────────────────────────
+let checkinData = {};
+let currentStopId = 1;
+let stopMap = null;
+
+const CHAUFFEUR = { nom: 'TAREK MAKNI', initiales: 'TM', color: '#4f7cff' };
+
+const STOPS = [
+  { id:1, done:false, collected:false, nom:'Pluntz Sophie',    adresse:'15 Rue des Roses',       cp:'94200', ville:'Ivry-sur-Seine',    lat:48.815, lng:2.387, creneau:'09:00-13:00', option:'Pièce du choix', poids:80, desc:'Arbustes + pot céramique', tel:'0678901234', nb_colis:5,  eta:'09:15' },
+  { id:2, done:false, collected:false, nom:'Abouriy Mahjouba', adresse:'14 Rue Bergère',          cp:'75009', ville:'Paris 9ème',         lat:48.873, lng:2.348, creneau:'09:00-13:00', option:'Pièce du choix', poids:7,  desc:'Plante verte',            tel:'0612345678', nb_colis:1,  eta:'10:00' },
+  { id:3, done:false, collected:false, nom:'Lacourt',          adresse:'22 Rue des Lilas',        cp:'75013', ville:'Paris 13ème',        lat:48.832, lng:2.372, creneau:'13:00-16:00', option:'Trottoir',       poids:60, desc:'Sacs de terreau × 6',     tel:'0699887766', nb_colis:6,  eta:'10:45' },
+  { id:4, done:false, collected:false, nom:'Sempe Jean-Louis', adresse:'94 Maisons-Alfort',       cp:'94700', ville:'Maisons-Alfort',     lat:48.806, lng:2.438, creneau:'15:00-18:00', option:'Pièce du choix', poids:40, desc:'Mobilier salon',          tel:'0655443322', nb_colis:3,  eta:'11:30' },
+  { id:5, done:false, collected:false, nom:'Gambaro Valérie',  adresse:'94 Saint-Maur-des-Fossés',cp:'94100', ville:'Saint-Maur',         lat:48.800, lng:2.503, creneau:'15:00-18:00', option:'Pièce du choix', poids:35, desc:'Canapé 2 places',         tel:'0677665544', nb_colis:2,  eta:'12:15' },
+  { id:6, done:false, collected:false, nom:'Savart Ludovic',   adresse:'93 Noisy-le-Sec',         cp:'93130', ville:'Noisy-le-Sec',       lat:48.874, lng:2.488, creneau:'13:00-16:00', option:'Trottoir',       poids:15, desc:'Bacs à fleurs',           tel:'0633221100', nb_colis:4,  eta:'13:00' },
+  { id:7, done:false, collected:false, nom:'Gaudin Jean',      adresse:'75 Paris 13ème',          cp:'75013', ville:'Paris',              lat:48.832, lng:2.361, creneau:'13:00-16:00', option:'Pièce du choix', poids:40, desc:'Table de jardin',         tel:'0644332211', nb_colis:2,  eta:'13:45' },
+  { id:8, done:false, collected:false, nom:'Erlykova Mila',    adresse:'75 Paris 7ème',           cp:'75007', ville:'Paris',              lat:48.859, lng:2.310, creneau:'13:00-16:00', option:'Trottoir',       poids:100,desc:'Dalle terrasse × 10',    tel:'0688050188', nb_colis:10, eta:'14:30' },
+  { id:9, done:true,  collected:true,  nom:'Mahdous',          adresse:'75 Paris 13ème',          cp:'75013', ville:'Paris',              lat:48.833, lng:2.365, creneau:'09:00-13:00', option:'Trottoir',       poids:30, desc:'Rosier grimpant',         tel:'0612111213', nb_colis:2,  eta:'✓ Livré', status:'livre' },
+  { id:10,done:true,  collected:true,  nom:'Craft Kate',       adresse:'Saint-Germain-en-Laye',   cp:'78100', ville:'Saint-Germain',      lat:48.898, lng:2.094, creneau:'09:00-13:00', option:'Pièce du choix', poids:50, desc:'Meubles de jardin',       tel:'0622334455', nb_colis:3,  eta:'✓ Livré', status:'livre' },
+];
+
+const PLANNING = [
+  { id:1, nom:'TAREK 30/03', couleur:'#4f7cff', date:'Aujourd\'hui · 30 mars', heure:'08:00', vehicule:'Fourgon 20m³', statut:'today', nb_stops:10, stops: STOPS.slice(0,5) },
+  { id:2, nom:'TAREK 31/03', couleur:'#2dd4a0', date:'Demain · 31 mars',       heure:'08:00', vehicule:'Fourgon 20m³', statut:'next',  nb_stops:7,  stops: [
+    {nom:'Bernard Sophie',  adresse:'5 Allée des Roses',  cp:'78160',ville:'Marly-le-Roi', eta:'09:00',creneau:'09:00-13:00'},
+    {nom:'Leroy Thomas',    adresse:'33 Rue Louis Siou',  cp:'78890',ville:'Garancières',  eta:'10:00',creneau:'09:00-13:00'},
+    {nom:'Petit Claire',    adresse:'8 Impasse des Lilas',cp:'94120',ville:'Fontenay',     eta:'11:00',creneau:'12:00-16:00'},
+    {nom:'Garcia Fernando', adresse:'2 Rue de la Paix',   cp:'75002',ville:'Paris',        eta:'13:30',creneau:'13:00-16:00'},
+  ]},
+];
+
+// ─── CHECK-IN ─────────────────────────────────────────────────
+document.getElementById('checkin-date').textContent =
+  new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+document.getElementById('ci-debut').value =
+  new Date().toTimeString().slice(0,5);
+
+function startDay() {
+  const plaque = document.getElementById('ci-plaque').value.trim();
+  if (!plaque) { showToast('⚠️ Renseignez la plaque d\'immatriculation'); return; }
+
+  checkinData = {
+    plaque: plaque.toUpperCase(),
+    debut: document.getElementById('ci-debut').value,
+    fin: document.getElementById('ci-fin').value,
+    vehicule: document.getElementById('ci-vehicule').value,
+    date: new Date().toLocaleDateString('fr-FR'),
+  };
+
+  document.getElementById('screen-checkin').classList.remove('on');
+  document.getElementById('screen-app').classList.add('on');
+
+  renderStops();
+  renderPlanning();
+  renderProfil();
+  initStopMap();
+  showToast(`✅ Bonne journée, ${CHAUFFEUR.nom.split(' ')[0]} !`);
+}
+
+// ─── STOPS ────────────────────────────────────────────────────
+function renderStops() {
+  const done = STOPS.filter(s => s.done).length;
+  const total = STOPS.length;
+  document.getElementById('progress-txt').textContent = `${done}/${total}`;
+  document.getElementById('progress-bar').style.width = `${done/total*100}%`;
+  document.getElementById('stops-badge').textContent = total - done;
+
+  document.getElementById('stops-list').innerHTML = STOPS.map(s => {
+    const isDone = s.done;
+    const isCurrent = !isDone && s.id === STOPS.find(x => !x.done)?.id;
+    const numClass = isDone ? (s.status === 'echec' ? 'fail-num' : 'done-num') : '';
+    const numIcon = isDone ? (s.status === 'echec' ? '✕' : '✓') : s.id;
+
+    return `
+    <div class="stop-card ${isCurrent ? 'current' : ''} ${isDone ? 'done' : ''}" id="stop-${s.id}">
+      <div class="stop-header" onclick="toggleStop(${s.id})">
+        <div class="stop-num ${numClass}">${numIcon}</div>
+        <div class="stop-info">
+          <div class="stop-name">${s.nom}</div>
+          <div class="stop-addr">${s.adresse}, ${s.cp} ${s.ville}</div>
+        </div>
+        <div class="stop-right">
+          <div class="stop-eta">${s.eta}</div>
+          <div class="stop-creneau">${s.creneau}</div>
+        </div>
+      </div>
+
+      <div class="stop-body ${isCurrent ? 'on' : ''}" id="body-${s.id}">
+        ${isCurrent && !s.collected ? `
+        <div class="collect-banner">
+          📦 Pensez à scanner/confirmer la collecte au magasin
+        </div>` : ''}
+
+        <div class="info-row">
+          <span class="info-icon">📍</span>
+          <div class="info-content">
+            <div class="info-label">Adresse</div>
+            <div class="info-val">${s.adresse}<br>${s.cp} ${s.ville}</div>
+          </div>
+        </div>
+
+        <div class="info-row">
+          <span class="info-icon">📦</span>
+          <div class="info-content">
+            <div class="info-label">Marchandise · ${s.nb_colis} colis · ${s.poids}kg</div>
+            <div class="info-val">${s.desc}</div>
+          </div>
+        </div>
+
+        <div class="info-row">
+          <span class="info-icon">${s.option === 'Pièce du choix' ? '🛋️' : '🚚'}</span>
+          <div class="info-content">
+            <div class="info-label">Option de livraison</div>
+            <div class="info-val" style="color:${s.option === 'Pièce du choix' ? 'var(--primary)' : 'var(--success)'}">${s.option}</div>
+          </div>
+        </div>
+
+        <div class="info-row">
+          <span class="info-icon">📱</span>
+          <div class="info-content">
+            <div class="info-label">Contact client</div>
+            <div class="info-val">${s.tel}</div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="action-row-3">
+          <button class="btn-action ba-call" onclick="callClient('${s.tel}')">
+            <span class="ba-icon">📞</span>
+            Appeler
+          </button>
+          <button class="btn-action ba-nav" onclick="openGPS(${s.lat}, ${s.lng}, '${s.adresse}')">
+            <span class="ba-icon">🧭</span>
+            GPS
+          </button>
+          <button class="btn-action ba-photo" onclick="openPhoto(${s.id})">
+            <span class="ba-icon">📷</span>
+            Photo
+          </button>
+        </div>
+
+        ${!isDone ? `
+        <div class="status-btns">
+          <button class="btn-big btn-success" style="padding:14px;font-size:14px" onclick="marquerLivre(${s.id})">
+            ✅ Livré — Signer
+          </button>
+          <button class="btn-big btn-danger" style="padding:14px;font-size:14px" onclick="openEchec(${s.id})">
+            ❌
+          </button>
+        </div>` : `
+        <div style="background:${s.status==='echec'?'var(--dd)':'var(--sd)'};color:${s.status==='echec'?'var(--danger)':'var(--success)'};border-radius:var(--r);padding:12px;text-align:center;font-weight:700;font-size:14px">
+          ${s.status==='echec' ? '❌ Échec déclaré' : '✅ Livraison confirmée'}
+        </div>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleStop(id) {
+  const body = document.getElementById(`body-${id}`);
+  if (!body) return;
+  const isOpen = body.classList.contains('on');
+  document.querySelectorAll('.stop-body').forEach(b => b.classList.remove('on'));
+  if (!isOpen) body.classList.add('on');
+}
+
+function marquerLivre(id) {
+  currentStopId = id;
+  openModal('modal-sig');
+}
+
+function saveSig() {
+  const s = STOPS.find(x => x.id === currentStopId);
+  if (s) { s.done = true; s.collected = true; s.status = 'livre'; }
+  closeModal('modal-sig');
+  clearSig();
+  renderStops();
+  updateMapMarkers();
+  showToast(`✅ Stop #${currentStopId} — Livraison confirmée !`);
+}
+
+let echecStopId = null;
+function openEchec(id) { echecStopId = id; openModal('modal-echec'); }
+function declareEchec(raison) {
+  const s = STOPS.find(x => x.id === echecStopId);
+  if (s) { s.done = true; s.status = 'echec'; s.echecRaison = raison; }
+  closeModal('modal-echec');
+  renderStops();
+  showToast(`❌ Échec déclaré — ${raison}`);
+}
+
+let photoStopId = null;
+function openPhoto(id) { photoStopId = id; openModal('modal-photo'); }
+function handlePhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const preview = document.getElementById('photo-preview');
+    preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:var(--r)">`;
+  };
+  reader.readAsDataURL(file);
+}
+function savePhoto() {
+  closeModal('modal-photo');
+  document.getElementById('photo-preview').innerHTML = '📷';
+  showToast(`📷 Photo enregistrée pour le stop #${photoStopId}`);
+}
+
+// ─── MAP ──────────────────────────────────────────────────────
+function initStopMap() {
+  if (stopMap) return;
+  stopMap = L.map('stop-map').setView([48.84, 2.38], 12);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(stopMap);
+  updateMapMarkers();
+}
+
+function updateMapMarkers() {
+  if (!stopMap) return;
+  stopMap.eachLayer(l => { if (l instanceof L.Marker) stopMap.removeLayer(l); });
+
+  STOPS.forEach((s, i) => {
+    const color = s.done ? (s.status === 'echec' ? '#f43f5e' : '#2dd4a0') : (i === STOPS.findIndex(x => !x.done) ? '#4f7cff' : '#f59e0b');
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="width:${s.done?12:16}px;height:${s.done?12:16}px;background:${color};border:2px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff">${s.done?'':''+s.id}</div>`,
+      iconSize: [16, 16], iconAnchor: [8, 8]
+    });
+    L.marker([s.lat, s.lng], { icon })
+      .addTo(stopMap)
+      .bindPopup(`<div style="font-family:'DM Sans',sans-serif;min-width:180px">
+        <div style="font-weight:700;font-size:14px;margin-bottom:4px">${s.nom}</div>
+        <div style="font-size:12px;color:#888;margin-bottom:6px">${s.adresse}</div>
+        <div style="color:${color};font-size:12px;font-weight:600">${s.done ? (s.status==='echec'?'❌ Échec':'✅ Livré') : '⏳ En attente'}</div>
+      </div>`);
+  });
+}
+
+// ─── PLANNING ─────────────────────────────────────────────────
+function renderPlanning() {
+  document.getElementById('planning-content').innerHTML = PLANNING.map(t => `
+    <div class="planning-card">
+      <div class="pc-header">
+        <div class="pc-color" style="background:${t.couleur}"></div>
+        <div class="pc-info">
+          <div class="pc-date">${t.date}</div>
+          <div class="pc-name">${t.nom}</div>
+          <div class="pc-meta">⏰ ${t.heure} · ${t.vehicule} · ${t.nb_stops} stops</div>
+        </div>
+        <span class="pc-badge ${t.statut==='today'?'pcb-today':'pcb-next'}">${t.statut==='today'?'Aujourd\'hui':'Demain'}</span>
+      </div>
+      <div class="pc-stops">
+        ${t.stops.slice(0,4).map((s,i) => `
+        <div class="pc-stop">
+          <div class="pc-stop-num">${i+1}</div>
+          <div class="pc-stop-info">
+            <div class="pc-stop-name">${s.nom}</div>
+            <div class="pc-stop-addr">${s.cp} ${s.ville} · ${s.creneau}</div>
+          </div>
+          <div class="pc-stop-eta">${s.eta}</div>
+        </div>`).join('')}
+        ${t.stops.length > 4 ? `<div style="text-align:center;font-size:12px;color:var(--muted);padding:6px">+${t.stops.length-4} stops supplémentaires</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── PROFIL ───────────────────────────────────────────────────
+function renderProfil() {
+  const done = STOPS.filter(s => s.done && s.status === 'livre').length;
+  document.getElementById('profil-content').innerHTML = `
+    <div class="profil-hero">
+      <div class="profil-av" style="background:${CHAUFFEUR.color}">${CHAUFFEUR.initiales}</div>
+      <div class="profil-name">${CHAUFFEUR.nom}</div>
+      <div class="profil-sub">Chauffeur FISSA LIV</div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-item">
+        <div class="stat-val" style="color:var(--success)">${done}</div>
+        <div class="stat-label">Livrés aujourd'hui</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val" style="color:var(--primary)">${STOPS.length}</div>
+        <div class="stat-label">Total stops</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val" style="color:var(--warning)">52</div>
+        <div class="stat-label">Ce mois</div>
+      </div>
+    </div>
+
+    <div class="checkin-info">
+      <div class="ci-header">
+        📋 Infos de la journée
+        <button class="btn-ghost" style="padding:4px 10px;font-size:11px;background:var(--s2);border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer" onclick="editCheckin()">Modifier</button>
+      </div>
+      <div class="ci-body">
+        <div class="ci-row"><span>Date</span><span>${checkinData.date}</span></div>
+        <div class="ci-row"><span>Plaque</span><span>${checkinData.plaque}</span></div>
+        <div class="ci-row"><span>Véhicule</span><span>${checkinData.vehicule?.split('—')[0]?.trim() || '—'}</span></div>
+        <div class="ci-row"><span>Heure début</span><span>${checkinData.debut}</span></div>
+        <div class="ci-row"><span>Heure fin prévue</span><span>${checkinData.fin}</span></div>
+      </div>
+    </div>
+
+    <button class="btn-big btn-danger" style="padding:14px" onclick="endDay()">
+      🔴 Terminer ma journée
+    </button>
+  `;
+}
+
+function editCheckin() {
+  document.getElementById('screen-app').classList.remove('on');
+  document.getElementById('screen-checkin').classList.add('on');
+}
+
+function endDay() {
+  if (!confirm('Terminer votre journée ?')) return;
+  const now = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'});
+  const done = STOPS.filter(s => s.done && s.status !== 'echec').length;
+  showToast(`✅ Journée terminée à ${now} · ${done} livraisons`);
+  setTimeout(() => {
+    document.getElementById('screen-app').classList.remove('on');
+    document.getElementById('screen-checkin').classList.add('on');
+  }, 2000);
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────
+function callClient(tel) {
+  window.location.href = `tel:${tel}`;
+  showToast(`📞 Appel vers ${tel}`);
+}
+
+function openGPS(lat, lng, adresse) {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const url = isIOS
+    ? `maps://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`
+    : `https://maps.google.com/?daddr=${lat},${lng}`;
+  window.open(url, '_blank');
+}
+
+function showPage(page) {
+  ['tournee','map','planning','profil'].forEach(p => {
+    document.getElementById(`page-${p}`).style.display = 'none';
+    document.getElementById(`nav-${p}`).classList.remove('on');
+  });
+  document.getElementById(`page-${page}`).style.display = 'block';
+  document.getElementById(`nav-${page}`).classList.add('on');
+
+  if (page === 'map') {
+    initStopMap();
+    setTimeout(() => stopMap?.invalidateSize(), 100);
+  }
+  if (page === 'profil') renderProfil();
+}
+
+// ─── SIGNATURE ────────────────────────────────────────────────
+let sigDrawing = false;
+let sigCtx = null;
+
+function initSig() {
+  const canvas = document.getElementById('sig-canvas');
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width;
+  sigCtx = canvas.getContext('2d');
+  sigCtx.strokeStyle = '#fff';
+  sigCtx.lineWidth = 2;
+  sigCtx.lineCap = 'round';
+  sigCtx.lineJoin = 'round';
+
+  canvas.addEventListener('mousedown', e => { sigDrawing = true; sigCtx.beginPath(); sigCtx.moveTo(e.offsetX, e.offsetY); });
+  canvas.addEventListener('mousemove', e => { if (!sigDrawing) return; sigCtx.lineTo(e.offsetX, e.offsetY); sigCtx.stroke(); });
+  canvas.addEventListener('mouseup', () => sigDrawing = false);
+
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    sigDrawing = true;
+    const t = e.touches[0];
+    const r = canvas.getBoundingClientRect();
+    sigCtx.beginPath();
+    sigCtx.moveTo(t.clientX - r.left, t.clientY - r.top);
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (!sigDrawing) return;
+    const t = e.touches[0];
+    const r = canvas.getBoundingClientRect();
+    sigCtx.lineTo(t.clientX - r.left, t.clientY - r.top);
+    sigCtx.stroke();
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', () => sigDrawing = false);
+}
+
+function clearSig() {
+  if (sigCtx) sigCtx.clearRect(0, 0, document.getElementById('sig-canvas').width, 180);
+}
+
+// ─── MODALS ───────────────────────────────────────────────────
+function openModal(id) {
+  document.getElementById(id).style.display = 'flex';
+  if (id === 'modal-sig') setTimeout(initSig, 100);
+}
+
+function closeModal(id) {
+  document.getElementById(id).style.display = 'none';
+}
+
+// ─── TOAST ────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.style.display = 'none', 3000);
+}
+</script>
+</body>
+</html>
