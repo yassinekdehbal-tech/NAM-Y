@@ -338,11 +338,14 @@ function showEl(id) {
 }
 
 function showModal(id) {
-  getEl(id).style.display = 'flex';
+  const el = getEl(id);
+  if (el) el.style.display = 'flex';
+  else console.error('[GRILLES] Modal introuvable:', id);
 }
 
 function hideModal(id) {
-  getEl(id).style.display = 'none';
+  const el = getEl(id);
+  if (el) el.style.display = 'none';
 }
 
 
@@ -360,11 +363,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       entreprisesRes
     ] = await Promise.allSettled([
       db.from('grilles_tarifaires_config').select('*').order('id'),
-      db.from('grilles_lignes').select('*').order('grille_id, poids_min'),
-      db.from('grilles_zones').select('*').order('grille_id, code'),
-      db.from('grilles_categories').select('*').order('grille_id, id'),
-      db.from('grilles_frais').select('*').order('grille_id, id'),
-      db.from('grilles_options').select('*').order('grille_id, id'),
+      db.from('grilles_lignes').select('*').order('grille_id').order('poids_min'),
+      db.from('grilles_zones').select('*').order('grille_id').order('code'),
+      db.from('grilles_categories').select('*').order('grille_id').order('id'),
+      db.from('grilles_frais').select('*').order('grille_id').order('id'),
+      db.from('grilles_options').select('*').order('grille_id').order('id'),
       db.from('clients_grilles').select('*').order('id'),
       db.from('entreprises').select('*').order('nom')
     ]);
@@ -1412,9 +1415,12 @@ function switchTab(btn, id) {
 
 
 // ─── MODAL OVERLAY CLOSE ──────────────────────────────────────
-document.querySelectorAll('.mo').forEach(overlay => {
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay) overlay.style.display = 'none';
+// Fermer les modaux en cliquant sur l'overlay (exécuté après le DOM)
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.mo').forEach(overlay => {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.style.display = 'none';
+    });
   });
 });
 </script>
