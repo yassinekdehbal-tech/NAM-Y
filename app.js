@@ -601,6 +601,70 @@ function showAdminSub(sub) {
   if (el) el.style.display = 'block';
 }
 
+// ─── CRÉATION ENTREPRISE ─────────────────────────────────────
+async function createEntreprise() {
+  const nom = document.getElementById('new-ent-nom').value.trim();
+  const adresse = document.getElementById('new-ent-adresse').value.trim();
+  const cp = document.getElementById('new-ent-cp').value.trim();
+  const ville = document.getElementById('new-ent-ville').value.trim();
+  const tel = document.getElementById('new-ent-tel').value.trim();
+  const lat = parseFloat(document.getElementById('new-ent-lat').value) || null;
+  const lng = parseFloat(document.getElementById('new-ent-lng').value) || null;
+
+  if (!nom || !adresse || !cp || !ville) {
+    showToast('Veuillez remplir les champs obligatoires (nom, adresse, CP, ville)', 'warning');
+    return;
+  }
+
+  const newEntreprise = { nom, adresse, cp, ville, tel: tel || null, lat, lng };
+
+  try {
+    const { data, error } = await db
+      .from('entreprises')
+      .insert(newEntreprise)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Ajouter aux données locales
+    ENTREPRISES.push(data);
+    populateDropdowns();
+    renderAdmin();
+    closeModal('modal-create-entreprise');
+
+    // Réinitialiser le formulaire
+    document.getElementById('new-ent-nom').value = '';
+    document.getElementById('new-ent-adresse').value = '';
+    document.getElementById('new-ent-cp').value = '';
+    document.getElementById('new-ent-ville').value = '';
+    document.getElementById('new-ent-tel').value = '';
+    document.getElementById('new-ent-lat').value = '';
+    document.getElementById('new-ent-lng').value = '';
+
+    showToast(`Entreprise "${nom}" ajoutée avec succès`);
+  } catch (err) {
+    console.error('[NAMY] Erreur création entreprise:', err);
+
+    // Fallback local si Supabase échoue
+    const newId = ENTREPRISES.length ? Math.max(...ENTREPRISES.map(e => e.id)) + 1 : 1;
+    ENTREPRISES.push({ id: newId, ...newEntreprise });
+    populateDropdowns();
+    renderAdmin();
+    closeModal('modal-create-entreprise');
+
+    document.getElementById('new-ent-nom').value = '';
+    document.getElementById('new-ent-adresse').value = '';
+    document.getElementById('new-ent-cp').value = '';
+    document.getElementById('new-ent-ville').value = '';
+    document.getElementById('new-ent-tel').value = '';
+    document.getElementById('new-ent-lat').value = '';
+    document.getElementById('new-ent-lng').value = '';
+
+    showToast(`Entreprise "${nom}" ajoutée localement (hors-ligne)`, 'info');
+  }
+}
+
 // ─── EXTRACTION ──────────────────────────────────────────────
 function generateExport(format) {
   const entreprise = document.getElementById('extract-entreprise').value || 'toutes les entreprises';
