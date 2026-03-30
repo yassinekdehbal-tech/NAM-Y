@@ -703,6 +703,8 @@ canvas#sig-canvas {
 let checkinData = {};
 let currentStopId = 1;
 let stopMap = null;
+let photoFile = null;
+let photoStopId = null;
 
 let CHAUFFEUR = { nom: 'TAREK MAKNI', initiales: 'TM', color: '#4f7cff' };
 
@@ -740,9 +742,10 @@ const PLANNING = [
 async function loadChauffeurData() {
   try {
     // Charger le profil chauffeur depuis la session
-    const sessionUser = JSON.parse(sessionStorage.getItem('namy_user') || 'null');
+    const sessionUser = getSessionUser();
     if (sessionUser) {
       CHAUFFEUR = {
+        id: sessionUser.id || sessionUser.auth_id,
         nom: `${sessionUser.prenom} ${sessionUser.nom}`.trim(),
         initiales: `${(sessionUser.prenom||'')[0]||''}${(sessionUser.nom||'')[0]||''}`.toUpperCase(),
         color: '#4f7cff'
@@ -768,13 +771,17 @@ async function loadChauffeurData() {
     // Charger les stops de la tournée du jour
     if (sessionUser) {
       const today = new Date().toISOString().split('T')[0];
-      const { data: tourneeData } = await db
-        .from('tournees')
-        .select('*')
-        .eq('chauffeur', CHAUFFEUR.nom)
-        .eq('date', today)
-        .limit(1)
-        .single();
+      let tourneeData = null;
+      // Try by ID first
+      const { data: byId } = await db.from('tournees').select('*')
+        .eq('chauffeur_id', CHAUFFEUR.id).eq('date', today).eq('statut', 'publie').limit(1).single();
+      if (byId) tourneeData = byId;
+      else {
+        // Fallback to name match
+        const { data: byName } = await db.from('tournees').select('*')
+          .eq('chauffeur', CHAUFFEUR.nom).eq('date', today).limit(1).single();
+        if (byName) tourneeData = byName;
+      }
 
       if (tourneeData && tourneeData.id) {
         const { data: stopsData } = await db
@@ -820,7 +827,7 @@ document.getElementById('checkin-date').textContent =
 document.getElementById('ci-debut').value =
   new Date().toTimeString().slice(0,5);
 
-function startDay() {
+async function startDay() {
   const plaque = document.getElementById('ci-plaque').value.trim();
   if (!plaque) { showToast('⚠️ Renseignez la plaque d\'immatriculation'); return; }
 
@@ -829,8 +836,21 @@ function startDay() {
     debut: document.getElementById('ci-debut').value,
     fin: document.getElementById('ci-fin').value,
     vehicule: document.getElementById('ci-vehicule').value,
-    date: new Date().toLocaleDateString('fr-FR'),
+    date: new Date().toISOString().split('T')[0],
   };
+
+  try {
+    const { data } = await db.from('checkins').insert({
+      chauffeur_id: CHAUFFEUR.id,
+      chauffeur_nom: CHAUFFEUR.nom,
+      date: checkinData.date,
+      heure_debut: checkinData.debut,
+      heure_fin_prevue: checkinData.fin,
+      plaque: checkinData.plaque,
+      vehicule: checkinData.vehicule,
+    }).select().single();
+    if (data) checkinData.supabase_id = data.id;
+  } catch(e) { console.warn('Check-in save failed:', e); }
 
   document.getElementById('screen-checkin').classList.remove('on');
   document.getElementById('screen-app').classList.add('on');
@@ -954,9 +974,31 @@ function marquerLivre(id) {
   openModal('modal-sig', initSig);
 }
 
-function saveSig() {
+async function saveSig() {
   const s = STOPS.find(x => x.id === currentStopId);
-  if (s) { s.done = true; s.collected = true; s.status = 'livre'; }
+  if (s) {
+    s.done = true;
+    s.collected = true;
+    s.status = 'livre';
+    s.eta = '✓ Livré';
+
+    // Save signature as base64 and update status in Supabase
+    try {
+      const canvas = document.getElementById('sig-canvas');
+      const signatureData = canvas.toDataURL('image/png');
+
+      await db.from('tournee_stops').update({
+        statut: 'livre',
+        signature_data: signatureData,
+        livre_at: new Date().toISOString()
+      }).eq('id', s.id);
+
+      // Also update the expedition status
+      if (s.expedition_id) {
+        await db.from('expeditions').update({ statut: 'livre' }).eq('id', s.expedition_id);
+      }
+    } catch(e) { console.warn('Supabase save signature failed:', e); }
+  }
   closeModal('modal-sig');
   clearSig();
   renderStops();
@@ -965,20 +1007,38 @@ function saveSig() {
 }
 
 let echecStopId = null;
-function openEchec(id) { echecStopId = id; openModal('modal-echec'); }
-function declareEchec(raison) {
-  const s = STOPS.find(x => x.id === echecStopId);
-  if (s) { s.done = true; s.status = 'echec'; s.echecRaison = raison; }
+function openEchec(id) { echecStopId = id; currentStopId = id; openModal('modal-echec'); }
+async function declareEchec(raison) {
+  const s = STOPS.find(x => x.id === currentStopId);
+  if (s) {
+    s.done = true;
+    s.status = 'echec';
+    s.eta = '✗ Échec';
+    s.echecRaison = raison;
+
+    try {
+      await db.from('tournee_stops').update({
+        statut: 'echec',
+        echec_raison: raison,
+        echec_at: new Date().toISOString()
+      }).eq('id', s.id);
+
+      if (s.expedition_id) {
+        await db.from('expeditions').update({ statut: 'litige' }).eq('id', s.expedition_id);
+      }
+    } catch(e) { console.warn('Supabase declare failure failed:', e); }
+  }
   closeModal('modal-echec');
   renderStops();
-  showToast(`❌ Échec déclaré — ${raison}`);
+  updateMapMarkers();
+  showToast(`⚠️ Échec déclaré — ${raison}`);
 }
 
-let photoStopId = null;
 function openPhoto(id) { photoStopId = id; openModal('modal-photo'); }
 function handlePhoto(input) {
   const file = input.files[0];
   if (!file) return;
+  photoFile = file;
   const reader = new FileReader();
   reader.onload = e => {
     const preview = document.getElementById('photo-preview');
@@ -986,9 +1046,23 @@ function handlePhoto(input) {
   };
   reader.readAsDataURL(file);
 }
-function savePhoto() {
+async function savePhoto() {
+  if (photoFile) {
+    try {
+      const fileName = `stop_${photoStopId}_${Date.now()}.jpg`;
+      const { error } = await db.storage.from('delivery-photos')
+        .upload(fileName, photoFile);
+
+      if (!error) {
+        await db.from('tournee_stops').update({
+          photo_url: fileName
+        }).eq('id', photoStopId);
+      }
+    } catch(e) { console.warn('Photo upload failed:', e); }
+  }
   closeModal('modal-photo');
   document.getElementById('photo-preview').innerHTML = '📷';
+  photoFile = null;
   showToast(`📷 Photo enregistrée pour le stop #${photoStopId}`);
 }
 
@@ -1022,8 +1096,34 @@ function updateMapMarkers() {
 }
 
 // ─── PLANNING ─────────────────────────────────────────────────
-function renderPlanning() {
-  document.getElementById('planning-content').innerHTML = PLANNING.map(t => `
+async function renderPlanning() {
+  let planningData = PLANNING;
+
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const { data } = await db.from('tournees').select('*')
+      .or(`chauffeur_id.eq.${CHAUFFEUR.id},chauffeur.eq.${CHAUFFEUR.nom}`)
+      .gte('date', today)
+      .order('date')
+      .limit(5);
+
+    if (data && data.length) {
+      planningData = data.map(t => ({
+        id: t.id,
+        nom: t.nom,
+        couleur: t.couleur || '#4f7cff',
+        date: t.date === today ? `Aujourd'hui · ${new Date(t.date).toLocaleDateString('fr-FR', {day:'numeric', month:'long'})}` :
+              `${new Date(t.date).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'})}`,
+        heure: t.heure || '08:00',
+        vehicule: t.vehicule || '',
+        statut: t.date === today ? 'today' : 'next',
+        nb_stops: t.nb_courses || 0,
+        stops: []
+      }));
+    }
+  } catch(e) { console.warn('Planning load failed:', e); }
+
+  document.getElementById('planning-content').innerHTML = planningData.map(t => `
     <div class="planning-card">
       <div class="pc-header">
         <div class="pc-color" style="background:${t.couleur}"></div>
@@ -1035,7 +1135,7 @@ function renderPlanning() {
         <span class="pc-badge ${t.statut==='today'?'pcb-today':'pcb-next'}">${t.statut==='today'?'Aujourd\'hui':'Demain'}</span>
       </div>
       <div class="pc-stops">
-        ${t.stops.slice(0,4).map((s,i) => `
+        ${(t.stops||[]).slice(0,4).map((s,i) => `
         <div class="pc-stop">
           <div class="pc-stop-num">${i+1}</div>
           <div class="pc-stop-info">
@@ -1044,15 +1144,30 @@ function renderPlanning() {
           </div>
           <div class="pc-stop-eta">${s.eta}</div>
         </div>`).join('')}
-        ${t.stops.length > 4 ? `<div style="text-align:center;font-size:12px;color:var(--muted);padding:6px">+${t.stops.length-4} stops supplémentaires</div>` : ''}
+        ${(t.stops||[]).length > 4 ? `<div style="text-align:center;font-size:12px;color:var(--muted);padding:6px">+${t.stops.length-4} stops supplémentaires</div>` : ''}
       </div>
     </div>
   `).join('');
 }
 
 // ─── PROFIL ───────────────────────────────────────────────────
-function renderProfil() {
+async function renderProfil() {
   const done = STOPS.filter(s => s.done && s.status === 'livre').length;
+  let monthCount = 52;
+
+  // Try to load real stats from Supabase
+  try {
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    const { count } = await db.from('tournee_stops')
+      .select('*', { count: 'exact', head: true })
+      .eq('chauffeur_id', CHAUFFEUR.id)
+      .eq('statut', 'livre')
+      .gte('livre_at', startOfMonth.toISOString());
+    if (count !== null && count !== undefined) monthCount = count;
+  } catch(e) { console.warn('Profil stats load failed:', e); }
+
   document.getElementById('profil-content').innerHTML = `
     <div class="profil-hero">
       <div class="profil-av" style="background:${CHAUFFEUR.color}">${CHAUFFEUR.initiales}</div>
@@ -1070,7 +1185,7 @@ function renderProfil() {
         <div class="stat-label">Total stops</div>
       </div>
       <div class="stat-item">
-        <div class="stat-val" style="color:var(--warning)">52</div>
+        <div class="stat-val" style="color:var(--warning)">${monthCount}</div>
         <div class="stat-label">Ce mois</div>
       </div>
     </div>
@@ -1100,15 +1215,24 @@ function editCheckin() {
   document.getElementById('screen-checkin').classList.add('on');
 }
 
-function endDay() {
+async function endDay() {
   if (!confirm('Terminer votre journée ?')) return;
-  const now = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'});
-  const done = STOPS.filter(s => s.done && s.status !== 'echec').length;
-  showToast(`✅ Journée terminée à ${now} · ${done} livraisons`);
-  setTimeout(() => {
-    document.getElementById('screen-app').classList.remove('on');
-    document.getElementById('screen-checkin').classList.add('on');
-  }, 2000);
+
+  try {
+    if (checkinData.supabase_id) {
+      await db.from('checkins').update({
+        heure_fin: new Date().toTimeString().slice(0, 5),
+        stops_total: STOPS.length,
+        stops_livres: STOPS.filter(s => s.status === 'livre').length,
+        stops_echec: STOPS.filter(s => s.status === 'echec').length,
+      }).eq('id', checkinData.supabase_id);
+    }
+  } catch(e) { console.warn('Check-out save failed:', e); }
+
+  showToast('👋 Bonne fin de journée !');
+  // Return to check-in screen
+  document.getElementById('screen-app').classList.remove('on');
+  document.getElementById('screen-checkin').classList.add('on');
 }
 
 // ─── HELPERS ──────────────────────────────────────────────────
