@@ -194,6 +194,26 @@ tr:hover td{background:rgba(0,0,0,.015)}
   </div>
 </div>
 
+<!-- Modal frais annexe -->
+<div class="mo" id="modal-frais" style="display:none">
+  <div class="md">
+    <div class="mh"><span class="mt">Ajouter un frais annexe</span><button class="mc" onclick="hideModal('modal-frais')">&#10005;</button></div>
+    <div class="mb">
+      <div class="fg"><label class="fl">Description *</label><input type="text" class="fc" id="fr-desc" placeholder="Ex: Dimanche et jours f&eacute;ri&eacute;s"></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Co&ucirc;t *</label><input type="text" class="fc" id="fr-cout" placeholder="Ex: +20%, 15 &euro;/&eacute;tage, 50% course"></div>
+        <div class="fg"><label class="fl">Note</label><input type="text" class="fc" id="fr-note" placeholder="Ex: Sur tarif de base"></div>
+      </div>
+      <div class="fg">
+        <label class="fl" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="fr-actif" checked> Actif par d&eacute;faut
+        </label>
+      </div>
+    </div>
+    <div class="mf"><button class="btn bg" onclick="hideModal('modal-frais')">Annuler</button><button class="btn bp" onclick="addFrais()">Ajouter</button></div>
+  </div>
+</div>
+
 <!-- Modal option -->
 <div class="mo" id="mo2" style="display:none">
   <div class="md">
@@ -652,7 +672,7 @@ function buildFraisPanel(g) {
 
   return `<div style="display:flex;align-items:center;justify-content:space-between">
     <div><div class="pt" style="font-size:18px">Frais annexes</div><div class="ps">Activez/d\u00e9sactivez les suppl\u00e9ments</div></div>
-    <button class="btn bg bs">+ Ajouter</button>
+    <button class="btn bp bs" onclick="showModal('modal-frais')">+ Ajouter</button>
   </div>
   <div class="card"><table><thead><tr><th style="width:50px">Actif</th><th>Description</th><th>Co\u00fbt</th><th>Note</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
@@ -970,6 +990,48 @@ async function toggleFrais(gid, fid) {
   frais.actif = newState;
   renderGrid(gid);
   showToast(`${newState ? '\u2705' : '\u23f8'} ${frais.description}`);
+}
+
+
+// ─── ACTIONS: ADD FRAIS ───────────────────────────────────────
+async function addFrais() {
+  const description = getVal('fr-desc').trim();
+  const cout = getVal('fr-cout').trim();
+  const note = getVal('fr-note').trim();
+  const actif = getEl('fr-actif').checked;
+
+  if (!description || !cout) {
+    showToast('Renseignez la description et le coût', 'warning');
+    return;
+  }
+
+  const g = grilles.find(x => x.id == activeGrilleId);
+  if (!g) return;
+
+  let newId;
+  try {
+    const { data, error } = await db.from('frais_annexes').insert({
+      grille_id: activeGrilleId,
+      actif,
+      description,
+      cout,
+      note
+    }).select().single();
+    if (error) throw error;
+    newId = data.id;
+  } catch (err) {
+    console.warn('[GRILLES] Supabase insert frais failed:', err);
+    newId = 'local-' + Date.now();
+  }
+
+  g.frais.push({ id: newId, actif, description, cout, note });
+  hideModal('modal-frais');
+  getEl('fr-desc').value = '';
+  getEl('fr-cout').value = '';
+  getEl('fr-note').value = '';
+  getEl('fr-actif').checked = true;
+  renderGrid(activeGrilleId);
+  showToast('Frais "' + description + '" ajouté');
 }
 
 
