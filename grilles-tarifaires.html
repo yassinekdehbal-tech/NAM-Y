@@ -219,12 +219,40 @@ tr:hover td{background:rgba(0,0,0,.015)}
   <div class="md">
     <div class="mh"><span class="mt">Ajouter une option de livraison</span><button class="mc" onclick="hideModal('mo2')">&#10005;</button></div>
     <div class="mb">
-      <div class="fg"><label class="fl">Nom *</label><input type="text" class="fc" id="op-n" placeholder="Ex: Manutention, Installation"></div>
-      <div class="fr">
-        <div class="fg"><label class="fl">Prix (&euro;HT)</label><input type="number" class="fc" id="op-p" step="0.01"></div>
-        <div class="fg"><label class="fl">Unit&eacute;</label>
-          <select class="fc" id="op-u"><option>Forfait</option><option>Par 30 minutes</option><option>Par colis</option><option>Par &eacute;tage</option></select>
+      <div class="fg"><label class="fl">Nom *</label><input type="text" class="fc" id="op-n" placeholder="Ex: &Eacute;tage sans ascenseur, Produit lourd"></div>
+      <div class="fg"><label class="fl">Type de calcul *</label>
+        <select class="fc" id="op-type" onchange="toggleOptionFields()">
+          <option value="fixe">Forfait fixe</option>
+          <option value="par_unite">Par unit&eacute; (ex: par &eacute;tage)</option>
+          <option value="par_seuil">Seuil d&eacute;clencheur (ex: poids lourd)</option>
+        </select>
+      </div>
+      <!-- Champs FIXE -->
+      <div id="opt-fields-fixe">
+        <div class="fr">
+          <div class="fg"><label class="fl">Prix fixe (&euro;HT) *</label><input type="number" class="fc" id="op-p" step="0.01" placeholder="Ex: 40"></div>
+          <div class="fg"><label class="fl">Unit&eacute;</label>
+            <select class="fc" id="op-u"><option>Forfait</option><option>Par 30 minutes</option><option>Par colis</option></select>
+          </div>
         </div>
+      </div>
+      <!-- Champs PAR_UNITE -->
+      <div id="opt-fields-par_unite" style="display:none">
+        <div class="fr">
+          <div class="fg"><label class="fl">Prix unitaire (&euro;HT) *</label><input type="number" class="fc" id="op-prix-unit" step="0.01" placeholder="Ex: 10"></div>
+          <div class="fg"><label class="fl">Unit&eacute; *</label><input type="text" class="fc" id="op-unite-label" placeholder="Ex: &eacute;tage, 30 minutes"></div>
+        </div>
+        <div class="fg"><label class="fl">Seuil gratuit (unit&eacute;s incluses)</label><input type="number" class="fc" id="op-seuil-gratuit" value="0" placeholder="Ex: 4 (&eacute;tages gratuits)"></div>
+        <div class="info-b" style="margin-top:8px">Exemple : seuil gratuit = 4, prix = 10&euro;/&eacute;tage &rarr; 7 &eacute;tages = (7-4) &times; 10 = 30&euro;</div>
+      </div>
+      <!-- Champs PAR_SEUIL -->
+      <div id="opt-fields-par_seuil" style="display:none">
+        <div class="fr">
+          <div class="fg"><label class="fl">Seuil d&eacute;clencheur *</label><input type="number" class="fc" id="op-seuil-decl" step="0.01" placeholder="Ex: 90 (kg)"></div>
+          <div class="fg"><label class="fl">Prix si d&eacute;pass&eacute; (&euro;HT) *</label><input type="number" class="fc" id="op-prix-seuil" step="0.01" placeholder="Ex: 15"></div>
+        </div>
+        <div class="fg"><label class="fl">Unit&eacute; du seuil</label><input type="text" class="fc" id="op-seuil-unite" placeholder="Ex: kg, colis"></div>
+        <div class="info-b" style="margin-top:8px">Exemple : seuil = 90kg, prix = 15&euro; &rarr; colis &lt; 90kg = 0&euro;, colis &ge; 90kg = 15&euro;</div>
       </div>
     </div>
     <div class="mf"><button class="btn bg" onclick="hideModal('mo2')">Annuler</button><button class="btn bp" onclick="addOption()">Ajouter</button></div>
@@ -468,14 +496,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             note: f.note
           }));
 
-        // Attach options
+        // Attach options (avec colonnes calcul)
         g.opts = optsData
           .filter(o => o.grille_id == cfg.id)
           .map(o => ({
             id: o.id,
             n: o.nom,
             p: o.prix,
-            u: o.unite
+            u: o.unite,
+            type_calcul: o.type_calcul || 'fixe',
+            prix_unitaire: o.prix_unitaire,
+            seuil_gratuit: o.seuil_gratuit || 0,
+            seuil_declencheur: o.seuil_declencheur,
+            unite_label: o.unite_label
           }));
 
         return g;
@@ -680,18 +713,33 @@ function buildFraisPanel(g) {
 
 // ─── BUILD OPTIONS PANEL ───────────────────────────────────────
 function buildOptionsPanel(g) {
-  const rows = g.opts.map(o => `<tr>
-    <td style="font-weight:600">${o.n}</td>
-    <td class="mn c-t2">${o.p.toFixed(2)} \u20ac</td>
-    <td>${o.u}</td>
-    <td><div style="display:flex;gap:4px"><button class="btn bg bxs">\u270f\ufe0f</button><button class="btn bd bxs" onclick="deleteOption('${g.id}','${o.id}')">\u2715</button></div></td>
-  </tr>`).join('');
+  const rows = g.opts.map(o => {
+    const type = o.type_calcul || 'fixe';
+    let prixLabel, detailLabel;
+    if (type === 'fixe') {
+      prixLabel = `${(o.p || 0).toFixed(2)} \u20ac`;
+      detailLabel = o.u || 'Forfait';
+    } else if (type === 'par_unite') {
+      prixLabel = `${(o.prix_unitaire || 0).toFixed(2)} \u20ac/${o.unite_label || 'unit\u00e9'}`;
+      detailLabel = o.seuil_gratuit ? `${o.seuil_gratuit} ${o.unite_label || ''} gratuit(s)` : 'D\u00e8s la 1\u00e8re unit\u00e9';
+    } else {
+      prixLabel = `${(o.prix_unitaire || o.p || 0).toFixed(2)} \u20ac`;
+      detailLabel = `Si \u2265 ${o.seuil_declencheur || 0} ${o.unite_label || ''}`;
+    }
+    const typeBadge = type === 'fixe' ? '\ud83d\udcb0 Fixe' : type === 'par_unite' ? '\ud83d\udccf Par unit\u00e9' : '\u26a0\ufe0f Seuil';
+    return `<tr>
+      <td style="font-weight:600">${o.n}<br><span style="font-size:11px;color:var(--muted)">${typeBadge}</span></td>
+      <td class="mn c-t2">${prixLabel}</td>
+      <td style="font-size:12px">${detailLabel}</td>
+      <td><div style="display:flex;gap:4px"><button class="btn bg bxs">\u270f\ufe0f</button><button class="btn bd bxs" onclick="deleteOption('${g.id}','${o.id}')">\u2715</button></div></td>
+    </tr>`;
+  }).join('');
 
   return `<div style="display:flex;align-items:center;justify-content:space-between">
-    <div><div class="pt" style="font-size:18px">Options de livraison</div><div class="ps">Propos\u00e9es au vendeur lors de la saisie</div></div>
+    <div><div class="pt" style="font-size:18px">Options de livraison</div><div class="ps">Propos\u00e9es au vendeur lors de la saisie \u2014 3 types de calcul</div></div>
     <button class="btn bp bs" onclick="showModal('mo2')">+ Ajouter</button>
   </div>
-  <div class="card"><table><thead><tr><th>Option</th><th>Prix</th><th>Unit\u00e9</th><th>Actions</th></tr></thead>
+  <div class="card"><table><thead><tr><th>Option</th><th>Prix</th><th>D\u00e9tail</th><th>Actions</th></tr></thead>
   <tbody>${rows || '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--dim)">Aucune option</td></tr>'}</tbody></table></div>`;
 }
 
@@ -1284,42 +1332,86 @@ async function addCategorieColis() {
 }
 
 
+// ─── ACTIONS: TOGGLE OPTION FIELDS ────────────────────────────
+function toggleOptionFields() {
+  const type = getVal('op-type');
+  getEl('opt-fields-fixe').style.display = type === 'fixe' ? 'block' : 'none';
+  getEl('opt-fields-par_unite').style.display = type === 'par_unite' ? 'block' : 'none';
+  getEl('opt-fields-par_seuil').style.display = type === 'par_seuil' ? 'block' : 'none';
+}
+
 // ─── ACTIONS: ADD OPTION ───────────────────────────────────────
 async function addOption() {
   const g = grilles.find(x => x.id == activeGrilleId);
   const nom = getVal('op-n').trim();
-  const prix = parseFloat(getVal('op-p')) || 0;
-  const unite = getVal('op-u');
+  const typeCalc = getVal('op-type');
 
-  if (!nom) {
-    showToast('\u26a0\ufe0f Donnez un nom', 'warning');
-    return;
+  if (!nom) { showToast('Donnez un nom', 'warning'); return; }
+
+  // Collecter les valeurs selon le type
+  let prix = 0, unite = 'Forfait', prixUnitaire = null, seuilGratuit = 0, seuilDeclencheur = null, uniteLabel = null;
+
+  if (typeCalc === 'fixe') {
+    prix = parseFloat(getVal('op-p')) || 0;
+    unite = getVal('op-u');
+    if (!prix) { showToast('Renseignez le prix', 'warning'); return; }
+  } else if (typeCalc === 'par_unite') {
+    prixUnitaire = parseFloat(getVal('op-prix-unit')) || 0;
+    uniteLabel = getVal('op-unite-label').trim();
+    seuilGratuit = parseInt(getVal('op-seuil-gratuit')) || 0;
+    if (!prixUnitaire || !uniteLabel) { showToast('Renseignez le prix unitaire et l\'unit\u00e9', 'warning'); return; }
+    unite = 'Par ' + uniteLabel;
+    prix = prixUnitaire;
+  } else if (typeCalc === 'par_seuil') {
+    seuilDeclencheur = parseFloat(getVal('op-seuil-decl')) || 0;
+    prixUnitaire = parseFloat(getVal('op-prix-seuil')) || 0;
+    uniteLabel = getVal('op-seuil-unite').trim();
+    if (!seuilDeclencheur || !prixUnitaire) { showToast('Renseignez le seuil et le prix', 'warning'); return; }
+    unite = 'Si \u2265 ' + seuilDeclencheur + (uniteLabel ? ' ' + uniteLabel : '');
+    prix = prixUnitaire;
   }
 
   let newId;
   try {
     const { data, error } = await db.from('options_livraison').insert({
       grille_id: activeGrilleId,
-      nom: nom,
-      prix: prix,
-      unite: unite
+      nom, prix, unite,
+      type_calcul: typeCalc,
+      prix_unitaire: prixUnitaire,
+      seuil_gratuit: seuilGratuit || null,
+      seuil_declencheur: seuilDeclencheur,
+      unite_label: uniteLabel
     }).select().single();
-
-    if (data && !error) {
-      newId = data.id;
-    }
+    if (data && !error) newId = data.id;
   } catch (err) {
     console.warn('[GRILLES] Supabase insert option failed:', err);
   }
 
-  if (!newId) {
-    newId = 'local-' + Date.now();
-  }
+  if (!newId) newId = 'local-' + Date.now();
 
-  g.opts.push({ id: newId, n: nom, p: prix, u: unite });
+  g.opts.push({
+    id: newId, n: nom, p: prix, u: unite,
+    type_calcul: typeCalc, prix_unitaire: prixUnitaire,
+    seuil_gratuit: seuilGratuit, seuil_declencheur: seuilDeclencheur,
+    unite_label: uniteLabel
+  });
+
   hideModal('mo2');
+  // Reset form
+  getEl('op-n').value = '';
+  getEl('op-p').value = '';
+  getEl('op-u').selectedIndex = 0;
+  getEl('op-type').value = 'fixe';
+  getEl('op-prix-unit').value = '';
+  getEl('op-unite-label').value = '';
+  getEl('op-seuil-gratuit').value = '0';
+  getEl('op-seuil-decl').value = '';
+  getEl('op-prix-seuil').value = '';
+  getEl('op-seuil-unite').value = '';
+  toggleOptionFields();
+
   renderGrid(activeGrilleId);
-  showToast(`\u2705 "${nom}" ajout\u00e9e`);
+  showToast('"' + nom + '" ajout\u00e9e');
 }
 
 

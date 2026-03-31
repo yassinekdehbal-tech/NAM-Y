@@ -906,6 +906,12 @@ select {
           <span class="error-msg" id="err-lieu">Choisissez une option</span>
         </div>
 
+        <!-- 2b. OPTIONS DE LIVRAISON DYNAMIQUES -->
+        <div id="options-livraison-container" style="display:none">
+          <label>Options supplémentaires</label>
+          <div id="options-livraison-list"></div>
+        </div>
+
         <!-- 3. ENLÈVEMENT avec infos livreur -->
         <div>
           <label>Point d'enlèvement</label>
@@ -1148,6 +1154,7 @@ select {
             <span>Suppl. colis lourd</span>
             <span id="p-lourd">—</span>
           </div>
+          <div id="p-options-lines"></div>
           <div class="price-line separator">
             <span>Total HT</span>
             <span id="p-ht">—</span>
@@ -1213,6 +1220,8 @@ let MAGASIN = {
   grille: 'TRUFFAUT PIECE DU CHOIX STD'
 };
 
+let OPTIONS_LIVRAISON = []; // Chargées depuis Supabase
+
 let GRILLE = [
   { poids_max: 150, dim_max: 140, colis_max: 30,  prix: 25 },
   { poids_max: 150, dim_max: 240, colis_max: 131, prix: 50 },
@@ -1277,6 +1286,18 @@ async function loadVendeurData() {
             colis_max: l.colis_max,
             prix: l.prix_lieu_choix || l.prix_pied_camion,
           }));
+        }
+
+        // 3. Charger les options de cette grille
+        const { data: opts } = await db
+          .from('options_livraison')
+          .select('*')
+          .eq('grille_id', assignment.grille_id)
+          .order('nom');
+
+        if (opts && opts.length) {
+          OPTIONS_LIVRAISON = opts;
+          renderOptionsLivraison();
         }
       }
     }
@@ -1628,6 +1649,111 @@ function renderArticles() {
 }
 
 // ─── CALCUL PRIX ────────────────────────────────────────────
+// ─── OPTIONS LIVRAISON DYNAMIQUES ────────────────────────────
+function renderOptionsLivraison() {
+  const container = document.getElementById('options-livraison-container');
+  const list = document.getElementById('options-livraison-list');
+  if (!OPTIONS_LIVRAISON.length) { container.style.display = 'none'; return; }
+
+  container.style.display = 'block';
+  list.innerHTML = OPTIONS_LIVRAISON.map(o => {
+    const type = o.type_calcul || 'fixe';
+    const id = o.id;
+
+    if (type === 'fixe') {
+      return `<label class="lieu-btn" style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;margin-bottom:6px" onclick="this.classList.toggle('selected');updatePrix()">
+        <input type="checkbox" data-option-id="${id}" data-type="fixe" data-prix="${o.prix}" style="display:none">
+        <span>${o.nom}</span>
+        <span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:12px;color:var(--accent)">${(o.prix || 0).toFixed(2)} \u20ac</span>
+      </label>`;
+    }
+
+    if (type === 'par_unite') {
+      return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <strong style="font-size:13px">${o.nom}</strong>
+          <span style="font-size:11px;color:var(--text-muted)">${(o.prix_unitaire || 0).toFixed(2)} \u20ac/${o.unite_label || 'unit\u00e9'}${o.seuil_gratuit ? ' \u00b7 ' + o.seuil_gratuit + ' gratuit(s)' : ''}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <label style="font-size:12px;color:var(--text-muted);white-space:nowrap">Nb ${o.unite_label || 'unit\u00e9s'} :</label>
+          <input type="number" min="0" value="0" class="form-input" style="width:80px;padding:6px 10px;font-size:13px"
+            data-option-id="${id}" data-type="par_unite"
+            data-prix-unitaire="${o.prix_unitaire}" data-seuil-gratuit="${o.seuil_gratuit || 0}"
+            data-unite-label="${o.unite_label || ''}"
+            oninput="updatePrix()">
+        </div>
+      </div>`;
+    }
+
+    if (type === 'par_seuil') {
+      return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <strong style="font-size:13px">${o.nom}</strong>
+          <div style="font-size:11px;color:var(--text-muted)">Si \u2265 ${o.seuil_declencheur} ${o.unite_label || ''} \u2192 ${(o.prix_unitaire || o.prix || 0).toFixed(2)} \u20ac</div>
+        </div>
+        <span style="font-size:12px;color:var(--text-muted)" data-option-id="${id}" data-type="par_seuil"
+          data-seuil="${o.seuil_declencheur}" data-prix="${o.prix_unitaire || o.prix}"
+          data-unite-label="${o.unite_label || ''}"
+          id="opt-seuil-result-${id}">auto</span>
+      </div>`;
+    }
+
+    return '';
+  }).join('');
+}
+
+function calculateOptionsTotal() {
+  let total = 0;
+  const lines = [];
+  const poids = articles.reduce((s, a) => s + a.poids, 0);
+  const poidsMax = Math.max(...articles.map(a => a.poidsUnit || 0), 0);
+
+  // Options fixe (checkbox)
+  document.querySelectorAll('[data-type="fixe"]').forEach(cb => {
+    if (cb.closest('.selected') || cb.checked) {
+      const prix = parseFloat(cb.dataset.prix) || 0;
+      total += prix;
+      lines.push({ label: cb.closest('label').querySelector('span').textContent.trim(), prix });
+    }
+  });
+
+  // Options par_unite (input)
+  document.querySelectorAll('[data-type="par_unite"]').forEach(input => {
+    const val = parseInt(input.value) || 0;
+    if (val <= 0) return;
+    const prixUnit = parseFloat(input.dataset.prixUnitaire) || 0;
+    const seuilGratuit = parseInt(input.dataset.seuilGratuit) || 0;
+    const uniteLabel = input.dataset.uniteLabel || 'unit\u00e9';
+    const facturable = Math.max(0, val - seuilGratuit);
+    const prix = facturable * prixUnit;
+    if (prix > 0) {
+      total += prix;
+      lines.push({ label: `${facturable} ${uniteLabel}(s) × ${prixUnit.toFixed(2)} \u20ac`, prix });
+    }
+  });
+
+  // Options par_seuil (auto-calcul selon poids)
+  document.querySelectorAll('[data-type="par_seuil"]').forEach(el => {
+    const seuil = parseFloat(el.dataset.seuil) || 0;
+    const prix = parseFloat(el.dataset.prix) || 0;
+    const uniteLabel = el.dataset.uniteLabel || '';
+    // Vérifier si le seuil est dépassé (poids max d'un article)
+    const valeur = uniteLabel === 'kg' ? poidsMax : poids;
+    const resultEl = document.getElementById('opt-seuil-result-' + el.dataset.optionId);
+    if (valeur >= seuil) {
+      total += prix;
+      lines.push({ label: `${el.closest('div').querySelector('strong').textContent} (\u2265${seuil}${uniteLabel})`, prix });
+      if (resultEl) resultEl.textContent = prix.toFixed(2) + ' \u20ac';
+      if (resultEl) resultEl.style.color = 'var(--accent)';
+    } else {
+      if (resultEl) resultEl.textContent = '0 \u20ac';
+      if (resultEl) resultEl.style.color = 'var(--text-muted)';
+    }
+  });
+
+  return { total, lines };
+}
+
 function updatePrix() {
   const poids = articles.reduce((s, a) => s + a.poids, 0);
   const longueurMax = Math.max(...articles.map(a => a.longueur || 0), 0);
@@ -1644,21 +1770,31 @@ function updatePrix() {
 
   const base = tarif.prix;
   const supplement = nbLourds * 55;
-  const ht = base + supplement;
+
+  // Calcul des options dynamiques
+  const { total: optionsTotal, lines: optionsLines } = calculateOptionsTotal();
+
+  const ht = base + supplement + optionsTotal;
   const tva = ht * 0.2;
   const ttc = ht + tva;
 
-  document.getElementById('p-base').textContent = base.toFixed(2) + ' €';
-  document.getElementById('p-ht').textContent = ht.toFixed(2) + ' €';
-  document.getElementById('p-tva').textContent = tva.toFixed(2) + ' €';
-  document.getElementById('p-ttc').textContent = ttc.toFixed(2) + ' €';
+  document.getElementById('p-base').textContent = base.toFixed(2) + ' \u20ac';
+  document.getElementById('p-ht').textContent = ht.toFixed(2) + ' \u20ac';
+  document.getElementById('p-tva').textContent = tva.toFixed(2) + ' \u20ac';
+  document.getElementById('p-ttc').textContent = ttc.toFixed(2) + ' \u20ac';
 
   if (supplement > 0) {
-    document.getElementById('p-lourd').textContent = supplement.toFixed(2) + ' €';
+    document.getElementById('p-lourd').textContent = supplement.toFixed(2) + ' \u20ac';
     document.getElementById('p-lourd-line').style.display = 'flex';
   } else {
     document.getElementById('p-lourd-line').style.display = 'none';
   }
+
+  // Lignes options
+  const optLinesEl = document.getElementById('p-options-lines');
+  optLinesEl.innerHTML = optionsLines.map(l =>
+    `<div class="price-line"><span>${l.label}</span><span style="font-family:'DM Mono',monospace">${l.prix.toFixed(2)} \u20ac</span></div>`
+  ).join('');
 
   document.getElementById('price-placeholder').style.display = 'none';
   document.getElementById('price-lines').style.display = 'flex';
