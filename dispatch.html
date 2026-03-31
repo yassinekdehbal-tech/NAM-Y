@@ -386,6 +386,14 @@ body{height:100vh;overflow:hidden;font-size:13px}
         <input type="text" class="search-input" placeholder="Rechercher..." id="search-cmd" oninput="searchCommandes(this.value)">
         <button class="btn btn-ghost btn-sm" onclick="selectAll()">Tout selectionner</button>
       </div>
+      <div id="mass-assign-bar" style="display:none;padding:8px 12px;background:var(--accent-light);border-bottom:1px solid var(--accent);display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px;font-weight:600;color:var(--accent-dark)" id="mass-assign-count">0 selectionne(s)</span>
+        <select class="form-control" id="mass-assign-tournee" style="height:30px;font-size:12px;flex:1;min-width:0">
+          <option value="">Tournee...</option>
+        </select>
+        <button class="btn btn-accent btn-sm" onclick="massAssign()">Assigner</button>
+        <button class="btn btn-ghost btn-sm" onclick="cancelMassSelect()" style="padding:4px 8px">&#10005;</button>
+      </div>
       <div class="commandes-list" id="commandes-list"></div>
     </div>
 
@@ -883,6 +891,63 @@ function selectAll() {
     filteredCommandes.filter(c => !c.tournee_id).forEach(c => selectedCmds.add(c.id));
     showToast(selectedCmds.size + ' commandes selectionnees');
   }
+  updateMassAssignBar();
+  renderCommandes();
+}
+
+function updateMassAssignBar() {
+  const bar = document.getElementById('mass-assign-bar');
+  const count = document.getElementById('mass-assign-count');
+  const sel = document.getElementById('mass-assign-tournee');
+
+  if (selectedCmds.size > 0) {
+    bar.style.display = 'flex';
+    count.textContent = selectedCmds.size + ' selectionne(s)';
+    // Populate tournée dropdown
+    sel.innerHTML = '<option value="">Tournee...</option>';
+    tournees.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.id;
+      opt.textContent = t.nom + ' (' + (t.chauffeur || 'non assigne') + ')';
+      sel.appendChild(opt);
+    });
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+async function massAssign() {
+  const tourneeId = document.getElementById('mass-assign-tournee').value;
+  if (!tourneeId) { showToast('Selectionnez une tournee', 'warning'); return; }
+  const t = tournees.find(x => x.id == tourneeId);
+  if (!t) return;
+
+  let assigned = 0;
+  for (const cmdId of selectedCmds) {
+    const cmd = commandes.find(c => c.id == cmdId);
+    if (!cmd || cmd.tournee_id) continue;
+
+    cmd.tournee_id = tourneeId;
+    if (!t.stops) t.stops = [];
+    t.stops.push(cmdId);
+    assigned++;
+
+    try {
+      await db.from('expeditions').update({ tournee_id: tourneeId, statut: 'planifie' }).eq('id', cmdId);
+    } catch (e) { console.warn('Mass assign failed for', cmdId, e); }
+  }
+
+  multiSelectMode = false;
+  selectedCmds.clear();
+  updateMassAssignBar();
+  renderAll();
+  showToast(assigned + ' commande(s) assignee(s) a ' + t.nom);
+}
+
+function cancelMassSelect() {
+  multiSelectMode = false;
+  selectedCmds.clear();
+  updateMassAssignBar();
   renderCommandes();
 }
 
