@@ -1797,7 +1797,16 @@ function updatePrix() {
   }
 
   let tarif = GRILLE.find(g => poids <= g.poids_max && longueurMax <= g.dim_max);
-  if (!tarif) tarif = GRILLE[GRILLE.length - 1];
+
+  // Hors grille → devis requis
+  if (!tarif) {
+    document.getElementById('price-placeholder').innerHTML =
+      '<div class="ph-icon">💬</div><p style="font-weight:600;color:var(--warning)">Devis requis</p><p style="font-size:12px;color:var(--text-muted)">Poids ' + poids + 'kg / dim ' + longueurMax + 'cm dépasse la grille tarifaire.<br>La commande sera soumise en attente de validation.</p>';
+    document.getElementById('price-placeholder').style.display = 'block';
+    document.getElementById('price-lines').style.display = 'none';
+    updateEstimationBadge('Devis requis', true);
+    return;
+  }
 
   const base = tarif.prix;
   const supplement = nbLourds * 55;
@@ -1829,6 +1838,30 @@ function updatePrix() {
 
   document.getElementById('price-placeholder').style.display = 'none';
   document.getElementById('price-lines').style.display = 'flex';
+  updateEstimationBadge(ht.toFixed(2) + ' \u20ac HT', false);
+}
+
+// ─── ESTIMATION BADGE (flottant) ────────────────────────────
+function updateEstimationBadge(text, isDevis) {
+  let badge = document.getElementById('estimation-badge');
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.id = 'estimation-badge';
+    badge.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:var(--radius-pill);font-size:13px;font-weight:600;font-family:var(--font-mono);z-index:999;box-shadow:var(--shadow-md);transition:all .3s;pointer-events:none';
+    document.body.appendChild(badge);
+  }
+  if (isDevis) {
+    badge.style.background = 'var(--warning-bg)';
+    badge.style.color = 'var(--warning)';
+    badge.style.border = '1px solid rgba(133,77,14,.2)';
+    badge.textContent = '\ud83d\udcac ' + text;
+  } else {
+    badge.style.background = 'var(--bg-surface)';
+    badge.style.color = 'var(--accent-dark)';
+    badge.style.border = '1px solid var(--accent)';
+    badge.textContent = '\ud83d\udcb6 Estimation : ' + text;
+  }
+  badge.style.display = text ? 'block' : 'none';
 }
 
 // ─── SIDEBAR SUMMARY ─────────────────────────────────────────
