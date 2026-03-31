@@ -244,7 +244,7 @@ tr:hover td{background:rgba(0,0,0,.015)}
    ================================================================ */
 
 // ─── STATE ─────────────────────────────────────────────────────
-let activeGrilleId = 1;
+let activeGrilleId = null;
 let entreprisesList = [];
 
 let CLIENTS = [
@@ -393,7 +393,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Attach lignes (poids)
         if (cfg.type === 'poids') {
           g.lignes = lignesData
-            .filter(l => l.grille_id === cfg.id)
+            .filter(l => l.grille_id == cfg.id)
             .map(l => ({
               id: l.id,
               poidsMin: l.poids_min,
@@ -408,7 +408,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Attach zones
         if (cfg.type === 'zone') {
           g.zones = zonesData
-            .filter(z => z.grille_id === cfg.id)
+            .filter(z => z.grille_id == cfg.id)
             .map(z => ({
               id: z.id,
               c: z.code,
@@ -423,7 +423,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Attach categories (colis)
         if (cfg.type === 'colis') {
           g.cats = catsData
-            .filter(c => c.grille_id === cfg.id)
+            .filter(c => c.grille_id == cfg.id)
             .map(c => ({
               id: c.id,
               n: c.nom,
@@ -439,7 +439,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Attach frais
         g.frais = fraisData
-          .filter(f => f.grille_id === cfg.id)
+          .filter(f => f.grille_id == cfg.id)
           .map(f => ({
             id: f.id,
             actif: f.actif,
@@ -450,7 +450,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Attach options
         g.opts = optsData
-          .filter(o => o.grille_id === cfg.id)
+          .filter(o => o.grille_id == cfg.id)
           .map(o => ({
             id: o.id,
             n: o.nom,
@@ -485,6 +485,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.warn('[GRILLES] Erreur Supabase, donn\u00e9es locales:', err);
   }
 
+  if (grilles.length) activeGrilleId = grilles[0].id;
   renderSidebar();
   renderGrid(activeGrilleId);
 });
@@ -493,8 +494,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ─── SIDEBAR ───────────────────────────────────────────────────
 function renderSidebar() {
   getEl('gl').innerHTML = grilles.map(g => {
-    const clientsForGrille = CLIENTS.filter(c => c.gid === g.id);
-    return `<div class="gi ${g.id === activeGrilleId ? 'on' : ''}" onclick="selectGrille(${g.id})">
+    const clientsForGrille = CLIENTS.filter(c => c.gid == g.id);
+    return `<div class="gi ${g.id == activeGrilleId ? 'on' : ''}" onclick="selectGrille('${g.id}')">
       <div class="gi-nm">${g.nom}</div>
       <div class="gi-mt">${clientsForGrille.length} client(s) \u00b7 ${g.rayon}km inclus</div>
       <div class="gi-tg">
@@ -516,7 +517,7 @@ function selectGrille(id) {
 
 // ─── RENDER GRID ───────────────────────────────────────────────
 function renderGrid(id) {
-  const g = grilles.find(x => x.id === id);
+  const g = grilles.find(x => x.id == id);
   if (!g) return;
   const mainEl = getEl('main');
   if (g.type === 'poids') {
@@ -536,7 +537,7 @@ function buildPoidsPanel(g) {
     <td><span class="bdg b-d">max ${l.colisMax}kg / ${l.dimMax}cm</span></td>
     <td class="mn c-p">${l.prixPiedCamion.toFixed(2)} \u20ac</td>
     <td class="mn c-l">${l.prixLieuChoix.toFixed(2)} \u20ac</td>
-    <td><div style="display:flex;gap:4px"><button class="btn bg bxs">\u270f\ufe0f</button><button class="btn bd bxs" onclick="deleteLigne(${g.id},${l.id})">\u2715</button></div></td>
+    <td><div style="display:flex;gap:4px"><button class="btn bg bxs">\u270f\ufe0f</button><button class="btn bd bxs" onclick="deleteLigne('${g.id}','${l.id}')">\u2715</button></div></td>
   </tr>`).join('');
 
   return buildLayout(g, `
@@ -642,7 +643,7 @@ function buildLayout(g, tabGrille, tabFrais, tabOptions, tabSimulateur, tabClien
 // ─── BUILD FRAIS PANEL ─────────────────────────────────────────
 function buildFraisPanel(g) {
   const rows = g.frais.map(f => `<tr>
-    <td><div class="tgl ${f.actif ? 'on' : ''}" onclick="toggleFrais(${g.id},${f.id})"></div></td>
+    <td><div class="tgl ${f.actif ? 'on' : ''}" onclick="toggleFrais('${g.id}','${f.id}')"></div></td>
     <td style="font-weight:500">${f.description}</td>
     <td class="mn" style="color:var(--accent2)">${f.cout}</td>
     <td style="font-size:12px;color:var(--muted)">${f.note}</td>
@@ -663,7 +664,7 @@ function buildOptionsPanel(g) {
     <td style="font-weight:600">${o.n}</td>
     <td class="mn c-t2">${o.p.toFixed(2)} \u20ac</td>
     <td>${o.u}</td>
-    <td><div style="display:flex;gap:4px"><button class="btn bg bxs">\u270f\ufe0f</button><button class="btn bd bxs" onclick="deleteOption(${g.id},${o.id})">\u2715</button></div></td>
+    <td><div style="display:flex;gap:4px"><button class="btn bg bxs">\u270f\ufe0f</button><button class="btn bd bxs" onclick="deleteOption('${g.id}','${o.id}')">\u2715</button></div></td>
   </tr>`).join('');
 
   return `<div style="display:flex;align-items:center;justify-content:space-between">
@@ -677,7 +678,7 @@ function buildOptionsPanel(g) {
 
 // ─── BUILD CLIENTS PANEL ───────────────────────────────────────
 function buildClientsPanel(g) {
-  const clientsForGrille = CLIENTS.filter(c => c.gid === g.id);
+  const clientsForGrille = CLIENTS.filter(c => c.gid == g.id);
   const cards = clientsForGrille.map(c => `<div class="pc ${c.devis ? 'on' : ''}">
     <div>
       <div class="pc-cl">${c.nom}</div>
@@ -689,20 +690,20 @@ function buildClientsPanel(g) {
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
       <div style="font-size:11px;color:var(--muted);text-align:right">Mode devis</div>
-      <div class="tgl ${c.devis ? 'on' : ''}" onclick="toggleDevis(${c.id})"></div>
-      <button class="btn bd bxs" onclick="removeClientFromGrille(${c.id}, ${g.id})" style="margin-top:4px">\u2715 Retirer</button>
+      <div class="tgl ${c.devis ? 'on' : ''}" onclick="toggleDevis('${c.id}')"></div>
+      <button class="btn bd bxs" onclick="removeClientFromGrille('${c.id}', '${g.id}')" style="margin-top:4px">\u2715 Retirer</button>
     </div>
   </div>`).join('');
 
   return `<div style="display:flex;align-items:center;justify-content:space-between">
     <div><div class="pt" style="font-size:18px">Clients & Permissions</div><div class="ps">G\u00e9rez l'acc\u00e8s au mode devis pour chaque client</div></div>
-    <button class="btn bp bs" onclick="openAssociateClientModal(${g.id})">+ Associer un client</button>
+    <button class="btn bp bs" onclick="openAssociateClientModal('${g.id}')">+ Associer un client</button>
   </div>
   <div class="warn-b">\ud83d\udcac <strong>Mode devis</strong> \u2014 Quand activ\u00e9, le client peut soumettre une demande hors grille. La commande arrive avec le statut <strong>\u201cEn attente de devis\u201d</strong> jusqu'\u00e0 validation manuelle par FISSA LIV.</div>
   <div class="pg">${cards || '<div style="color:var(--dim);font-size:13px;padding:16px">Aucun client associ\u00e9</div>'}</div>
   <div style="display:flex;gap:8px;padding-top:8px">
-    <button class="btn bg bs" onclick="duplicateGrille(${g.id})">\u29c9 Dupliquer</button>
-    <button class="btn bd bs" style="margin-left:auto" onclick="deleteGrille(${g.id})">\ud83d\uddd1 Supprimer</button>
+    <button class="btn bg bs" onclick="duplicateGrille('${g.id}')">\u29c9 Dupliquer</button>
+    <button class="btn bd bs" style="margin-left:auto" onclick="deleteGrille('${g.id}')">\ud83d\uddd1 Supprimer</button>
   </div>`;
 }
 
@@ -715,20 +716,20 @@ function buildSimulateurPoids(g) {
     <div class="sim-top"><span class="sim-title">\ud83e\uddee ${g.nom}</span></div>
     <div class="sim-body">
       <div class="sim-grid">
-        <div class="fg"><label class="fl">Poids total (kg)</label><input type="number" class="fc" id="sp-p" placeholder="Ex: 250" oninput="calculatePoids(${g.id})"></div>
-        <div class="fg"><label class="fl">Distance (km)</label><input type="number" class="fc" id="sp-k" placeholder="Ex: 15" oninput="calculatePoids(${g.id})"></div>
+        <div class="fg"><label class="fl">Poids total (kg)</label><input type="number" class="fc" id="sp-p" placeholder="Ex: 250" oninput="calculatePoids('${g.id}')"></div>
+        <div class="fg"><label class="fl">Distance (km)</label><input type="number" class="fc" id="sp-k" placeholder="Ex: 15" oninput="calculatePoids('${g.id}')"></div>
         <div class="fg"><label class="fl">Option d\u00e9p\u00f4t</label>
-          <select class="fc" id="sp-o" onchange="calculatePoids(${g.id})">
+          <select class="fc" id="sp-o" onchange="calculatePoids('${g.id}')">
             <option value="pied">\ud83d\ude9a Pied de camion</option>
             <option value="lieu">\ud83d\udecb\ufe0f Lieu du choix</option>
           </select>
         </div>
       </div>
       <div class="fcks">
-        <label class="fck" onclick="this.classList.toggle('on');calculatePoids(${g.id})"><input type="checkbox"> \ud83d\udcc5 Dim/F\u00e9ri\u00e9</label>
-        <label class="fck" onclick="this.classList.toggle('on');calculatePoids(${g.id})"><input type="checkbox"> \ud83c\udfcb\ufe0f Produit lourd</label>
-        <label class="fck" onclick="this.classList.toggle('on');calculatePoids(${g.id})"><input type="checkbox"> \ud83c\udfe2 \u00c9tage</label>
-        <label class="fck" onclick="this.classList.toggle('on');calculatePoids(${g.id})"><input type="checkbox"> \ud83d\udce6 D\u00e9ballage</label>
+        <label class="fck" onclick="this.classList.toggle('on');calculatePoids('${g.id}')"><input type="checkbox"> \ud83d\udcc5 Dim/F\u00e9ri\u00e9</label>
+        <label class="fck" onclick="this.classList.toggle('on');calculatePoids('${g.id}')"><input type="checkbox"> \ud83c\udfcb\ufe0f Produit lourd</label>
+        <label class="fck" onclick="this.classList.toggle('on');calculatePoids('${g.id}')"><input type="checkbox"> \ud83c\udfe2 \u00c9tage</label>
+        <label class="fck" onclick="this.classList.toggle('on');calculatePoids('${g.id}')"><input type="checkbox"> \ud83d\udce6 D\u00e9ballage</label>
       </div>
       <div id="sp-r" style="display:none"></div>
       <div id="sp-e" style="text-align:center;padding:20px;color:var(--dim);font-size:13px">Renseignez les informations pour calculer le prix</div>
@@ -743,20 +744,20 @@ function buildSimulateurZone(g) {
     <div class="sim-top"><span class="sim-title">\ud83e\uddee ${g.nom}</span></div>
     <div class="sim-body">
       <div class="sim-grid">
-        <div class="fg"><label class="fl">Distance (km)</label><input type="number" class="fc" id="sz-k" placeholder="Ex: 22" oninput="calculateZone(${g.id})"></div>
+        <div class="fg"><label class="fl">Distance (km)</label><input type="number" class="fc" id="sz-k" placeholder="Ex: 22" oninput="calculateZone('${g.id}')"></div>
         <div class="fg"><label class="fl">V\u00e9hicule</label>
-          <select class="fc" id="sz-v" onchange="calculateZone(${g.id})">
+          <select class="fc" id="sz-v" onchange="calculateZone('${g.id}')">
             <option value="t1">\ud83d\ude97 Break T1 \u00b7 3m\u00b3</option>
             <option value="t2">\ud83d\ude90 Fourgon T2 \u00b7 12m\u00b3</option>
             <option value="t3">\ud83d\ude9b Hayon T3 \u00b7 20m\u00b3</option>
           </select>
         </div>
         <div class="fg"><label class="fl">Jour</label>
-          <select class="fc" id="sz-j" onchange="calculateZone(${g.id})">
+          <select class="fc" id="sz-j" onchange="calculateZone('${g.id}')">
             <option value="s">Lun\u2013Sam</option><option value="f">Dim / F\u00e9ri\u00e9</option>
           </select>
         </div>
-        <div class="fg"><label class="fl">Manutention (min)</label><input type="number" class="fc" id="sz-m" placeholder="Ex: 30" oninput="calculateZone(${g.id})"></div>
+        <div class="fg"><label class="fl">Manutention (min)</label><input type="number" class="fc" id="sz-m" placeholder="Ex: 30" oninput="calculateZone('${g.id}')"></div>
       </div>
       <div id="sz-r" style="display:none"></div>
       <div id="sz-e" style="text-align:center;padding:20px;color:var(--dim);font-size:13px">Renseignez la distance et le v\u00e9hicule</div>
@@ -772,13 +773,13 @@ function buildSimulateurColis(g) {
     <div class="sim-body">
       <div class="sim-grid">
         <div class="fg"><label class="fl">Cat\u00e9gorie</label>
-          <select class="fc" id="sc-c" onchange="calculateColis(${g.id})">${cats.map(n => `<option>${n}</option>`).join('')}</select>
+          <select class="fc" id="sc-c" onchange="calculateColis('${g.id}')">${cats.map(n => `<option>${n}</option>`).join('')}</select>
         </div>
-        <div class="fg"><label class="fl">Nombre de colis</label><input type="number" class="fc" id="sc-n" placeholder="Ex: 3" oninput="calculateColis(${g.id})"></div>
-        <div class="fg"><label class="fl">Distance (km)</label><input type="number" class="fc" id="sc-k" placeholder="Ex: 12" oninput="calculateColis(${g.id})"></div>
+        <div class="fg"><label class="fl">Nombre de colis</label><input type="number" class="fc" id="sc-n" placeholder="Ex: 3" oninput="calculateColis('${g.id}')"></div>
+        <div class="fg"><label class="fl">Distance (km)</label><input type="number" class="fc" id="sc-k" placeholder="Ex: 12" oninput="calculateColis('${g.id}')"></div>
       </div>
       <div class="fcks">
-        ${g.opts.map(o => `<label class="fck" onclick="this.classList.toggle('on');calculateColis(${g.id})"><input type="checkbox"> ${o.n} (${o.p}\u20ac)</label>`).join('')}
+        ${g.opts.map(o => `<label class="fck" onclick="this.classList.toggle('on');calculateColis('${g.id}')"><input type="checkbox"> ${o.n} (${o.p}\u20ac)</label>`).join('')}
       </div>
       <div id="sc-r" style="display:none"></div>
       <div id="sc-e" style="text-align:center;padding:20px;color:var(--dim);font-size:13px">Renseignez la cat\u00e9gorie et le nombre de colis</div>
@@ -789,7 +790,7 @@ function buildSimulateurColis(g) {
 
 // ─── CALCULATEURS ──────────────────────────────────────────────
 function calculatePoids(gid) {
-  const g = grilles.find(x => x.id === gid);
+  const g = grilles.find(x => x.id == gid);
   const poids = parseFloat(getVal('sp-p')) || 0;
   const km = parseFloat(getVal('sp-k')) || 0;
   const option = getVal('sp-o') || 'pied';
@@ -843,7 +844,7 @@ function calculatePoids(gid) {
 }
 
 function calculateZone(gid) {
-  const g = grilles.find(x => x.id === gid);
+  const g = grilles.find(x => x.id == gid);
   const km = parseFloat(getVal('sz-k')) || 0;
   const vehicule = getVal('sz-v') || 't1';
   const jour = getVal('sz-j') || 's';
@@ -884,7 +885,7 @@ function calculateZone(gid) {
 }
 
 function calculateColis(gid) {
-  const g = grilles.find(x => x.id === gid);
+  const g = grilles.find(x => x.id == gid);
   const nbColis = parseInt(getVal('sc-n')) || 0;
   const km = parseFloat(getVal('sc-k')) || 0;
   const cat = getVal('sc-c') || '';
@@ -954,8 +955,8 @@ function showResult(resultId, emptyId, lines, total) {
 
 // ─── ACTIONS: TOGGLE FRAIS ─────────────────────────────────────
 async function toggleFrais(gid, fid) {
-  const g = grilles.find(x => x.id === gid);
-  const frais = g.frais.find(x => x.id === fid);
+  const g = grilles.find(x => x.id == gid);
+  const frais = g.frais.find(x => x.id == fid);
   if (!frais) return;
 
   const newState = !frais.actif;
@@ -974,7 +975,7 @@ async function toggleFrais(gid, fid) {
 
 // ─── ACTIONS: TOGGLE DEVIS ─────────────────────────────────────
 async function toggleDevis(cid) {
-  const client = CLIENTS.find(x => x.id === cid);
+  const client = CLIENTS.find(x => x.id == cid);
   if (!client) return;
 
   const newState = !client.devis;
@@ -1001,8 +1002,8 @@ async function deleteLigne(gid, lid) {
     console.warn('[GRILLES] Supabase delete ligne failed:', err);
   }
 
-  const g = grilles.find(x => x.id === gid);
-  g.lignes = g.lignes.filter(l => l.id !== lid);
+  const g = grilles.find(x => x.id == gid);
+  g.lignes = g.lignes.filter(l => l.id != lid);
   renderGrid(gid);
   showToast('\ud83d\uddd1 Ligne supprim\u00e9e');
 }
@@ -1016,8 +1017,8 @@ async function deleteOption(gid, oid) {
     console.warn('[GRILLES] Supabase delete option failed:', err);
   }
 
-  const g = grilles.find(x => x.id === gid);
-  g.opts = g.opts.filter(o => o.id !== oid);
+  const g = grilles.find(x => x.id == gid);
+  g.opts = g.opts.filter(o => o.id != oid);
   renderGrid(gid);
   showToast('\ud83d\uddd1 Option supprim\u00e9e');
 }
@@ -1042,7 +1043,7 @@ async function deleteGrille(id) {
     console.warn('[GRILLES] Supabase delete grille failed:', err);
   }
 
-  grilles = grilles.filter(x => x.id !== id);
+  grilles = grilles.filter(x => x.id != id);
   if (grilles.length) {
     selectGrille(grilles[0].id);
   } else {
@@ -1055,9 +1056,9 @@ async function deleteGrille(id) {
 
 // ─── ACTIONS: DUPLICATE GRILLE ─────────────────────────────────
 async function duplicateGrille(id) {
-  const g = grilles.find(x => x.id === id);
+  const g = grilles.find(x => x.id == id);
   const copy = JSON.parse(JSON.stringify(g));
-  const localId = Math.max(...grilles.map(x => x.id)) + 1;
+  const localId = 'local-' + Date.now();
   copy.nom = g.nom + ' (copie)';
 
   try {
@@ -1129,7 +1130,7 @@ async function duplicateGrille(id) {
 
 // ─── ACTIONS: ADD LIGNE POIDS ──────────────────────────────────
 async function addLignePoids() {
-  const g = grilles.find(x => x.id === activeGrilleId);
+  const g = grilles.find(x => x.id == activeGrilleId);
   const poidsMin = parseFloat(getVal('lp-a')) || 0;
   const poidsMax = parseFloat(getVal('lp-b'));
   const colisMax = parseFloat(getVal('lp-c')) || 130;
@@ -1162,7 +1163,7 @@ async function addLignePoids() {
   }
 
   if (!newId) {
-    newId = Math.max(...g.lignes.map(l => l.id), 0) + 1;
+    newId = 'local-' + Date.now();
   }
 
   g.lignes.push({ id: newId, poidsMin, poidsMax, colisMax, dimMax, prixPiedCamion, prixLieuChoix });
@@ -1175,7 +1176,7 @@ async function addLignePoids() {
 
 // ─── ACTIONS: ADD CATEGORIE COLIS ──────────────────────────────
 async function addCategorieColis() {
-  const g = grilles.find(x => x.id === activeGrilleId);
+  const g = grilles.find(x => x.id == activeGrilleId);
   const nom = getVal('lc-n').trim();
   const nbMin = parseInt(getVal('lc-a')) || 1;
   const nbMax = parseInt(getVal('lc-b')) || 999;
@@ -1210,7 +1211,7 @@ async function addCategorieColis() {
   }
 
   if (!newId) {
-    newId = Math.max(...(g.cats || []).map(c => c.id), 0) + 1;
+    newId = 'local-' + Date.now();
   }
 
   if (!g.cats) g.cats = [];
@@ -1223,7 +1224,7 @@ async function addCategorieColis() {
 
 // ─── ACTIONS: ADD OPTION ───────────────────────────────────────
 async function addOption() {
-  const g = grilles.find(x => x.id === activeGrilleId);
+  const g = grilles.find(x => x.id == activeGrilleId);
   const nom = getVal('op-n').trim();
   const prix = parseFloat(getVal('op-p')) || 0;
   const unite = getVal('op-u');
@@ -1250,7 +1251,7 @@ async function addOption() {
   }
 
   if (!newId) {
-    newId = Math.max(...g.opts.map(o => o.id), 0) + 1;
+    newId = 'local-' + Date.now();
   }
 
   g.opts.push({ id: newId, n: nom, p: prix, u: unite });
@@ -1289,7 +1290,7 @@ async function createGrille() {
   }
 
   if (!newId) {
-    newId = Math.max(...grilles.map(x => x.id)) + 1;
+    newId = 'local-' + Date.now();
   }
 
   grilles.push({
@@ -1317,7 +1318,7 @@ function openAssociateClientModal(gid) {
 
   // Use entreprises from Supabase, or fall back to existing CLIENTS not yet assigned
   const sources = entreprisesList.length > 0 ? entreprisesList : [];
-  const alreadyAssigned = CLIENTS.filter(c => c.gid === gid).map(c => c.nom);
+  const alreadyAssigned = CLIENTS.filter(c => c.gid == gid).map(c => c.nom);
 
   if (sources.length > 0) {
     sources.forEach(e => {
@@ -1345,7 +1346,7 @@ function openAssociateClientModal(gid) {
 
 async function associateClient() {
   const modal = getEl('modal-associate-client');
-  const grilleId = parseInt(modal.dataset.grilleId);
+  const grilleId = modal.dataset.grilleId;
   const selectEl = getEl('assoc-entreprise');
   const selectedValue = selectEl.value;
   const selectedText = selectEl.options[selectEl.selectedIndex]?.text || '';
@@ -1373,7 +1374,7 @@ async function associateClient() {
   }
 
   if (!newId) {
-    newId = Math.max(...CLIENTS.map(c => c.id), 0) + 1;
+    newId = 'local-' + Date.now();
   }
 
   CLIENTS.push({
@@ -1398,7 +1399,7 @@ async function removeClientFromGrille(clientId, grilleId) {
     console.warn('[GRILLES] Supabase remove client failed:', err);
   }
 
-  CLIENTS = CLIENTS.filter(c => !(c.id === clientId && c.gid === grilleId));
+  CLIENTS = CLIENTS.filter(c => !(c.id == clientId && c.gid == grilleId));
   renderSidebar();
   renderGrid(activeGrilleId);
   showToast('\ud83d\uddd1 Client retir\u00e9');
