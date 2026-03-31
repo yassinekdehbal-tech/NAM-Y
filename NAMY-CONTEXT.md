@@ -44,7 +44,10 @@
 | Fichier | Description | Statut Supabase |
 |---|---|---|
 | `login.html` | Authentification — redirige selon rôle | ✅ Branché |
-| `dashboard.html` | Dashboard 3 profils (dispatcher/magasin/client) | ✅ Branché |
+| `dashboard.html` | Dashboard Admin NAMY (8 KPIs + 5 graphiques Chart.js) | ✅ Branché |
+| `dashboard-client.html` | Dashboard Client/Enseigne (7 KPIs + 5 graphiques, filtré RLS) | ✅ Branché |
+| `dashboard-transporteur.html` | Dashboard Transporteur (8 KPIs + 6 graphiques + avis, filtré RLS) | ✅ Branché |
+| `admin.html` | Gestion comptes + entreprises + paramètres contractuels | ✅ Branché |
 | `dispatch.html` | Carte Leaflet + création tournées | ✅ Branché |
 | `formulaire-vendeur.html` | Saisie expédition vendeur (3 étapes) | ✅ Branché |
 | `grilles-tarifaires.html` | 3 types de grilles (poids/zone/colis) | ✅ Branché |
@@ -91,12 +94,13 @@ clients_grilles         → Assignation grille ↔ entreprise + mode devis
 | Rôle | Ancien nom | Accès | Redirect après login |
 |---|---|---|---|
 | `admin` | admin | Tout — gestion comptes incluse | `dashboard.html` |
-| `client` | dirigeant | Expéditions, stats, extraction | `dashboard.html` |
+| `client` | dirigeant | Stats enseigne, expéditions, extraction | `dashboard-client.html` |
+| `fournisseur` | — (nouveau) | Stats transport, chauffeurs, performance | `dashboard-transporteur.html` |
 | `dispatcher` | exploitant | Dispatch, tournées, expéditions, stats | `dashboard.html` |
 | `vendeur` | vendeur | Création expéditions (son magasin) | `formulaire-vendeur.html` |
 | `livreur` | chauffeur | Tournées assignées, statuts, photos, signatures | `chauffeur.html` |
 
-**Hiérarchie** : admin > client > dispatcher > vendeur / livreur
+**Hiérarchie** : admin > client / fournisseur > dispatcher > vendeur / livreur
 
 ### Permissions (JSONB dans table `utilisateurs`)
 
