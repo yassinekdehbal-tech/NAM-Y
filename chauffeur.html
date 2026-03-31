@@ -859,13 +859,13 @@ function renderStops() {
 
   document.getElementById('stops-list').innerHTML = STOPS.map(s => {
     const isDone = s.done;
-    const isCurrent = !isDone && s.id === STOPS.find(x => !x.done)?.id;
+    const isCurrent = !isDone && s.id == STOPS.find(x => !x.done)?.id;
     const numClass = isDone ? (s.status === 'echec' ? 'fail-num' : 'done-num') : '';
     const numIcon = isDone ? (s.status === 'echec' ? '✕' : '✓') : s.id;
 
     return `
     <div class="stop-card ${isCurrent ? 'current' : ''} ${isDone ? 'done' : ''}" id="stop-${s.id}">
-      <div class="stop-header" onclick="toggleStop(${s.id})">
+      <div class="stop-header" onclick="toggleStop('${s.id}')">
         <div class="stop-num ${numClass}">${numIcon}</div>
         <div class="stop-info">
           <div class="stop-name">${s.nom}</div>
@@ -925,7 +925,7 @@ function renderStops() {
             <span class="ba-icon">🧭</span>
             GPS
           </button>
-          <button class="btn-action ba-photo" onclick="openPhoto(${s.id})">
+          <button class="btn-action ba-photo" onclick="openPhoto('${s.id}')">
             <span class="ba-icon">📷</span>
             Photo
           </button>
@@ -933,10 +933,10 @@ function renderStops() {
 
         ${!isDone ? `
         <div class="status-btns">
-          <button class="btn-big btn-success" style="padding:14px;font-size:14px" onclick="marquerLivre(${s.id})">
+          <button class="btn-big btn-success" style="padding:14px;font-size:14px" onclick="marquerLivre('${s.id}')">
             ✅ Livré — Signer
           </button>
-          <button class="btn-big btn-danger" style="padding:14px;font-size:14px" onclick="openEchec(${s.id})">
+          <button class="btn-big btn-danger" style="padding:14px;font-size:14px" onclick="openEchec('${s.id}')">
             ❌
           </button>
         </div>` : `
@@ -962,7 +962,7 @@ function marquerLivre(id) {
 }
 
 async function saveSig() {
-  const s = STOPS.find(x => x.id === currentStopId);
+  const s = STOPS.find(x => x.id == currentStopId);
   if (s) {
     s.done = true;
     s.collected = true;
@@ -996,7 +996,7 @@ async function saveSig() {
 let echecStopId = null;
 function openEchec(id) { echecStopId = id; currentStopId = id; openModal('modal-echec'); }
 async function declareEchec(raison) {
-  const s = STOPS.find(x => x.id === currentStopId);
+  const s = STOPS.find(x => x.id == currentStopId);
   if (s) {
     s.done = true;
     s.status = 'echec';
@@ -1230,9 +1230,17 @@ function callClient(tel) {
 
 function openGPS(lat, lng, adresse) {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const url = isIOS
-    ? `maps://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`
-    : `https://maps.google.com/?daddr=${lat},${lng}`;
+  let url;
+  if (lat && lng && lat !== 0 && lng !== 0) {
+    url = isIOS
+      ? `maps://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`
+      : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+  } else {
+    const q = encodeURIComponent(adresse || '');
+    url = isIOS
+      ? `maps://maps.apple.com/?daddr=${q}&dirflg=d`
+      : `https://www.google.com/maps/dir/?api=1&destination=${q}&travelmode=driving`;
+  }
   window.open(url, '_blank');
 }
 
