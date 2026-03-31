@@ -895,9 +895,10 @@ select {
             <input type="text" id="client-prenom" placeholder="Ex: Caroline" oninput="updateSidebar()">
             <span class="error-msg" id="err-prenom">Champ obligatoire</span>
           </div>
-          <div class="form-group">
+          <div class="form-group" style="position:relative">
             <label>Nom <span class="required">*</span></label>
-            <input type="text" id="client-nom" placeholder="Ex: Pochet" oninput="updateSidebar()">
+            <input type="text" id="client-nom" placeholder="Ex: Pochet" oninput="updateSidebar();searchDestinataires(this.value)" autocomplete="off">
+            <div class="autocomplete-list" id="dest-suggestions" style="display:none"></div>
             <span class="error-msg" id="err-nom">Champ obligatoire</span>
           </div>
         </div>
@@ -1186,6 +1187,78 @@ let GRILLE = [
   { poids_max: 350, dim_max: 320, colis_max: 131, prix: 86 },
   { poids_max: 1200, dim_max: 400, colis_max: 131, prix: 160 },
 ];
+
+// ─── AUTO-COMPLÉTION DESTINATAIRES ───────────────────────────
+let destSearchTimeout = null;
+
+async function searchDestinataires(query) {
+  const list = document.getElementById('dest-suggestions');
+  if (!list) return;
+  if (!query || query.length < 3) { list.style.display = 'none'; return; }
+
+  clearTimeout(destSearchTimeout);
+  destSearchTimeout = setTimeout(async () => {
+    try {
+      const { data } = await db.from('expeditions')
+        .select('destinataire, dest_adresse, dest_cp, dest_ville, dest_tel, dest_email')
+        .ilike('destinataire', '%' + query + '%')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (!data || !data.length) { list.style.display = 'none'; return; }
+
+      // Dédupliquer par nom
+      const seen = new Set();
+      const unique = data.filter(d => {
+        const key = (d.destinataire || '').toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      list.innerHTML = unique.map(d => `
+        <div class="autocomplete-item" onclick="selectDestinataire(${JSON.stringify(d).replace(/"/g, '&quot;')})">
+          <strong>${d.destinataire}</strong>
+          <span style="font-size:11px;color:var(--text-muted)">${d.dest_adresse || ''} ${d.dest_cp || ''} ${d.dest_ville || ''}</span>
+        </div>
+      `).join('');
+      list.style.display = 'block';
+    } catch (e) {
+      console.warn('Autocomplete failed:', e);
+      list.style.display = 'none';
+    }
+  }, 300);
+}
+
+function selectDestinataire(d) {
+  // Séparer prénom/nom (heuristique : premier mot = prénom)
+  const parts = (d.destinataire || '').split(' ');
+  const prenom = parts[0] || '';
+  const nom = parts.slice(1).join(' ') || '';
+
+  document.getElementById('client-prenom').value = prenom;
+  document.getElementById('client-nom').value = nom;
+  if (d.dest_adresse) document.getElementById('client-adresse').value = d.dest_adresse;
+  if (d.dest_cp) document.getElementById('client-cp').value = d.dest_cp;
+  if (d.dest_ville) document.getElementById('client-ville').value = d.dest_ville;
+  if (d.dest_tel) document.getElementById('client-tel').value = d.dest_tel;
+  if (d.dest_email) {
+    const emailEl = document.getElementById('client-email');
+    if (emailEl) emailEl.value = d.dest_email;
+  }
+
+  document.getElementById('dest-suggestions').style.display = 'none';
+  updateSidebar();
+  updatePrix();
+}
+
+// Fermer suggestions si clic ailleurs
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#client-nom') && !e.target.closest('#dest-suggestions')) {
+    const list = document.getElementById('dest-suggestions');
+    if (list) list.style.display = 'none';
+  }
+});
 
 async function loadVendeurData() {
   try {
