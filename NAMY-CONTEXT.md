@@ -187,27 +187,36 @@ const { data } = await db.functions.invoke('create-user', {
 ## 🔐 Sécurité — RLS activé
 
 - Vendeur : voit uniquement les expéditions de son entreprise
-- Chauffeur : voit uniquement ses tournées et stops
-- Exploitant/Dirigeant : voient tout
-- Admin : accès total
+- Livreur : voit uniquement ses tournées et stops
+- Client/Fournisseur : voient les données de leur entreprise
+- Admin/Dispatcher : voient tout
 
 ---
 
-## 📋 Prochaines étapes (par priorité)
+## 📋 Avancement
 
-- [x] **Brancher dispatch sur Supabase** — tournées + expéditions persistées
-- [x] **Brancher app chauffeur** — check-in, statuts, photos, signatures
-- [x] **Grilles tarifaires CRUD** — poids/zone/colis + assignation clients
-- [x] **Fichiers partagés** — supabase-client.js, utils.js (supprimé 8 doublons)
-- [x] **Nouveaux rôles** — client, dispatcher, livreur + permissions JSONB
-- [x] **Migrations SQL** — 4 fichiers dans supabase/migrations/
-- [ ] **Appliquer les migrations** — `supabase db push` sur le projet
-- [ ] **Redéployer Edge Function** — create-user avec les nouveaux rôles
-- [ ] **Dashboard temps réel** — KPIs et alertes depuis Supabase
-- [ ] **Géolocalisation livreur** — GPS temps réel
-- [ ] **SMS automatique client** — Twilio ou Vonage
-- [ ] **Import historique** — ancien NAMY vers Supabase
-- [ ] **Nom de domaine** — nam-y.com
+### Terminé
+- [x] Dispatch Supabase complet (tournées, assignation, publication, auto-dispatch IA)
+- [x] App chauffeur Supabase (check-in, statuts, photos, signatures, GPS)
+- [x] Grilles tarifaires CRUD (poids/zone/colis + options calculées + assignation clients)
+- [x] Module admin (comptes, entreprises, paramètres contractuels, permissions)
+- [x] 3 dashboards Chart.js (admin, client, transporteur) avec filtres période
+- [x] Liste expéditions paginée + filtres + export CSV + changement statut
+- [x] Formulaire vendeur : auto-complétion destinataires + prix temps réel
+- [x] Dispatch : vue urgences "À assigner" + assignation en masse
+- [x] Migrations SQL appliquées (schéma complet + RLS + storage)
+- [x] Edge Function create-user déployée (6 rôles)
+- [x] Arctic Design System (thème light) sur toutes les pages
+- [x] Fichiers partagés : supabase-client.js, utils.js, arctic.css
+
+### À faire
+- [ ] Géolocalisation livreur temps réel
+- [ ] SMS automatique client (Twilio/Vonage)
+- [ ] Import historique ancien NAMY
+- [ ] Nom de domaine nam-y.com
+- [ ] PWA manifest + service worker chauffeur
+- [ ] Notifications push (tournée publiée → livreur)
+- [ ] Module facturation (devis → facture)
 
 ---
 
@@ -216,8 +225,8 @@ const { data } = await db.functions.invoke('create-user', {
 - **Pas de framework** — HTML/CSS/JS vanilla uniquement
 - **Supabase client** : toujours chargé via CDN `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2`
 - **Fallback** : si Supabase inaccessible, afficher données statiques (ne jamais bloquer l'UI)
-- **Styles** : CSS variables dans `:root`, dark theme par défaut (`--bg: #0d0f14`)
-- **Fonts** : Syne (titres) + DM Sans (corps) + DM Mono (chiffres/codes)
+- **Styles** : Arctic Design System (arctic.css) — thème light, accent #00C9A7
+- **Fonts** : DM Sans (corps) + DM Mono (chiffres/codes)
 - **Session** : toujours vérifier `db.auth.getSession()` au chargement des pages protégées
 - **Redirect** : si pas de session → `window.location.href = 'login.html'`
 
@@ -240,13 +249,13 @@ Contexte complet : voir NAMY-CONTEXT.md dans le repo
 ## 📦 Migrations SQL
 
 Les fichiers sont dans `supabase/migrations/` :
-1. `001_schema_base.sql` — Types enum, entreprises (type), utilisateurs (permissions JSONB), parametres_entreprise
-2. `002_tables_operations.sql` — Véhicules, chauffeurs, expéditions, tournées, stops, checkins, historique
-3. `003_tables_grilles_tarifaires.sql` — Grilles, lignes poids/zone/colis, frais, options, clients_grilles
-4. `004_rls_policies.sql` — RLS + fonctions helper + storage buckets (delivery-photos, signatures)
+- `20260331120000_schema_complet.sql` — Tables, colonnes, RLS, storage buckets
+- `20260331140000_options_livraison_calcul.sql` — Colonnes calcul options
+- `20260331160000_utilisateurs_statut.sql` — Colonne statut utilisateurs
+- `20260331170000_parametres_contractuels.sql` — Paramètres contractuels entreprise
 
-Pour appliquer : `supabase db push` ou copier le SQL dans l'éditeur SQL du dashboard Supabase.
+Toutes les migrations sont **appliquées** sur le projet Supabase gwbvfohizdxwhmcoqvgh.
 
 ---
 
-*Dernière mise à jour : 31 mars 2026*
+*Dernière mise à jour : 31 mars 2026 — session nuit*
