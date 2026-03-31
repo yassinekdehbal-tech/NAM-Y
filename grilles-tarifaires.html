@@ -114,7 +114,7 @@ tr:hover td{background:rgba(0,0,0,.015)}
   <div class="logo">N A M Y</div>
   <span class="hdr-sub">/ Grilles tarifaires</span>
   <div class="hdr-act">
-    <button class="btn bg bs" style="color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.15)" onclick="showModal('mn')">+ Nouvelle grille</button>
+    <a href="admin.html" class="btn bg bs" style="color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.1);text-decoration:none">&larr; Admin</a>
   </div>
 </header>
 <div class="layout">
@@ -191,26 +191,6 @@ tr:hover td{background:rgba(0,0,0,.015)}
       </div>
     </div>
     <div class="mf"><button class="btn bg" onclick="hideModal('mc2')">Annuler</button><button class="btn bp" onclick="addCategorieColis()">Ajouter</button></div>
-  </div>
-</div>
-
-<!-- Modal frais annexe -->
-<div class="mo" id="modal-frais" style="display:none">
-  <div class="md">
-    <div class="mh"><span class="mt">Ajouter un frais annexe</span><button class="mc" onclick="hideModal('modal-frais')">&#10005;</button></div>
-    <div class="mb">
-      <div class="fg"><label class="fl">Description *</label><input type="text" class="fc" id="fr-desc" placeholder="Ex: Dimanche et jours f&eacute;ri&eacute;s"></div>
-      <div class="fr">
-        <div class="fg"><label class="fl">Co&ucirc;t *</label><input type="text" class="fc" id="fr-cout" placeholder="Ex: +20%, 15 &euro;/&eacute;tage, 50% course"></div>
-        <div class="fg"><label class="fl">Note</label><input type="text" class="fc" id="fr-note" placeholder="Ex: Sur tarif de base"></div>
-      </div>
-      <div class="fg">
-        <label class="fl" style="display:flex;align-items:center;gap:8px;cursor:pointer">
-          <input type="checkbox" id="fr-actif" checked> Actif par d&eacute;faut
-        </label>
-      </div>
-    </div>
-    <div class="mf"><button class="btn bg" onclick="hideModal('modal-frais')">Annuler</button><button class="btn bp" onclick="addFrais()">Ajouter</button></div>
   </div>
 </div>
 
@@ -318,17 +298,6 @@ let grilles = [
       { id: 6, poidsMin: 500, poidsMax: 800,  colisMax: 130, dimMax: 400, prixPiedCamion: 80,  prixLieuChoix: 130 },
       { id: 7, poidsMin: 800, poidsMax: 1200, colisMax: 130, dimMax: 400, prixPiedCamion: 100, prixLieuChoix: 150 },
     ],
-    frais: [
-      { id: 1, actif: true,  description: 'Km suppl\u00e9mentaire (>30km)',        cout: '2,50 \u20ac/km',    note: 'A+R au-del\u00e0 du rayon' },
-      { id: 2, actif: true,  description: 'Dimanche et jours f\u00e9ri\u00e9s',    cout: '+20%',              note: 'Sur tarif de base' },
-      { id: 3, actif: true,  description: 'Produit lourd (90\u2013130kg)',          cout: '40 \u20ac/produit', note: 'Par article' },
-      { id: 4, actif: true,  description: '\u00c9tage sans ascenseur',              cout: '15 \u20ac/\u00e9tage',  note: '\u00c0 partir du 5\u00e8me' },
-      { id: 5, actif: true,  description: '\u00c9chec retrait / annulation JJ',     cout: '50% course',        note: '' },
-      { id: 6, actif: true,  description: '\u00c9chec livraison + retour magasin',  cout: '150% course',       note: '' },
-      { id: 7, actif: false, description: 'D\u00e9ballage et montage mobilier',     cout: '40 \u20ac/30min',   note: 'Jardin, barbecue' },
-      { id: 8, actif: false, description: 'Rempotage plante (<50kg)',               cout: '10 \u20ac/plante',  note: '' },
-      { id: 9, actif: false, description: 'Plateau grue (131\u2013500kg)',           cout: '180\u20ac+45\u20ac/suiv.', note: 'Transport sp\u00e9cialis\u00e9' },
-    ],
     opts: [{ id: 1, n: 'Manutention', p: 40, u: 'Par 30 minutes' }]
   },
   {
@@ -340,12 +309,6 @@ let grilles = [
       { id: 4, c: 'D', lb: '< 45km', t1: 60, t2: 110, t3: 160, km: null },
       { id: 5, c: 'E', lb: '> 45km', t1: null, t2: null, t3: null, km: { t1: .65, t2: .85, t3: 1 } },
     ],
-    frais: [
-      { id: 1, actif: true, description: 'Dimanche et jours f\u00e9ri\u00e9s',      cout: '+30%',        note: '' },
-      { id: 2, actif: true, description: '\u00c9chec retrait / annulation JJ',       cout: '50% course',  note: '' },
-      { id: 3, actif: true, description: '\u00c9chec livraison + retour',            cout: '150% course', note: '' },
-      { id: 4, actif: true, description: 'Manutention',                              cout: '30 \u20ac/30min', note: '15 min incluses enl\u00e8vement+livraison' },
-    ],
     opts: [{ id: 1, n: 'Manutention suppl\u00e9mentaire', p: 30, u: 'Par 30 minutes' }]
   },
   {
@@ -356,10 +319,6 @@ let grilles = [
       { id: 3, n: 'LITERIE', a: 5, b: 999, p: null,  s: null, l: 'Pied de camion', ds: 5 },
     ],
     dist: [{ id: 1, a: 1, b: 30, type: 'Au kilom\u00e8tre', p: 2 }],
-    frais: [
-      { id: 1, actif: true, description: 'Dimanche et jours f\u00e9ri\u00e9s',  cout: '+20%',       note: '' },
-      { id: 2, actif: true, description: '\u00c9chec retrait / annulation JJ',   cout: '50% course', note: '' },
-    ],
     opts: [{ id: 1, n: 'Installation', p: 10, u: 'Forfait' }]
   }
 ];
@@ -405,7 +364,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       lignesRes,
       zonesRes,
       categoriesRes,
-      fraisRes,
       optionsRes,
       clientsGrillesRes,
       entreprisesRes
@@ -414,7 +372,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       db.from('lignes_tarifaires_poids').select('*').order('grille_id').order('poids_min'),
       db.from('lignes_tarifaires_zone').select('*').order('grille_id').order('code'),
       db.from('lignes_tarifaires_colis').select('*').order('grille_id').order('id'),
-      db.from('frais_annexes').select('*').order('grille_id').order('id'),
       db.from('options_livraison').select('*').order('grille_id').order('id'),
       db.from('clients_grilles').select('*').order('id'),
       db.from('entreprises').select('*').order('nom')
@@ -426,7 +383,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       const lignesData = lignesRes.status === 'fulfilled' ? (lignesRes.value.data || []) : [];
       const zonesData = zonesRes.status === 'fulfilled' ? (zonesRes.value.data || []) : [];
       const catsData = categoriesRes.status === 'fulfilled' ? (categoriesRes.value.data || []) : [];
-      const fraisData = fraisRes.status === 'fulfilled' ? (fraisRes.value.data || []) : [];
       const optsData = optionsRes.status === 'fulfilled' ? (optionsRes.value.data || []) : [];
 
       grilles = configs.map(cfg => {
@@ -484,17 +440,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }));
           g.dist = []; // distance rules could be loaded separately
         }
-
-        // Attach frais
-        g.frais = fraisData
-          .filter(f => f.grille_id == cfg.id)
-          .map(f => ({
-            id: f.id,
-            actif: f.actif,
-            description: f.description,
-            cout: f.cout,
-            note: f.note
-          }));
 
         // Attach options (avec colonnes calcul)
         g.opts = optsData
@@ -608,7 +553,7 @@ function buildPoidsPanel(g) {
         <th>Actions</th>
       </tr></thead><tbody>${rows}</tbody></table>
     </div>`,
-    buildFraisPanel(g), buildOptionsPanel(g), buildSimulateurPoids(g), buildClientsPanel(g));
+    buildOptionsPanel(g), buildSimulateurPoids(g), buildClientsPanel(g));
 }
 
 
@@ -636,7 +581,7 @@ function buildZonePanel(g) {
         <th></th>
       </tr></thead><tbody>${rows}</tbody></table>
     </div>`,
-    buildFraisPanel(g), buildOptionsPanel(g), buildSimulateurZone(g), buildClientsPanel(g));
+    buildOptionsPanel(g), buildSimulateurZone(g), buildClientsPanel(g));
 }
 
 
@@ -672,42 +617,22 @@ function buildColisPanel(g) {
       <div class="ch"><div class="ct">\ud83d\ude97 Tarification distance</div><button class="btn bg bs">+ Ajouter</button></div>
       <table><thead><tr><th>Km min</th><th>Km max</th><th>Type</th><th>Prix</th><th></th></tr></thead><tbody>${drows}</tbody></table>
     </div>`,
-    buildFraisPanel(g), buildOptionsPanel(g), buildSimulateurColis(g), buildClientsPanel(g));
+    buildOptionsPanel(g), buildSimulateurColis(g), buildClientsPanel(g));
 }
 
 
 // ─── BUILD LAYOUT ──────────────────────────────────────────────
-function buildLayout(g, tabGrille, tabFrais, tabOptions, tabSimulateur, tabClients) {
+function buildLayout(g, tabGrille, tabOptions, tabSimulateur, tabClients) {
   return `<div class="gtabs">
     <button class="gtab on" onclick="switchTab(this,'tg')">\ud83d\udcca Grille</button>
-    <button class="gtab" onclick="switchTab(this,'tf')">\u2795 Frais annexes</button>
     <button class="gtab" onclick="switchTab(this,'to')">\u2699\ufe0f Options livraison</button>
     <button class="gtab" onclick="switchTab(this,'ts')">\ud83e\uddee Simulateur</button>
     <button class="gtab" onclick="switchTab(this,'tc')">\ud83c\udfea Clients & Permissions</button>
   </div>
   <div class="tp on" id="tg">${tabGrille}</div>
-  <div class="tp" id="tf">${tabFrais}</div>
   <div class="tp" id="to">${tabOptions}</div>
   <div class="tp" id="ts">${tabSimulateur}</div>
   <div class="tp" id="tc">${tabClients}</div>`;
-}
-
-
-// ─── BUILD FRAIS PANEL ─────────────────────────────────────────
-function buildFraisPanel(g) {
-  const rows = g.frais.map(f => `<tr>
-    <td><div class="tgl ${f.actif ? 'on' : ''}" onclick="toggleFrais('${g.id}','${f.id}')"></div></td>
-    <td style="font-weight:500">${f.description}</td>
-    <td class="mn" style="color:var(--accent2)">${f.cout}</td>
-    <td style="font-size:12px;color:var(--muted)">${f.note}</td>
-    <td><button class="btn bg bxs">\u270f\ufe0f</button></td>
-  </tr>`).join('');
-
-  return `<div style="display:flex;align-items:center;justify-content:space-between">
-    <div><div class="pt" style="font-size:18px">Frais annexes</div><div class="ps">Activez/d\u00e9sactivez les suppl\u00e9ments</div></div>
-    <button class="btn bp bs" onclick="showModal('modal-frais')">+ Ajouter</button>
-  </div>
-  <div class="card"><table><thead><tr><th style="width:50px">Actif</th><th>Description</th><th>Co\u00fbt</th><th>Note</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 
@@ -877,36 +802,48 @@ function calculatePoids(gid) {
     return;
   }
 
-  let base = (option === 'pied') ? ligne.prixPiedCamion : ligne.prixLieuChoix;
-  let lines = [{ l: `Tarif base (${poids}kg \u00b7 ${option === 'pied' ? 'Pied camion' : 'Lieu choix'})`, v: base }];
-  let total = base;
+  const base = (option === 'pied') ? ligne.prixPiedCamion : ligne.prixLieuChoix;
+  const lines = [{ l: `Tarif base (${poids}kg \u00b7 ${option === 'pied' ? 'Pied camion' : 'Lieu choix'})`, v: base }];
+  let subtotal = base;
 
   if (km > g.rayon) {
     const supp = (km - g.rayon) * 2 * 2.5;
     lines.push({ l: `Km supp. (${(km - g.rayon) * 2}km A+R \u00d7 2,50\u20ac)`, v: supp });
-    total += supp;
+    subtotal += supp;
   }
 
-  document.querySelectorAll('.fck.on').forEach(chip => {
+  // Collecter les options cochées (reset complet, pas d'accumulation)
+  const checkedChips = document.querySelectorAll('#sp-r ~ .fcks .fck.on, .fck.on');
+  let optionsTotal = 0;
+  const activeOptions = new Set();
+  checkedChips.forEach(chip => {
     const text = chip.textContent.trim();
-    if (text.includes('Dim/F\u00e9ri\u00e9')) {
-      const majoration = total * g.maj / 100;
-      lines.push({ l: `Dim/F\u00e9ri\u00e9 (+${g.maj}%)`, v: majoration });
-      total += majoration;
-    }
-    if (text.includes('Produit lourd')) {
+    if (text.includes('Produit lourd') && !activeOptions.has('lourd')) {
+      activeOptions.add('lourd');
       lines.push({ l: 'Produit lourd \u00d71', v: 40 });
-      total += 40;
+      optionsTotal += 40;
     }
-    if (text.includes('\u00c9tage')) {
+    if (text.includes('\u00c9tage') && !activeOptions.has('etage')) {
+      activeOptions.add('etage');
       lines.push({ l: '\u00c9tage \u00d71', v: 15 });
-      total += 15;
+      optionsTotal += 15;
     }
-    if (text.includes('D\u00e9ballage')) {
+    if (text.includes('D\u00e9ballage') && !activeOptions.has('deballage')) {
+      activeOptions.add('deballage');
       lines.push({ l: 'D\u00e9ballage/Montage', v: 40 });
-      total += 40;
+      optionsTotal += 40;
     }
   });
+
+  let total = subtotal + optionsTotal;
+
+  // Majoration dimanche/férié appliquée en dernier sur le total complet
+  const isDimFerie = Array.from(checkedChips).some(c => c.textContent.includes('Dim/F\u00e9ri\u00e9'));
+  if (isDimFerie) {
+    const majoration = total * g.maj / 100;
+    lines.push({ l: `Dim/F\u00e9ri\u00e9 (+${g.maj}%)`, v: majoration });
+    total += majoration;
+  }
 
   showResult('sp-r', 'sp-e', lines, total);
 }
@@ -932,21 +869,23 @@ function calculateZone(gid) {
     (x.c === 'E')
   );
 
-  let base = zone.km ? km * 2 * zone.km[vehicule] : zone[vehicule];
-  let lines = [{ l: `Zone ${zone.c} (${zone.lb}) \u00b7 ${vehicule.toUpperCase()}`, v: base }];
+  const base = zone.km ? km * 2 * zone.km[vehicule] : zone[vehicule];
+  const lines = [{ l: `Zone ${zone.c} (${zone.lb}) \u00b7 ${vehicule.toUpperCase()}`, v: base }];
   let total = base;
 
-  if (jour === 'f') {
-    const majoration = total * g.maj / 100;
-    lines.push({ l: `Dim/F\u00e9ri\u00e9 (+${g.maj}%)`, v: majoration });
-    total += majoration;
-  }
-
+  // Manutention d'abord (avant majoration)
   if (manut > 0) {
     const units = Math.ceil(manut / 30);
     const cost = units * 30;
     lines.push({ l: `Manutention (${manut}min = ${units}\u00d730min)`, v: cost });
     total += cost;
+  }
+
+  // Majoration en dernier (sur le total complet)
+  if (jour === 'f') {
+    const majoration = total * g.maj / 100;
+    lines.push({ l: `Dim/F\u00e9ri\u00e9 (+${g.maj}%)`, v: majoration });
+    total += majoration;
   }
 
   showResult('sz-r', 'sz-e', lines, total);
@@ -987,9 +926,12 @@ function calculateColis(gid) {
     total += distCost;
   }
 
+  // Options (reset complet, pas d'accumulation)
+  const addedOpts = new Set();
   document.querySelectorAll('.fck.on').forEach(chip => {
     g.opts.forEach(o => {
-      if (chip.textContent.includes(o.n)) {
+      if (chip.textContent.includes(o.n) && !addedOpts.has(o.id)) {
+        addedOpts.add(o.id);
         lines.push({ l: `Option ${o.n}`, v: o.p });
         total += o.p;
       }
@@ -1018,68 +960,6 @@ function showResult(resultId, emptyId, lines, total) {
   </div>`;
   showEl(resultId);
   hideEl(emptyId);
-}
-
-
-// ─── ACTIONS: TOGGLE FRAIS ─────────────────────────────────────
-async function toggleFrais(gid, fid) {
-  const g = grilles.find(x => x.id == gid);
-  const frais = g.frais.find(x => x.id == fid);
-  if (!frais) return;
-
-  const newState = !frais.actif;
-
-  try {
-    await db.from('frais_annexes').update({ actif: newState }).eq('id', fid);
-  } catch (err) {
-    console.warn('[GRILLES] Supabase update frais failed:', err);
-  }
-
-  frais.actif = newState;
-  renderGrid(gid);
-  showToast(`${newState ? '\u2705' : '\u23f8'} ${frais.description}`);
-}
-
-
-// ─── ACTIONS: ADD FRAIS ───────────────────────────────────────
-async function addFrais() {
-  const description = getVal('fr-desc').trim();
-  const cout = getVal('fr-cout').trim();
-  const note = getVal('fr-note').trim();
-  const actif = getEl('fr-actif').checked;
-
-  if (!description || !cout) {
-    showToast('Renseignez la description et le coût', 'warning');
-    return;
-  }
-
-  const g = grilles.find(x => x.id == activeGrilleId);
-  if (!g) return;
-
-  let newId;
-  try {
-    const { data, error } = await db.from('frais_annexes').insert({
-      grille_id: activeGrilleId,
-      actif,
-      description,
-      cout,
-      note
-    }).select().single();
-    if (error) throw error;
-    newId = data.id;
-  } catch (err) {
-    console.warn('[GRILLES] Supabase insert frais failed:', err);
-    newId = 'local-' + Date.now();
-  }
-
-  g.frais.push({ id: newId, actif, description, cout, note });
-  hideModal('modal-frais');
-  getEl('fr-desc').value = '';
-  getEl('fr-cout').value = '';
-  getEl('fr-note').value = '';
-  getEl('fr-actif').checked = true;
-  renderGrid(activeGrilleId);
-  showToast('Frais "' + description + '" ajouté');
 }
 
 
@@ -1144,7 +1024,6 @@ async function deleteGrille(id) {
       db.from('lignes_tarifaires_poids').delete().eq('grille_id', id),
       db.from('lignes_tarifaires_zone').delete().eq('grille_id', id),
       db.from('lignes_tarifaires_colis').delete().eq('grille_id', id),
-      db.from('frais_annexes').delete().eq('grille_id', id),
       db.from('options_livraison').delete().eq('grille_id', id),
       db.from('clients_grilles').delete().eq('grille_id', id),
     ]);
@@ -1205,15 +1084,6 @@ async function duplicateGrille(id) {
           km_t1: z.km ? z.km.t1 : null,
           km_t2: z.km ? z.km.t2 : null,
           km_t3: z.km ? z.km.t3 : null
-        })));
-      }
-      if (copy.frais && copy.frais.length) {
-        await db.from('frais_annexes').insert(copy.frais.map(f => ({
-          grille_id: copy.id,
-          actif: f.actif,
-          description: f.description,
-          cout: f.cout,
-          note: f.note
         })));
       }
       if (copy.opts && copy.opts.length) {
@@ -1453,7 +1323,6 @@ async function createGrille() {
     zones: type === 'zone' ? [{ id: 1, c: 'A', lb: '<15km', t1: 0, t2: 0, t3: 0, km: null }] : undefined,
     cats: type === 'colis' ? [] : undefined,
     dist: type === 'colis' ? [] : undefined,
-    frais: [],
     opts: []
   });
 

@@ -292,6 +292,62 @@ tr:hover td{background:rgba(255,255,255,.02)}
   </div>
 </div>
 
+<!-- MODAL PARAMÈTRES CONTRACTUELS -->
+<div class="modal-overlay" id="modal-edit-ent" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="edit-ent-title">Param&egrave;tres entreprise</span>
+      <button class="modal-close" onclick="closeModal('modal-edit-ent')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box">&#9432; Ces param&egrave;tres s'appliquent &agrave; toutes les commandes de ce client.</div>
+
+      <div class="section-label">Conditions contractuelles</div>
+
+      <div class="fr">
+        <div class="fg">
+          <label class="fl">Majoration dim/f&eacute;ri&eacute;s (%)</label>
+          <input type="number" class="fi" id="ee-maj" value="20" min="0" step="1">
+        </div>
+        <div class="fg">
+          <label class="fl">Co&ucirc;t &eacute;chec retrait (% course)</label>
+          <input type="number" class="fi" id="ee-echec-retrait" value="50" min="0" step="1">
+        </div>
+      </div>
+      <div class="fr">
+        <div class="fg">
+          <label class="fl">Co&ucirc;t &eacute;chec livraison (&euro; fixe)</label>
+          <input type="number" class="fi" id="ee-echec-livraison" value="0" min="0" step="0.01">
+        </div>
+        <div class="fg">
+          <label class="fl">Limite commandes/jour (0 = illimit&eacute;)</label>
+          <input type="number" class="fi" id="ee-limite" value="0" min="0">
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">D&eacute;lai d'annulation (heures)</label>
+        <input type="number" class="fi" id="ee-delai" value="24" min="0">
+      </div>
+
+      <div class="section-label">Jours de service</div>
+      <div class="perms-grid">
+        <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="lundi" checked> Lundi</label>
+        <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="mardi" checked> Mardi</label>
+        <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="mercredi" checked> Mercredi</label>
+        <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="jeudi" checked> Jeudi</label>
+        <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="vendredi" checked> Vendredi</label>
+        <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="samedi" checked> Samedi</label>
+        <label class="perm-item" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="dimanche"> Dimanche</label>
+        <label class="perm-item" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="feries"> Jours f&eacute;ri&eacute;s</label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-edit-ent')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveEntrepriseParams()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -447,7 +503,8 @@ function renderEntreprises() {
       <td style="font-size:12px;color:var(--text-muted)">${e.adresse || ''} ${e.cp || ''} ${e.ville || ''}</td>
       <td style="font-family:'DM Mono',monospace">${usersCount}</td>
       <td><div class="actions">
-        <button class="btn btn-ghost btn-xs" onclick="deleteEntreprise('${e.id}')">&#128465;</button>
+        ${e.type === 'client' ? `<button class="btn btn-ghost btn-xs" onclick="editEntreprise('${e.id}')">&#9881; Param.</button>` : ''}
+        <button class="btn btn-danger btn-xs" onclick="deleteEntreprise('${e.id}')">&#128465;</button>
       </div></td>
     </tr>`;
   }).join('');
@@ -717,6 +774,75 @@ async function deleteEntreprise(id) {
   }
   renderAll();
   showToast(`${ent.nom} supprim\u00e9e`);
+}
+
+// ─── EDIT ENTREPRISE PARAMS ─────────────────────────────────
+let editingEntId = null;
+
+async function editEntreprise(id) {
+  editingEntId = id;
+  const ent = entreprises.find(e => e.id == id);
+  if (!ent) return;
+
+  document.getElementById('edit-ent-title').textContent = 'Param\u00e8tres \u2014 ' + ent.nom;
+
+  // Charger les paramètres existants
+  let params = {};
+  try {
+    const { data } = await db.from('parametres_entreprise').select('*').eq('entreprise_id', id).single();
+    if (data) params = data;
+  } catch (e) {}
+
+  document.getElementById('ee-maj').value = params.majoration_dimanche_ferie ?? 20;
+  document.getElementById('ee-echec-retrait').value = params.cout_echec_retrait ?? 50;
+  document.getElementById('ee-echec-livraison').value = params.cout_echec_livraison ?? 0;
+  document.getElementById('ee-limite').value = params.limite_commandes_jour ?? 0;
+  document.getElementById('ee-delai').value = params.delai_annulation_heures ?? 24;
+
+  // Jours de service
+  const jours = params.jours_service || ['lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+  document.querySelectorAll('#modal-edit-ent [data-jour]').forEach(cb => {
+    const on = jours.includes(cb.dataset.jour) || (cb.dataset.jour === 'feries' && params.ouvert_feries);
+    cb.closest('.perm-item').classList.toggle('on', on);
+    cb.checked = on;
+  });
+
+  openModal('modal-edit-ent');
+}
+
+async function saveEntrepriseParams() {
+  if (!editingEntId) return;
+
+  const jours = [];
+  let ouvertFeries = false;
+  document.querySelectorAll('#modal-edit-ent [data-jour]').forEach(cb => {
+    if (cb.closest('.perm-item').classList.contains('on')) {
+      if (cb.dataset.jour === 'feries') ouvertFeries = true;
+      else jours.push(cb.dataset.jour);
+    }
+  });
+
+  const params = {
+    entreprise_id: editingEntId,
+    majoration_dimanche_ferie: parseFloat(document.getElementById('ee-maj').value) || 20,
+    cout_echec_retrait: parseFloat(document.getElementById('ee-echec-retrait').value) || 50,
+    cout_echec_livraison: parseFloat(document.getElementById('ee-echec-livraison').value) || 0,
+    limite_commandes_jour: parseInt(document.getElementById('ee-limite').value) || 0,
+    delai_annulation_heures: parseInt(document.getElementById('ee-delai').value) || 24,
+    jours_service: jours,
+    ouvert_dimanche: jours.includes('dimanche'),
+    ouvert_feries: ouvertFeries,
+  };
+
+  try {
+    // Upsert : insert or update
+    const { error } = await db.from('parametres_entreprise').upsert(params, { onConflict: 'entreprise_id' });
+    if (error) throw error;
+    closeModal('modal-edit-ent');
+    showToast('Param\u00e8tres enregistr\u00e9s');
+  } catch (e) {
+    showToast('Erreur: ' + e.message, 'warning');
+  }
 }
 </script>
 </body>
