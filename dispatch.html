@@ -373,6 +373,15 @@ body{height:100vh;overflow:hidden;font-size:13px}
 
     <!-- Tab: Commandes -->
     <div class="tab-content active" id="content-commandes">
+      <!-- Section urgences -->
+      <div id="urgences-section" style="display:none">
+        <div style="padding:8px 12px;background:var(--danger-bg);border-bottom:1px solid rgba(153,27,27,.15);display:flex;align-items:center;gap:8px">
+          <span style="font-size:14px">&#9888;&#65039;</span>
+          <span style="font-size:12px;font-weight:600;color:var(--danger)">A assigner</span>
+          <span class="badge badge-danger" id="urgences-count" style="margin-left:auto;font-size:10px">0</span>
+        </div>
+        <div id="urgences-list" style="max-height:200px;overflow-y:auto;border-bottom:2px solid var(--danger-bg)"></div>
+      </div>
       <div class="commandes-header">
         <input type="text" class="search-input" placeholder="Rechercher..." id="search-cmd" oninput="searchCommandes(this.value)">
         <button class="btn btn-ghost btn-sm" onclick="selectAll()">Tout selectionner</button>
@@ -642,11 +651,58 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function renderAll() {
+  renderUrgences();
   renderCommandes();
   renderTournees();
   updateStats();
   updateMarkers();
   updateLegend();
+}
+
+// ─── URGENCES ──────────────────────────────────────────────
+function renderUrgences() {
+  const unassigned = commandes.filter(c => !c.tournee_id);
+  const section = document.getElementById('urgences-section');
+  const list = document.getElementById('urgences-list');
+  const countEl = document.getElementById('urgences-count');
+  const badgeCommandes = document.getElementById('badge-commandes');
+
+  if (!unassigned.length) {
+    if (section) section.style.display = 'none';
+    return;
+  }
+
+  // Trier par créneau (heure la plus proche d'abord)
+  const sorted = [...unassigned].sort((a, b) => {
+    const ha = (a.creneau || '99:99').split('-')[0] || '99:99';
+    const hb = (b.creneau || '99:99').split('-')[0] || '99:99';
+    return ha.localeCompare(hb);
+  });
+
+  if (section) section.style.display = 'block';
+  if (countEl) countEl.textContent = sorted.length;
+
+  // Badge rouge sur le tab commandes
+  if (badgeCommandes) {
+    badgeCommandes.textContent = sorted.length;
+    badgeCommandes.style.background = sorted.length > 0 ? 'var(--danger)' : '';
+    badgeCommandes.style.color = sorted.length > 0 ? '#fff' : '';
+  }
+
+  if (list) {
+    list.innerHTML = sorted.slice(0, 10).map(c => `
+      <div class="sidebar-item" style="padding:8px 12px;font-size:12px;border-bottom:1px solid var(--border);cursor:pointer" onclick="selectCommande('${c.id}')">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong style="color:var(--text-primary)">${c.dest || c.destinataire || ''}</strong>
+          <span class="badge badge-warning" style="font-size:10px">${c.creneau || ''}</span>
+        </div>
+        <div style="color:var(--text-muted);font-size:11px;margin-top:2px">${c.adresse || c.dest_adresse || ''} ${c.cp || c.dest_cp || ''} ${c.ville || c.dest_ville || ''}</div>
+      </div>
+    `).join('');
+    if (sorted.length > 10) {
+      list.innerHTML += '<div style="padding:6px 12px;font-size:11px;color:var(--text-hint);text-align:center">+' + (sorted.length - 10) + ' autres</div>';
+    }
+  }
 }
 
 // ─── MAP ────────────────────────────────────────────────────
@@ -942,6 +998,7 @@ function renderTournees() {
         <div class="tournee-info">
           <div class="tournee-name">${t.nom}</div>
           <div class="tournee-meta">${t.chauffeur||'Non assigne'} - ${t.heure}${t.vehicule?' - '+t.vehicule:''}</div>
+          ${isLateForSlot(t) ? '<div style="font-size:10px;color:var(--warning);font-weight:600;margin-top:2px">&#9888; Retard sur cr\u00e9neau</div>' : ''}
         </div>
         <div class="tournee-stats">
           <div class="t-stat">
@@ -966,6 +1023,17 @@ function renderTournees() {
       </div>
     </div>`;
   }).join('');
+}
+
+function isLateForSlot(tournee) {
+  if (tournee.statut != 'publie' && tournee.statut != 'en_cours') return false;
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  if (tournee.date != today) return false;
+  // Vérifier si l'heure actuelle dépasse l'heure de départ + nb stops * 35min
+  const [h, m] = (tournee.heure || '08:00').split(':').map(Number);
+  const etaEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m + (tournee.stops || []).length * 35);
+  return now > etaEnd;
 }
 
 function calcETA(heureDepart, stopIndex) {
