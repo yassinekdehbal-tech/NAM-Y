@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAMY — Administration</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="utils.js"></script>
+<style>
+:root{--bg:#0d0f14;--s1:#151820;--s2:#1c2030;--s3:#252a3a;--border:#2a3050;--border2:#333d5a;--text:#e8eaf4;--text-muted:#6b7599;--text-dim:#4b5580;--primary:#4f7cff;--success:#2dd4a0;--warning:#f59e0b;--danger:#f43f5e;--purple:#a855f7;--r:8px;--rl:14px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+.hdr{background:var(--s1);border-bottom:1px solid var(--border);height:56px;display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:100}
+.logo{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;letter-spacing:5px;color:#fff}
+.hdr-sub{font-size:13px;color:var(--text-muted)}
+.hdr-right{margin-left:auto;display:flex;gap:8px}
+.layout{display:flex;height:calc(100vh - 56px)}
+.sidebar{width:220px;background:var(--s1);border-right:1px solid var(--border);padding:16px 12px;display:flex;flex-direction:column;gap:4px;flex-shrink:0}
+.nav-link{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--r);font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;transition:all .15s;text-decoration:none}
+.nav-link:hover{background:var(--s2);color:var(--text)}
+.nav-link.active{background:rgba(79,124,255,.12);color:var(--primary);font-weight:600}
+.nav-count{margin-left:auto;background:var(--s2);padding:2px 8px;border-radius:10px;font-size:11px;font-family:'DM Mono',monospace}
+.main{flex:1;overflow-y:auto;padding:24px}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.page-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800}
+.page-sub{font-size:13px;color:var(--text-muted);margin-top:2px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border:none;border-radius:var(--r);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:#3d6aec}
+.btn-ghost{background:var(--s2);border:1px solid var(--border);color:var(--text-muted)}.btn-ghost:hover{color:var(--text);border-color:var(--border2)}
+.btn-danger{background:rgba(244,63,94,.12);color:var(--danger);border:1px solid rgba(244,63,94,.2)}.btn-danger:hover{background:var(--danger);color:#fff}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-xs{padding:3px 8px;font-size:11px;border-radius:5px}
+.filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filter-select{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:7px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:12px;outline:none}
+.filter-select:focus{border-color:var(--primary)}
+.filter-input{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:7px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:12px;outline:none;width:220px}
+.filter-input:focus{border-color:var(--primary)}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 14px;background:var(--s2);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);text-align:left;border-bottom:1px solid var(--border)}
+td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+.badge{display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.3px}
+.b-admin{background:rgba(168,85,247,.15);color:var(--purple)}
+.b-client{background:rgba(79,124,255,.15);color:var(--primary)}
+.b-fournisseur{background:rgba(45,212,160,.15);color:var(--success)}
+.b-vendeur{background:rgba(245,158,11,.15);color:var(--warning)}
+.b-livreur{background:rgba(244,63,94,.15);color:var(--danger)}
+.b-dispatcher{background:rgba(79,124,255,.15);color:var(--primary)}
+.b-actif{background:rgba(45,212,160,.1);color:var(--success)}
+.b-suspendu{background:rgba(244,63,94,.1);color:var(--danger)}
+.b-plateforme{background:rgba(168,85,247,.1);color:var(--purple)}
+.user-cell{display:flex;align-items:center;gap:10px}
+.user-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.user-info{line-height:1.3}
+.user-name{font-weight:600;font-size:13px}
+.user-email{font-size:11.5px;color:var(--text-muted);font-family:'DM Mono',monospace}
+.actions{display:flex;gap:4px}
+.empty{text-align:center;padding:40px;color:var(--text-dim);font-size:13px}
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--s1);border:1px solid var(--border);border-radius:var(--rl);width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:mIn .2s ease}
+@keyframes mIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.modal-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700}
+.modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-muted);padding:4px 8px;border-radius:4px}
+.modal-close:hover{background:var(--s2)}
+.modal-body{padding:20px;display:flex;flex-direction:column;gap:14px}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fl{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted)}
+.fi{background:var(--s2);border:1.5px solid var(--border);border-radius:var(--r);padding:10px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .15s;width:100%}
+.fi:focus{border-color:var(--primary);background:rgba(79,124,255,.04)}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.perms-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.perm-item{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);font-size:12px;cursor:pointer;transition:all .15s}
+.perm-item:hover{border-color:var(--border2)}
+.perm-item.on{background:rgba(79,124,255,.08);border-color:rgba(79,124,255,.3);color:var(--primary)}
+.perm-item input{display:none}
+.info-box{background:rgba(79,124,255,.06);border:1px solid rgba(79,124,255,.15);border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--primary);display:flex;gap:8px;align-items:flex-start}
+.section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);padding-top:8px;border-top:1px solid var(--border)}
+.ent-type{display:flex;gap:6px}
+.ent-type-btn{padding:6px 14px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--s2);color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.ent-type-btn:hover{border-color:var(--border2);color:var(--text)}
+.ent-type-btn.on{background:rgba(79,124,255,.1);border-color:var(--primary);color:var(--primary)}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--s1);color:var(--text);border:1px solid var(--border);border-radius:var(--r);padding:10px 18px;font-size:13px;z-index:9999;box-shadow:0 4px 24px rgba(0,0,0,.4);display:none}
+.tab-section{display:none}.tab-section.active{display:block}
+.stat-row{display:flex;gap:12px;margin-bottom:20px}
+.stat-card{flex:1;background:var(--s1);border:1px solid var(--border);border-radius:var(--rl);padding:16px 20px}
+.stat-val{font-family:'DM Mono',monospace;font-size:28px;font-weight:700}
+.stat-label{font-size:12px;color:var(--text-muted);margin-top:2px}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="logo">N A M Y</div>
+  <span class="hdr-sub">/ Administration</span>
+  <div class="hdr-right">
+    <a href="dashboard.html" class="btn btn-ghost btn-sm">← Dashboard</a>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="nav-link active" onclick="switchSection('comptes')">
+      <span>👤</span> Comptes <span class="nav-count" id="count-comptes">0</span>
+    </div>
+    <div class="nav-link" onclick="switchSection('entreprises')">
+      <span>🏢</span> Entreprises <span class="nav-count" id="count-entreprises">0</span>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- SECTION COMPTES -->
+    <div class="tab-section active" id="section-comptes">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Gestion des comptes</div>
+          <div class="page-sub">Cr&eacute;ez et g&eacute;rez les acc&egrave;s &agrave; la plateforme NAMY</div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('modal-create-user')">+ Cr&eacute;er un compte</button>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-card"><div class="stat-val" id="stat-total" style="color:var(--primary)">0</div><div class="stat-label">Total comptes</div></div>
+        <div class="stat-card"><div class="stat-val" id="stat-actifs" style="color:var(--success)">0</div><div class="stat-label">Actifs</div></div>
+        <div class="stat-card"><div class="stat-val" id="stat-suspendus" style="color:var(--danger)">0</div><div class="stat-label">Suspendus</div></div>
+      </div>
+
+      <div class="filters">
+        <input type="text" class="filter-input" id="filter-search" placeholder="&#128269; Rechercher nom, email..." oninput="filterUsers()">
+        <select class="filter-select" id="filter-role" onchange="filterUsers()">
+          <option value="">Tous les r&ocirc;les</option>
+          <option value="admin">Admin</option>
+          <option value="client">Client</option>
+          <option value="fournisseur">Fournisseur</option>
+          <option value="dispatcher">Dispatcher</option>
+          <option value="vendeur">Vendeur</option>
+          <option value="livreur">Livreur</option>
+        </select>
+        <select class="filter-select" id="filter-entreprise" onchange="filterUsers()">
+          <option value="">Toutes les entreprises</option>
+        </select>
+        <select class="filter-select" id="filter-statut" onchange="filterUsers()">
+          <option value="">Tous les statuts</option>
+          <option value="actif">Actif</option>
+          <option value="suspendu">Suspendu</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead><tr><th>Utilisateur</th><th>R&ocirc;le</th><th>Entreprise</th><th>Statut</th><th>Cr&eacute;&eacute; le</th><th>Actions</th></tr></thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SECTION ENTREPRISES -->
+    <div class="tab-section" id="section-entreprises">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Entreprises</div>
+          <div class="page-sub">Clients, fournisseurs et plateforme</div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('modal-create-ent')">+ Nouvelle entreprise</button>
+      </div>
+
+      <div class="filters">
+        <input type="text" class="filter-input" id="filter-ent-search" placeholder="&#128269; Rechercher..." oninput="filterEntreprises()">
+        <select class="filter-select" id="filter-ent-type" onchange="filterEntreprises()">
+          <option value="">Tous les types</option>
+          <option value="plateforme">Plateforme</option>
+          <option value="client">Client</option>
+          <option value="fournisseur">Fournisseur</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead><tr><th>Entreprise</th><th>Type</th><th>Adresse</th><th>Utilisateurs</th><th>Actions</th></tr></thead>
+          <tbody id="ent-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CRÉATION COMPTE -->
+<div class="modal-overlay" id="modal-create-user" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Cr&eacute;er un compte</span>
+      <button class="modal-close" onclick="closeModal('modal-create-user')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="fr">
+        <div class="fg"><label class="fl">Pr&eacute;nom *</label><input type="text" class="fi" id="cu-prenom" placeholder="Pr&eacute;nom"></div>
+        <div class="fg"><label class="fl">Nom *</label><input type="text" class="fi" id="cu-nom" placeholder="Nom"></div>
+      </div>
+      <div class="fg"><label class="fl">Email *</label><input type="email" class="fi" id="cu-email" placeholder="email@exemple.fr"></div>
+      <div class="fg"><label class="fl">Mot de passe temporaire *</label><input type="text" class="fi" id="cu-password" placeholder="Min. 8 caract&egrave;res" value=""></div>
+
+      <div class="section-label">R&ocirc;le &amp; rattachement</div>
+
+      <div class="fg">
+        <label class="fl">R&ocirc;le *</label>
+        <select class="fi" id="cu-role" onchange="onRoleChange()">
+          <option value="">S&eacute;lectionner...</option>
+          <option value="admin">Admin (NAMY)</option>
+          <option value="client">Client (enseigne)</option>
+          <option value="fournisseur">Fournisseur (transporteur)</option>
+          <option value="dispatcher">Dispatcher</option>
+          <option value="vendeur">Vendeur</option>
+          <option value="livreur">Livreur</option>
+        </select>
+      </div>
+
+      <!-- Entreprise (conditionnel) -->
+      <div class="fg" id="cu-ent-group" style="display:none">
+        <label class="fl">Entreprise *</label>
+        <select class="fi" id="cu-entreprise" onchange="onEntrepriseChange()">
+          <option value="">S&eacute;lectionner...</option>
+          <option value="__new__">+ Cr&eacute;er une nouvelle entreprise</option>
+        </select>
+      </div>
+
+      <!-- Nouvelle entreprise (conditionnel) -->
+      <div id="cu-new-ent" style="display:none">
+        <div class="info-box">&#9432; Une nouvelle entreprise sera cr&eacute;&eacute;e automatiquement.</div>
+        <div class="fr" style="margin-top:8px">
+          <div class="fg"><label class="fl">Nom entreprise *</label><input type="text" class="fi" id="cu-ent-nom" placeholder="Ex: Castorama Boulogne"></div>
+          <div class="fg"><label class="fl">Type</label>
+            <div class="ent-type" id="cu-ent-type">
+              <div class="ent-type-btn" data-val="client" onclick="selectEntType(this)">Client</div>
+              <div class="ent-type-btn" data-val="fournisseur" onclick="selectEntType(this)">Fournisseur</div>
+            </div>
+          </div>
+        </div>
+        <div class="fr" style="margin-top:8px">
+          <div class="fg"><label class="fl">Adresse</label><input type="text" class="fi" id="cu-ent-adresse"></div>
+          <div class="fg"><label class="fl">Ville</label><input type="text" class="fi" id="cu-ent-ville"></div>
+        </div>
+      </div>
+
+      <!-- Permissions (conditionnel) -->
+      <div id="cu-perms-section" style="display:none">
+        <div class="section-label">Permissions</div>
+        <div class="perms-grid" id="cu-perms-grid"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-create-user')">Annuler</button>
+      <button class="btn btn-primary" id="cu-btn" onclick="createUser()">Cr&eacute;er le compte</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CRÉATION ENTREPRISE -->
+<div class="modal-overlay" id="modal-create-ent" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Nouvelle entreprise</span>
+      <button class="modal-close" onclick="closeModal('modal-create-ent')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="fg"><label class="fl">Nom *</label><input type="text" class="fi" id="ne-nom" placeholder="Nom de l'entreprise"></div>
+      <div class="fg"><label class="fl">Type *</label>
+        <select class="fi" id="ne-type">
+          <option value="client">Client (enseigne)</option>
+          <option value="fournisseur">Fournisseur (transporteur)</option>
+          <option value="plateforme">Plateforme</option>
+        </select>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Adresse</label><input type="text" class="fi" id="ne-adresse"></div>
+        <div class="fg"><label class="fl">CP</label><input type="text" class="fi" id="ne-cp" maxlength="5"></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Ville</label><input type="text" class="fi" id="ne-ville"></div>
+        <div class="fg"><label class="fl">T&eacute;l&eacute;phone</label><input type="tel" class="fi" id="ne-tel"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-create-ent')">Annuler</button>
+      <button class="btn btn-primary" onclick="createEntreprise()">Cr&eacute;er</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ──────────────────────────────────────────────────
+let users = [];
+let entreprises = [];
+let filteredUsers = [];
+let filteredEnts = [];
+
+const COLORS = ['#4f7cff','#f43f5e','#2dd4a0','#f59e0b','#a855f7','#ec4899','#06b6d4','#84cc16'];
+
+const ROLE_LABELS = {
+  admin: 'Admin', client: 'Client', fournisseur: 'Fournisseur',
+  dispatcher: 'Dispatcher', vendeur: 'Vendeur', livreur: 'Livreur'
+};
+
+const PERMS_VENDEUR = [
+  { key: 'voir_prix', label: 'Voir les prix' },
+  { key: 'mode_devis', label: 'Mode devis' },
+  { key: 'annuler_expedition', label: 'Annuler exp\u00e9dition' },
+  { key: 'voir_historique', label: 'Voir historique' },
+];
+
+const PERMS_LIVREUR = [
+  { key: 'voir_prix', label: 'Voir les prix' },
+  { key: 'voir_contact_client', label: 'Voir contact client' },
+  { key: 'signaler_litige', label: 'Signaler litige' },
+  { key: 'modifier_ordre_stops', label: 'Modifier ordre stops' },
+];
+
+// ─── LOAD DATA ──────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadData();
+  renderAll();
+});
+
+async function loadData() {
+  try {
+    const [usersRes, entRes] = await Promise.allSettled([
+      db.from('utilisateurs').select('*').order('created_at', { ascending: false }),
+      db.from('entreprises').select('*').order('nom'),
+    ]);
+    if (usersRes.status === 'fulfilled' && usersRes.value.data) users = usersRes.value.data;
+    if (entRes.status === 'fulfilled' && entRes.value.data) entreprises = entRes.value.data;
+  } catch (e) {
+    console.warn('[ADMIN] Supabase error:', e);
+    showToast('Mode hors ligne', 'warning');
+  }
+  filteredUsers = [...users];
+  filteredEnts = [...entreprises];
+
+  // Populate filter dropdown
+  const sel = document.getElementById('filter-entreprise');
+  entreprises.forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = e.id;
+    opt.textContent = e.nom;
+    sel.appendChild(opt);
+  });
+}
+
+function renderAll() {
+  renderUsers();
+  renderEntreprises();
+  updateStats();
+}
+
+// ─── SECTION SWITCH ─────────────────────────────────────────
+function switchSection(name) {
+  document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// ─── STATS ──────────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('stat-total').textContent = users.length;
+  document.getElementById('stat-actifs').textContent = users.filter(u => u.statut !== 'suspendu').length;
+  document.getElementById('stat-suspendus').textContent = users.filter(u => u.statut === 'suspendu').length;
+  document.getElementById('count-comptes').textContent = users.length;
+  document.getElementById('count-entreprises').textContent = entreprises.length;
+}
+
+// ─── RENDER USERS ───────────────────────────────────────────
+function renderUsers() {
+  const tbody = document.getElementById('users-tbody');
+  if (!filteredUsers.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">Aucun compte trouv\u00e9</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filteredUsers.map(u => {
+    const ent = entreprises.find(e => e.id == u.entreprise_id);
+    const color = COLORS[Math.abs(hashStr(u.prenom + u.nom)) % COLORS.length];
+    const initials = ((u.prenom || '')[0] || '') + ((u.nom || '')[0] || '');
+    const roleCls = 'b-' + (u.role || 'vendeur');
+    const statutCls = u.statut === 'suspendu' ? 'b-suspendu' : 'b-actif';
+    const date = u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '\u2014';
+    return `<tr>
+      <td><div class="user-cell">
+        <div class="user-avatar" style="background:${color}">${initials.toUpperCase()}</div>
+        <div class="user-info"><div class="user-name">${u.prenom || ''} ${u.nom || ''}</div><div class="user-email">${u.email || ''}</div></div>
+      </div></td>
+      <td><span class="badge ${roleCls}">${ROLE_LABELS[u.role] || u.role}</span></td>
+      <td>${ent ? ent.nom : '<span style="color:var(--text-dim)">\u2014</span>'}</td>
+      <td><span class="badge ${statutCls}">${u.statut === 'suspendu' ? 'Suspendu' : 'Actif'}</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted)">${date}</td>
+      <td><div class="actions">
+        <button class="btn btn-ghost btn-xs" onclick="toggleSuspend('${u.id}','${u.auth_id}')">${u.statut === 'suspendu' ? '\u25b6 R\u00e9activer' : '\u23f8 Suspendre'}</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}','${u.auth_id}')">&#128465;</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function hashStr(s) {
+  let h = 0;
+  for (let i = 0; i < (s || '').length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  return h;
+}
+
+// ─── FILTER USERS ───────────────────────────────────────────
+function filterUsers() {
+  const search = document.getElementById('filter-search').value.toLowerCase();
+  const role = document.getElementById('filter-role').value;
+  const entId = document.getElementById('filter-entreprise').value;
+  const statut = document.getElementById('filter-statut').value;
+
+  filteredUsers = users.filter(u => {
+    if (search && !(u.prenom + ' ' + u.nom + ' ' + u.email).toLowerCase().includes(search)) return false;
+    if (role && u.role !== role) return false;
+    if (entId && u.entreprise_id != entId) return false;
+    if (statut === 'actif' && u.statut === 'suspendu') return false;
+    if (statut === 'suspendu' && u.statut !== 'suspendu') return false;
+    return true;
+  });
+  renderUsers();
+}
+
+// ─── RENDER ENTREPRISES ─────────────────────────────────────
+function renderEntreprises() {
+  const tbody = document.getElementById('ent-tbody');
+  if (!filteredEnts.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">Aucune entreprise</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filteredEnts.map(e => {
+    const typeCls = e.type === 'plateforme' ? 'b-plateforme' : e.type === 'fournisseur' ? 'b-fournisseur' : 'b-client';
+    const usersCount = users.filter(u => u.entreprise_id == e.id).length;
+    return `<tr>
+      <td style="font-weight:600">${e.nom}</td>
+      <td><span class="badge ${typeCls}">${e.type || 'client'}</span></td>
+      <td style="font-size:12px;color:var(--text-muted)">${e.adresse || ''} ${e.cp || ''} ${e.ville || ''}</td>
+      <td style="font-family:'DM Mono',monospace">${usersCount}</td>
+      <td><div class="actions">
+        <button class="btn btn-ghost btn-xs" onclick="deleteEntreprise('${e.id}')">&#128465;</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterEntreprises() {
+  const search = document.getElementById('filter-ent-search').value.toLowerCase();
+  const type = document.getElementById('filter-ent-type').value;
+  filteredEnts = entreprises.filter(e => {
+    if (search && !e.nom.toLowerCase().includes(search)) return false;
+    if (type && e.type !== type) return false;
+    return true;
+  });
+  renderEntreprises();
+}
+
+// ─── ROLE CHANGE (modal) ────────────────────────────────────
+function onRoleChange() {
+  const role = document.getElementById('cu-role').value;
+  const entGroup = document.getElementById('cu-ent-group');
+  const permsSection = document.getElementById('cu-perms-section');
+  const permsGrid = document.getElementById('cu-perms-grid');
+
+  // Entreprise field
+  if (['client', 'fournisseur', 'vendeur', 'livreur', 'dispatcher'].includes(role)) {
+    entGroup.style.display = 'block';
+    populateEntrepriseDropdown(role);
+  } else {
+    entGroup.style.display = 'none';
+  }
+  document.getElementById('cu-new-ent').style.display = 'none';
+
+  // Permissions
+  if (role === 'vendeur') {
+    permsSection.style.display = 'block';
+    permsGrid.innerHTML = PERMS_VENDEUR.map(p =>
+      `<label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-perm="${p.key}" checked> ${p.label}</label>`
+    ).join('');
+  } else if (role === 'livreur') {
+    permsSection.style.display = 'block';
+    permsGrid.innerHTML = PERMS_LIVREUR.map(p =>
+      `<label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-perm="${p.key}" checked> ${p.label}</label>`
+    ).join('');
+  } else {
+    permsSection.style.display = 'none';
+  }
+}
+
+function populateEntrepriseDropdown(role) {
+  const sel = document.getElementById('cu-entreprise');
+  sel.innerHTML = '<option value="">S\u00e9lectionner...</option><option value="__new__">+ Cr\u00e9er une nouvelle entreprise</option>';
+
+  let filtered;
+  if (role === 'vendeur' || role === 'client') {
+    filtered = entreprises.filter(e => e.type === 'client' || !e.type);
+  } else if (role === 'livreur' || role === 'fournisseur') {
+    filtered = entreprises.filter(e => e.type === 'fournisseur');
+  } else {
+    filtered = entreprises;
+  }
+
+  filtered.forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = e.id;
+    opt.textContent = e.nom + (e.type ? ' (' + e.type + ')' : '');
+    sel.appendChild(opt);
+  });
+}
+
+function onEntrepriseChange() {
+  const val = document.getElementById('cu-entreprise').value;
+  const newEntDiv = document.getElementById('cu-new-ent');
+  if (val === '__new__') {
+    newEntDiv.style.display = 'block';
+    // Auto-set type based on role
+    const role = document.getElementById('cu-role').value;
+    const typeToSelect = (role === 'livreur' || role === 'fournisseur') ? 'fournisseur' : 'client';
+    document.querySelectorAll('#cu-ent-type .ent-type-btn').forEach(b => {
+      b.classList.toggle('on', b.dataset.val === typeToSelect);
+    });
+  } else {
+    newEntDiv.style.display = 'none';
+  }
+}
+
+function selectEntType(btn) {
+  document.querySelectorAll('#cu-ent-type .ent-type-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+// ─── CREATE USER ────────────────────────────────────────────
+async function createUser() {
+  const prenom = document.getElementById('cu-prenom').value.trim();
+  const nom = document.getElementById('cu-nom').value.trim();
+  const email = document.getElementById('cu-email').value.trim();
+  const password = document.getElementById('cu-password').value;
+  const role = document.getElementById('cu-role').value;
+  let entreprise_id = document.getElementById('cu-entreprise').value;
+
+  if (!prenom || !nom || !email || !password || !role) {
+    showToast('Remplissez tous les champs obligatoires', 'warning');
+    return;
+  }
+  if (password.length < 8) {
+    showToast('Mot de passe : 8 caract\u00e8res minimum', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('cu-btn');
+  btn.disabled = true;
+  btn.textContent = 'Cr\u00e9ation...';
+
+  // Créer nouvelle entreprise si demandé
+  if (entreprise_id === '__new__') {
+    const entNom = document.getElementById('cu-ent-nom').value.trim();
+    if (!entNom) { showToast('Donnez un nom \u00e0 l\'entreprise', 'warning'); btn.disabled = false; btn.textContent = 'Cr\u00e9er le compte'; return; }
+    const entType = document.querySelector('#cu-ent-type .ent-type-btn.on')?.dataset.val || 'client';
+    const entAdresse = document.getElementById('cu-ent-adresse').value.trim();
+    const entVille = document.getElementById('cu-ent-ville').value.trim();
+
+    try {
+      const { data, error } = await db.from('entreprises').insert({
+        nom: entNom, type: entType, adresse: entAdresse, ville: entVille
+      }).select().single();
+      if (error) throw error;
+      entreprise_id = data.id;
+      entreprises.push(data);
+    } catch (e) {
+      showToast('Erreur cr\u00e9ation entreprise: ' + e.message, 'danger');
+      btn.disabled = false; btn.textContent = 'Cr\u00e9er le compte';
+      return;
+    }
+  }
+
+  if (entreprise_id === '' || entreprise_id === '__new__') entreprise_id = null;
+
+  // Permissions
+  const permissions = {};
+  document.querySelectorAll('#cu-perms-grid .perm-item.on input').forEach(cb => {
+    permissions[cb.dataset.perm] = true;
+  });
+
+  // Appel Edge Function
+  try {
+    const { data, error } = await db.functions.invoke('create-user', {
+      body: { email, password, role, prenom, nom, entreprise_id: entreprise_id || null }
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    // Mettre à jour les permissions si nécessaire
+    if (Object.keys(permissions).length && data?.user?.auth_id) {
+      await db.from('utilisateurs').update({ permissions }).eq('auth_id', data.user.auth_id);
+    }
+
+    // Reload
+    const { data: newUsers } = await db.from('utilisateurs').select('*').order('created_at', { ascending: false });
+    if (newUsers) { users = newUsers; filteredUsers = [...users]; }
+
+    closeModal('modal-create-user');
+    resetCreateForm();
+    renderAll();
+    showToast(`Compte ${prenom} ${nom} (${ROLE_LABELS[role]}) cr\u00e9\u00e9`);
+  } catch (e) {
+    showToast('Erreur: ' + (e.message || 'Cr\u00e9ation impossible'), 'warning');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Cr\u00e9er le compte';
+}
+
+function resetCreateForm() {
+  ['cu-prenom','cu-nom','cu-email','cu-password','cu-ent-nom','cu-ent-adresse','cu-ent-ville'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('cu-role').value = '';
+  document.getElementById('cu-ent-group').style.display = 'none';
+  document.getElementById('cu-new-ent').style.display = 'none';
+  document.getElementById('cu-perms-section').style.display = 'none';
+}
+
+// ─── SUSPEND / REACTIVATE ───────────────────────────────────
+async function toggleSuspend(userId, authId) {
+  const user = users.find(u => u.id == userId);
+  if (!user) return;
+  const newStatut = user.statut === 'suspendu' ? 'actif' : 'suspendu';
+  const label = newStatut === 'suspendu' ? 'Suspendre' : 'R\u00e9activer';
+  if (!confirm(`${label} ${user.prenom} ${user.nom} ?`)) return;
+
+  try {
+    await db.from('utilisateurs').update({ statut: newStatut }).eq('id', userId);
+    user.statut = newStatut;
+  } catch (e) {
+    showToast('Erreur: ' + e.message, 'warning');
+    return;
+  }
+  filterUsers();
+  updateStats();
+  showToast(`${user.prenom} ${user.nom} — ${newStatut === 'suspendu' ? 'suspendu' : 'r\u00e9activ\u00e9'}`);
+}
+
+// ─── DELETE USER ────────────────────────────────────────────
+async function deleteUser(userId, authId) {
+  const user = users.find(u => u.id == userId);
+  if (!user) return;
+  if (!confirm(`Supprimer d\u00e9finitivement ${user.prenom} ${user.nom} ?\nCette action est irr\u00e9versible.`)) return;
+
+  try {
+    await db.from('utilisateurs').delete().eq('id', userId);
+    users = users.filter(u => u.id != userId);
+    filteredUsers = filteredUsers.filter(u => u.id != userId);
+  } catch (e) {
+    showToast('Erreur suppression: ' + e.message, 'warning');
+    return;
+  }
+  renderAll();
+  showToast(`Compte ${user.prenom} ${user.nom} supprim\u00e9`);
+}
+
+// ─── CREATE ENTREPRISE ──────────────────────────────────────
+async function createEntreprise() {
+  const nom = document.getElementById('ne-nom').value.trim();
+  const type = document.getElementById('ne-type').value;
+  if (!nom) { showToast('Donnez un nom', 'warning'); return; }
+
+  try {
+    const { data, error } = await db.from('entreprises').insert({
+      nom, type,
+      adresse: document.getElementById('ne-adresse').value.trim(),
+      cp: document.getElementById('ne-cp').value.trim(),
+      ville: document.getElementById('ne-ville').value.trim(),
+      tel: document.getElementById('ne-tel').value.trim(),
+    }).select().single();
+    if (error) throw error;
+    entreprises.push(data);
+    filteredEnts = [...entreprises];
+  } catch (e) {
+    showToast('Erreur: ' + e.message, 'warning');
+    return;
+  }
+
+  closeModal('modal-create-ent');
+  ['ne-nom','ne-adresse','ne-cp','ne-ville','ne-tel'].forEach(id => document.getElementById(id).value = '');
+  renderAll();
+  showToast(`Entreprise "${nom}" cr\u00e9\u00e9e`);
+}
+
+// ─── DELETE ENTREPRISE ──────────────────────────────────────
+async function deleteEntreprise(id) {
+  const ent = entreprises.find(e => e.id == id);
+  if (!ent) return;
+  const usersCount = users.filter(u => u.entreprise_id == id).length;
+  if (usersCount > 0) {
+    showToast(`Impossible : ${usersCount} utilisateur(s) rattach\u00e9(s)`, 'warning');
+    return;
+  }
+  if (!confirm(`Supprimer ${ent.nom} ?`)) return;
+
+  try {
+    await db.from('entreprises').delete().eq('id', id);
+    entreprises = entreprises.filter(e => e.id != id);
+    filteredEnts = filteredEnts.filter(e => e.id != id);
+  } catch (e) {
+    showToast('Erreur: ' + e.message, 'warning');
+    return;
+  }
+  renderAll();
+  showToast(`${ent.nom} supprim\u00e9e`);
+}
+</script>
+</body>
+</html>

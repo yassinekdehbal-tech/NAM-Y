@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     }
 
     // Validation du rôle
-    const rolesAutorises = ["admin", "client", "dispatcher", "vendeur", "livreur"];
+    const rolesAutorises = ["admin", "client", "fournisseur", "dispatcher", "vendeur", "livreur"];
     if (!rolesAutorises.includes(role)) {
       return new Response(
         JSON.stringify({ error: `Rôle invalide. Rôles autorisés : ${rolesAutorises.join(", ")}` }),
@@ -85,9 +85,9 @@ Deno.serve(async (req) => {
       .eq("auth_id", caller.id)
       .single();
 
-    if (!callerProfile || !["admin", "client"].includes(callerProfile.role)) {
+    if (!callerProfile || !["admin", "client", "fournisseur"].includes(callerProfile.role)) {
       return new Response(
-        JSON.stringify({ error: "Droits insuffisants. Seuls les admins et clients peuvent créer des utilisateurs." }),
+        JSON.stringify({ error: "Droits insuffisants. Seuls les admins, clients et fournisseurs peuvent créer des utilisateurs." }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
