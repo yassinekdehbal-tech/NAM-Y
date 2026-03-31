@@ -44,51 +44,80 @@
 | Fichier | Description | Statut Supabase |
 |---|---|---|
 | `login.html` | Authentification — redirige selon rôle | ✅ Branché |
-| `dashboard.html` | Dashboard 3 profils (exploitant/magasin/dirigeant) | ⚠️ Partiellement |
-| `dispatch.html` | Carte Leaflet + création tournées | ❌ Données statiques |
+| `dashboard.html` | Dashboard 3 profils (dispatcher/magasin/client) | ✅ Branché |
+| `dispatch.html` | Carte Leaflet + création tournées | ✅ Branché |
 | `formulaire-vendeur.html` | Saisie expédition vendeur (3 étapes) | ✅ Branché |
-| `grilles-tarifaires.html` | 3 types de grilles (poids/zone/colis) | ⚠️ Partiellement |
-| `chauffeur.html` | App mobile PWA chauffeur | ❌ Données statiques |
-| `admin.html` | Gestion utilisateurs + permissions | ✅ Branché |
-| `index.html` | Liste expéditions principale | ❌ Données statiques |
+| `grilles-tarifaires.html` | 3 types de grilles (poids/zone/colis) | ✅ Branché |
+| `chauffeur.html` | App mobile PWA livreur | ✅ Branché |
+| `supabase-client.js` | Init Supabase centralisée (source unique) | — |
+| `utils.js` | Fonctions partagées (showToast, openModal, formatDate) | — |
+| `data.js` | Chargement données Supabase + fallback local | — |
+| `app.js` | Logique métier index.html | — |
+| `styles.css` | Styles globaux index.html | — |
+| `index.html` | Liste expéditions principale | ✅ Branché |
 
 ---
 
 ## 🗄️ Base de données — Tables principales
 
 ```
-expeditions        → commandes de livraison (table centrale)
-utilisateurs       → profils étendus liés à auth.users
-entreprises        → magasins clients (Truffaut × 5 + FISSA LIV)
-tournees           → groupes de stops par chauffeur/jour
-stops              → étapes d'une tournée (liées à expeditions)
-checkins_chauffeurs → suivi horaires + immatriculation quotidien
-positions_chauffeurs → GPS temps réel chauffeurs
-grilles_tarifaires → 3 types : poids / zone / colis
-lignes_tarifaires_poids → tranches poids × prix pied/lieu
-lignes_tarifaires_zone  → zones A-E × véhicules T1/T2/T3
-lignes_tarifaires_colis → catégories (LITERIE...) × nb colis
-frais_annexes      → suppléments par grille
-options_livraison  → options proposées au vendeur
-evenements_expedition → historique / tracking
-vehicules          → parc véhicules
+entreprises             → Magasins, plateforme, fournisseurs (type enum)
+utilisateurs            → Profils liés à auth.users (rôle + permissions JSONB)
+parametres_entreprise   → Config par entreprise (jours ouvrés, rayon max, fermetures)
+vehicules               → Parc véhicules
+chauffeurs              → Livreurs (liés à un utilisateur)
+expeditions             → Commandes de livraison (table centrale)
+tournees                → Regroupement livraisons par livreur/jour
+tournee_stops           → Étapes d'une tournée (statut, signature, photo)
+checkins                → Pointages livreurs (début/fin journée)
+historique_expeditions  → Journal événements par expédition
+grilles_tarifaires      → 3 types : poids / zone / colis
+lignes_tarifaires_poids → Tranches poids × prix pied/lieu
+lignes_tarifaires_zone  → Zones A-E × véhicules T1/T2/T3
+lignes_tarifaires_colis → Catégories (LITERIE...) × nb colis
+frais_annexes           → Suppléments par grille
+options_livraison       → Options proposées au vendeur
+clients_grilles         → Assignation grille ↔ entreprise + mode devis
 ```
 
-**Statuts expédition** : `en_attente` → `planifie` → `en_cours` → `livre` / `echec` / `litige` / `devis_attente`
+**Statuts expédition** : `en_attente` → `planifie` → `en_cours` → `livre` / `litige` / `annule`
+**Statuts tournée** : `brouillon` → `publie` → `en_cours` → `termine` / `annule`
+**Statuts stop** : `en_attente` → `collecte` → `en_route` → `livre` / `echec`
 
 ---
 
 ## 👥 Rôles utilisateurs
 
-| Rôle | Accès | Redirect après login |
-|---|---|---|
-| `admin` | Tout — gestion comptes incluse | `dashboard.html` |
-| `dirigeant` | Dashboard + stats + exploitation | `dashboard.html` |
-| `exploitant` | Exploitation + magasin | `dashboard.html` |
-| `vendeur` | Formulaire saisie uniquement | `formulaire-vendeur.html` |
-| `chauffeur` | App mobile uniquement | `chauffeur.html` |
+| Rôle | Ancien nom | Accès | Redirect après login |
+|---|---|---|---|
+| `admin` | admin | Tout — gestion comptes incluse | `dashboard.html` |
+| `client` | dirigeant | Expéditions, stats, extraction | `dashboard.html` |
+| `dispatcher` | exploitant | Dispatch, tournées, expéditions, stats | `dashboard.html` |
+| `vendeur` | vendeur | Création expéditions (son magasin) | `formulaire-vendeur.html` |
+| `livreur` | chauffeur | Tournées assignées, statuts, photos, signatures | `chauffeur.html` |
 
-**Hiérarchie** : admin > dirigeant > exploitant > vendeur / chauffeur
+**Hiérarchie** : admin > client > dispatcher > vendeur / livreur
+
+### Permissions (JSONB dans table `utilisateurs`)
+
+```json
+// admin
+{ "dispatch": true, "tournees": true, "expeditions": true, "grilles": true,
+  "entreprises": true, "utilisateurs": true, "statistiques": true, "extraction": true, "configuration": true }
+
+// client
+{ "expeditions": true, "statistiques": true, "extraction": true }
+
+// dispatcher
+{ "dispatch": true, "tournees": true, "expeditions": true, "statistiques": true, "extraction": true }
+
+// vendeur
+{ "expeditions": { "create": true, "read_own": true } }
+
+// livreur
+{ "tournees": { "read_assigned": true },
+  "stops": { "update_status": true, "upload_photo": true, "upload_signature": true } }
+```
 
 ---
 
@@ -162,16 +191,19 @@ const { data } = await db.functions.invoke('create-user', {
 
 ## 📋 Prochaines étapes (par priorité)
 
-- [ ] **Brancher dispatch sur Supabase** — vraies tournées + expéditions
-- [ ] **Brancher dashboard temps réel** — KPIs et alertes depuis Supabase
-- [ ] **Brancher app chauffeur** — check-in réel + stops depuis tournees
-- [ ] **Module expéditions** — liste + filtres + suivi
-- [ ] **Géolocalisation chauffeur** — positions_chauffeurs temps réel
-- [ ] **Import base de données existante** — historique livraisons ancien NAMY
-- [ ] **Nom de domaine nam-y.com** — DNS GitHub Pages ou migration Vercel
-- [ ] **SMS automatique client** — Twilio ou Vonage à l'approche livraison
-- [ ] **Vidéos démo** — une par profil (exploitant, vendeur, chauffeur, dirigeant)
-- [ ] **Refonte design** — charte couleurs plus intuitive et contrastée
+- [x] **Brancher dispatch sur Supabase** — tournées + expéditions persistées
+- [x] **Brancher app chauffeur** — check-in, statuts, photos, signatures
+- [x] **Grilles tarifaires CRUD** — poids/zone/colis + assignation clients
+- [x] **Fichiers partagés** — supabase-client.js, utils.js (supprimé 8 doublons)
+- [x] **Nouveaux rôles** — client, dispatcher, livreur + permissions JSONB
+- [x] **Migrations SQL** — 4 fichiers dans supabase/migrations/
+- [ ] **Appliquer les migrations** — `supabase db push` sur le projet
+- [ ] **Redéployer Edge Function** — create-user avec les nouveaux rôles
+- [ ] **Dashboard temps réel** — KPIs et alertes depuis Supabase
+- [ ] **Géolocalisation livreur** — GPS temps réel
+- [ ] **SMS automatique client** — Twilio ou Vonage
+- [ ] **Import historique** — ancien NAMY vers Supabase
+- [ ] **Nom de domaine** — nam-y.com
 
 ---
 
@@ -201,4 +233,16 @@ Contexte complet : voir NAMY-CONTEXT.md dans le repo
 
 ---
 
-*Dernière mise à jour : 30 mars 2026*
+## 📦 Migrations SQL
+
+Les fichiers sont dans `supabase/migrations/` :
+1. `001_schema_base.sql` — Types enum, entreprises (type), utilisateurs (permissions JSONB), parametres_entreprise
+2. `002_tables_operations.sql` — Véhicules, chauffeurs, expéditions, tournées, stops, checkins, historique
+3. `003_tables_grilles_tarifaires.sql` — Grilles, lignes poids/zone/colis, frais, options, clients_grilles
+4. `004_rls_policies.sql` — RLS + fonctions helper + storage buckets (delivery-photos, signatures)
+
+Pour appliquer : `supabase db push` ou copier le SQL dans l'éditeur SQL du dashboard Supabase.
+
+---
+
+*Dernière mise à jour : 31 mars 2026*

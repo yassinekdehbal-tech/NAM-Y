@@ -362,12 +362,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       clientsGrillesRes,
       entreprisesRes
     ] = await Promise.allSettled([
-      db.from('grilles_tarifaires_config').select('*').order('id'),
-      db.from('grilles_lignes').select('*').order('grille_id').order('poids_min'),
-      db.from('grilles_zones').select('*').order('grille_id').order('code'),
-      db.from('grilles_categories').select('*').order('grille_id').order('id'),
-      db.from('grilles_frais').select('*').order('grille_id').order('id'),
-      db.from('grilles_options').select('*').order('grille_id').order('id'),
+      db.from('grilles_tarifaires').select('*').order('id'),
+      db.from('lignes_tarifaires_poids').select('*').order('grille_id').order('poids_min'),
+      db.from('lignes_tarifaires_zone').select('*').order('grille_id').order('code'),
+      db.from('lignes_tarifaires_colis').select('*').order('grille_id').order('id'),
+      db.from('frais_annexes').select('*').order('grille_id').order('id'),
+      db.from('options_livraison').select('*').order('grille_id').order('id'),
       db.from('clients_grilles').select('*').order('id'),
       db.from('entreprises').select('*').order('nom')
     ]);
@@ -961,7 +961,7 @@ async function toggleFrais(gid, fid) {
   const newState = !frais.actif;
 
   try {
-    await db.from('grilles_frais').update({ actif: newState }).eq('id', fid);
+    await db.from('frais_annexes').update({ actif: newState }).eq('id', fid);
   } catch (err) {
     console.warn('[GRILLES] Supabase update frais failed:', err);
   }
@@ -996,7 +996,7 @@ async function deleteLigne(gid, lid) {
   if (!confirm('Supprimer?')) return;
 
   try {
-    await db.from('grilles_lignes').delete().eq('id', lid);
+    await db.from('lignes_tarifaires_poids').delete().eq('id', lid);
   } catch (err) {
     console.warn('[GRILLES] Supabase delete ligne failed:', err);
   }
@@ -1011,7 +1011,7 @@ async function deleteLigne(gid, lid) {
 // ─── ACTIONS: DELETE OPTION ────────────────────────────────────
 async function deleteOption(gid, oid) {
   try {
-    await db.from('grilles_options').delete().eq('id', oid);
+    await db.from('options_livraison').delete().eq('id', oid);
   } catch (err) {
     console.warn('[GRILLES] Supabase delete option failed:', err);
   }
@@ -1030,14 +1030,14 @@ async function deleteGrille(id) {
   try {
     // Delete related data first
     await Promise.allSettled([
-      db.from('grilles_lignes').delete().eq('grille_id', id),
-      db.from('grilles_zones').delete().eq('grille_id', id),
-      db.from('grilles_categories').delete().eq('grille_id', id),
-      db.from('grilles_frais').delete().eq('grille_id', id),
-      db.from('grilles_options').delete().eq('grille_id', id),
+      db.from('lignes_tarifaires_poids').delete().eq('grille_id', id),
+      db.from('lignes_tarifaires_zone').delete().eq('grille_id', id),
+      db.from('lignes_tarifaires_colis').delete().eq('grille_id', id),
+      db.from('frais_annexes').delete().eq('grille_id', id),
+      db.from('options_livraison').delete().eq('grille_id', id),
       db.from('clients_grilles').delete().eq('grille_id', id),
     ]);
-    await db.from('grilles_tarifaires_config').delete().eq('id', id);
+    await db.from('grilles_tarifaires').delete().eq('id', id);
   } catch (err) {
     console.warn('[GRILLES] Supabase delete grille failed:', err);
   }
@@ -1061,7 +1061,7 @@ async function duplicateGrille(id) {
   copy.nom = g.nom + ' (copie)';
 
   try {
-    const { data, error } = await db.from('grilles_tarifaires_config').insert({
+    const { data, error } = await db.from('grilles_tarifaires').insert({
       nom: copy.nom,
       type: copy.type,
       rayon: copy.rayon,
@@ -1073,7 +1073,7 @@ async function duplicateGrille(id) {
 
       // Duplicate related data
       if (copy.lignes && copy.lignes.length) {
-        await db.from('grilles_lignes').insert(copy.lignes.map(l => ({
+        await db.from('lignes_tarifaires_poids').insert(copy.lignes.map(l => ({
           grille_id: copy.id,
           poids_min: l.poidsMin,
           poids_max: l.poidsMax,
@@ -1084,7 +1084,7 @@ async function duplicateGrille(id) {
         })));
       }
       if (copy.zones && copy.zones.length) {
-        await db.from('grilles_zones').insert(copy.zones.map(z => ({
+        await db.from('lignes_tarifaires_zone').insert(copy.zones.map(z => ({
           grille_id: copy.id,
           code: z.c,
           label: z.lb,
@@ -1097,7 +1097,7 @@ async function duplicateGrille(id) {
         })));
       }
       if (copy.frais && copy.frais.length) {
-        await db.from('grilles_frais').insert(copy.frais.map(f => ({
+        await db.from('frais_annexes').insert(copy.frais.map(f => ({
           grille_id: copy.id,
           actif: f.actif,
           description: f.description,
@@ -1106,7 +1106,7 @@ async function duplicateGrille(id) {
         })));
       }
       if (copy.opts && copy.opts.length) {
-        await db.from('grilles_options').insert(copy.opts.map(o => ({
+        await db.from('options_livraison').insert(copy.opts.map(o => ({
           grille_id: copy.id,
           nom: o.n,
           prix: o.p,
@@ -1144,7 +1144,7 @@ async function addLignePoids() {
 
   let newId;
   try {
-    const { data, error } = await db.from('grilles_lignes').insert({
+    const { data, error } = await db.from('lignes_tarifaires_poids').insert({
       grille_id: activeGrilleId,
       poids_min: poidsMin,
       poids_max: poidsMax,
@@ -1191,7 +1191,7 @@ async function addCategorieColis() {
 
   let newId;
   try {
-    const { data, error } = await db.from('grilles_categories').insert({
+    const { data, error } = await db.from('lignes_tarifaires_colis').insert({
       grille_id: activeGrilleId,
       nom: nom,
       nb_min: nbMin,
@@ -1235,7 +1235,7 @@ async function addOption() {
 
   let newId;
   try {
-    const { data, error } = await db.from('grilles_options').insert({
+    const { data, error } = await db.from('options_livraison').insert({
       grille_id: activeGrilleId,
       nom: nom,
       prix: prix,
@@ -1274,7 +1274,7 @@ async function createGrille() {
 
   let newId;
   try {
-    const { data, error } = await db.from('grilles_tarifaires_config').insert({
+    const { data, error } = await db.from('grilles_tarifaires').insert({
       nom: nom,
       type: type,
       rayon: rayon,

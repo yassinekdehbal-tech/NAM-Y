@@ -229,9 +229,9 @@ tr:hover td{background:rgba(79,124,255,.04)}
   <div class="hdr-right">
     <!-- Profile switcher -->
     <div class="profile-sw">
-      <button class="psw-btn on" onclick="switchProfile('exploitant',this)">⚙️ Exploitant</button>
+      <button class="psw-btn on" onclick="switchProfile('dispatcher',this)">⚙️ Dispatcher</button>
       <button class="psw-btn" onclick="switchProfile('magasin',this)">🏪 Magasin</button>
-      <button class="psw-btn" onclick="switchProfile('dirigeant',this)">📊 Dirigeant</button>
+      <button class="psw-btn" onclick="switchProfile('client',this)">📊 Client</button>
     </div>
 
     <!-- Alert bell -->
@@ -251,7 +251,7 @@ tr:hover td{background:rgba(79,124,255,.04)}
 <div class="dash">
 
   <!-- ═══════════ EXPLOITANT ═══════════ -->
-  <div class="profile-panel on" id="panel-exploitant">
+  <div class="profile-panel on" id="panel-dispatcher">
 
     <!-- KPIs exploitant -->
     <div class="kpi-row kpi-row-5">
@@ -550,7 +550,7 @@ tr:hover td{background:rgba(79,124,255,.04)}
   </div>
 
   <!-- ═══════════ DIRIGEANT ═══════════ -->
-  <div class="profile-panel" id="panel-dirigeant">
+  <div class="profile-panel" id="panel-client">
 
     <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800">Vue d'ensemble — FISSA LIV</div>
 
@@ -628,7 +628,7 @@ function switchProfile(p, btn) {
   document.querySelectorAll('.profile-panel').forEach(x => x.classList.remove('on'));
   btn.classList.add('on');
   document.getElementById(`panel-${p}`).classList.add('on');
-  const names = { exploitant:'NIZAR · Exploitant', magasin:'Marie L. · Vendeur', dirigeant:'Yassine · Dirigeant' };
+  const names = { dispatcher:'NIZAR · Dispatcher', magasin:'Marie L. · Vendeur', client:'Yassine · Client' };
   document.getElementById('user-name').textContent = names[p];
 }
 

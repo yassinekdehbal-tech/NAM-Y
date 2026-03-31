@@ -1265,7 +1265,7 @@ async function loadVendeurData() {
       if (assignment && assignment.grille_id) {
         // 2. Charger les lignes de cette grille
         const { data: lignes } = await db
-          .from('grilles_lignes')
+          .from('lignes_tarifaires_poids')
           .select('*')
           .eq('grille_id', assignment.grille_id)
           .order('poids_min');

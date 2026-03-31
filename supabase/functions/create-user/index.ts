@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     }
 
     // Validation du rôle
-    const rolesAutorises = ["admin", "dirigeant", "exploitant", "vendeur", "chauffeur"];
+    const rolesAutorises = ["admin", "client", "dispatcher", "vendeur", "livreur"];
     if (!rolesAutorises.includes(role)) {
       return new Response(
         JSON.stringify({ error: `Rôle invalide. Rôles autorisés : ${rolesAutorises.join(", ")}` }),
@@ -78,16 +78,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Vérifier que l'appelant est admin ou dirigeant
+    // Vérifier que l'appelant est admin ou client
     const { data: callerProfile } = await supabaseAdmin
       .from("utilisateurs")
       .select("role")
       .eq("auth_id", caller.id)
       .single();
 
-    if (!callerProfile || !["admin", "dirigeant"].includes(callerProfile.role)) {
+    if (!callerProfile || !["admin", "client"].includes(callerProfile.role)) {
       return new Response(
-        JSON.stringify({ error: "Droits insuffisants. Seuls les admins et dirigeants peuvent créer des utilisateurs." }),
+        JSON.stringify({ error: "Droits insuffisants. Seuls les admins et clients peuvent créer des utilisateurs." }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
