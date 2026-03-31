@@ -4,65 +4,56 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NAMY — Dashboard Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="arctic.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="supabase-client.js"></script>
 <script src="utils.js"></script>
 <style>
-:root {
-  --bg:#0d0f14; --s1:#151820; --s2:#1c2030; --s3:#222840; --border:#2a3050;
-  --text:#e8eaf4; --muted:#6b7599; --primary:#4f7cff; --success:#2dd4a0;
-  --warning:#f59e0b; --danger:#f43f5e; --purple:#a855f7;
-  --r:8px; --rl:12px;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:13px}
-
 /* HEADER */
-.hdr{background:var(--s1);border-bottom:1px solid var(--border);height:52px;display:flex;align-items:center;padding:0 24px;gap:14px;position:sticky;top:0;z-index:100}
-.logo{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;letter-spacing:5px;color:var(--text)}
-.hdr-sep{font-size:12px;color:var(--muted)}
-.hdr-page{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--muted);font-weight:500}
+.hdr{background:var(--bg-surface);border-bottom:1px solid var(--border);height:52px;display:flex;align-items:center;padding:0 24px;gap:14px;position:sticky;top:0;z-index:100}
+.logo{font-size:13px;font-weight:800;letter-spacing:5px;color:var(--text-primary)}
+.hdr-sep{font-size:12px;color:var(--text-muted)}
+.hdr-page{font-size:12px;color:var(--text-muted);font-weight:500}
 .hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.hdr-link{font-size:12px;color:var(--muted);text-decoration:none;padding:5px 12px;border:1px solid var(--border);border-radius:var(--r);transition:all .15s}
-.hdr-link:hover{color:var(--primary);border-color:var(--primary)}
+.hdr-link{font-size:12px;color:var(--text-muted);text-decoration:none;padding:5px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);transition:all .15s}
+.hdr-link:hover{color:var(--accent);border-color:var(--accent)}
 
 /* PERIOD FILTER */
 .period-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.period-grp{display:flex;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:3px;gap:2px}
-.pbtn{padding:5px 14px;border:none;border-radius:6px;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
-.pbtn.on{background:var(--primary);color:#fff}
-.pbtn:hover:not(.on){color:var(--text)}
-.date-input{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:5px 10px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px}
-.date-input::-webkit-calendar-picker-indicator{filter:invert(.6)}
+.period-grp{display:flex;background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);padding:3px;gap:2px}
+.pbtn{padding:5px 14px;border:none;border-radius:var(--radius-sm);background:transparent;color:var(--text-muted);font-family:var(--font-body);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.pbtn.on{background:var(--text-primary);color:#fff}
+.pbtn:hover:not(.on){color:var(--text-primary)}
+.date-input{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 10px;color:var(--text-primary);font-family:var(--font-mono);font-size:11px}
 
 /* FILTERS ROW */
 .filters-row{display:flex;gap:10px;flex-wrap:wrap}
-.flt-select{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:6px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:12px;min-width:180px;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7599'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
-.flt-select:focus{outline:none;border-color:var(--primary)}
+.flt-select{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:12px;min-width:180px;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238A9BAE'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.flt-select:focus{outline:none;border-color:var(--accent)}
 
 /* LAYOUT */
 .dash{padding:20px 24px;display:flex;flex-direction:column;gap:16px;max-width:1440px;margin:0 auto}
 
 /* KPI GRID */
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-.kpi{background:var(--s1);border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;position:relative;overflow:hidden;transition:border-color .2s}
-.kpi:hover{border-color:var(--s3)}
+.kpi{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;position:relative;overflow:hidden;transition:border-color .2s;box-shadow:var(--shadow-sm)}
+.kpi:hover{border-color:var(--border-strong)}
 .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
-.kpi.c-primary::before{background:var(--primary)}
-.kpi.c-success::before{background:var(--success)}
-.kpi.c-warning::before{background:var(--warning)}
+.kpi.c-primary::before{background:var(--accent)}
+.kpi.c-success::before{background:var(--accent-dark)}
+.kpi.c-warning::before{background:#F59E0B}
 .kpi.c-danger::before{background:var(--danger)}
-.kpi.c-purple::before{background:var(--purple)}
+.kpi.c-purple::before{background:#8B5CF6}
 .kpi-icon{font-size:20px;margin-bottom:8px;display:block}
-.kpi-val{font-family:'DM Mono',monospace;font-size:26px;font-weight:700;line-height:1;margin-bottom:4px}
-.kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.kpi-val{font-family:var(--font-mono);font-size:26px;font-weight:700;line-height:1;margin-bottom:4px;color:var(--text-primary)}
+.kpi-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
 
 /* CHARTS GRID */
 .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
+.card{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm)}
 .ch{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.ct{font-family:'Syne',sans-serif;font-size:13px;font-weight:700}
+.ct{font-size:13px;font-weight:700;color:var(--text-primary)}
 .chart-wrap{padding:16px;height:280px;position:relative}
 
 /* RESPONSIVE */
@@ -201,13 +192,13 @@ let charts = {};
 
 // ─── CHART DEFAULTS ─────────────────────────────────────
 Chart.defaults.font.family = "'DM Sans', sans-serif";
-Chart.defaults.color = '#6b7599';
+Chart.defaults.color = '#8A9BAE';
 
 const COLORS = {
-  primary: '#4f7cff', success: '#2dd4a0', warning: '#f59e0b',
-  danger: '#f43f5e', purple: '#a855f7', muted: '#6b7599'
+  primary: '#00C9A7', success: '#009E85', warning: '#F59E0B',
+  danger: '#991B1B', purple: '#8B5CF6', muted: '#8A9BAE'
 };
-const gridOpts = { color: 'rgba(255,255,255,0.06)' };
+const gridOpts = { color: 'rgba(0,0,0,0.06)' };
 const baseOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
 
 // ─── DEMO DATA (fallback) ───────────────────────────────
@@ -459,7 +450,7 @@ function renderCharts(d) {
       labels: ['Livré', 'Échec', 'En cours', 'Litige', 'En attente'],
       datasets: [{
         data: [d.statuts.livré || d.statuts['livré'], d.statuts.échec || d.statuts['échec'], d.statuts.en_cours || d.statuts['en_cours'], d.statuts.litige || d.statuts['litige'], d.statuts.en_attente || d.statuts['en_attente']],
-        backgroundColor: [COLORS.success, COLORS.danger, COLORS.warning, '#f43f5e', COLORS.purple],
+        backgroundColor: [COLORS.success, COLORS.danger, COLORS.warning, '#DC2626', COLORS.purple],
         borderWidth: 0
       }]
     },

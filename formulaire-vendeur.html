@@ -5,43 +5,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NAMY — Nouvelle expédition</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="arctic.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
 <style>
-:root {
-  --bg: #f5f4f0;
-  --surface: #ffffff;
-  --surface2: #f0efe9;
-  --border: #e2e0d8;
-  --text: #1a1a18;
-  --text-muted: #7a7870;
-  --text-dim: #a8a69e;
-  --accent: #1a472a;
-  --accent-light: #e8f0ea;
-  --accent2: #d4742a;
-  --success: #1a7a4a;
-  --warning: #c47a20;
-  --danger: #c43a2a;
-  --radius: 10px;
-  --radius-lg: 16px;
-  --shadow: 0 1px 4px rgba(0,0,0,0.08);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
-}
-
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: 'DM Sans', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  font-size: 15px;
-}
-
 /* ── HEADER ── */
 .header {
-  background: var(--text);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
   padding: 0 32px;
   height: 56px;
   display: flex;
@@ -53,33 +25,33 @@ body {
 }
 
 .header-logo {
-  font-family: 'Syne', sans-serif;
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: 6px;
-  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  color: var(--text-primary);
 }
 
 .header-magasin {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.12);
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 6px 14px;
   font-size: 13px;
-  color: rgba(255,255,255,0.85);
+  color: var(--text-secondary);
 }
 
-.header-magasin strong { color: #fff; font-weight: 600; }
+.header-magasin strong { color: var(--text-primary); font-weight: 600; }
 
 .header-user {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: rgba(255,255,255,0.7);
+  color: var(--text-muted);
 }
 
 .avatar {
@@ -92,7 +64,7 @@ body {
 
 /* ── STEPPER ── */
 .stepper-container {
-  background: var(--surface);
+  background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
   padding: 0 32px;
 }
@@ -132,10 +104,10 @@ body {
 .step-num {
   width: 40px; height: 40px;
   border-radius: 50%;
-  background: var(--surface2);
+  background: var(--bg-hover);
   border: 2px solid var(--border);
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Syne', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 14px; font-weight: 700;
   color: var(--text-muted);
   transition: all 0.3s;
@@ -155,7 +127,7 @@ body {
   color: #fff;
 }
 
-.step.completed .step-num::after { content: '✓'; }
+.step.completed .step-num::after { content: '\2713'; }
 .step.completed .step-num span { display: none; }
 
 .step-info { display: flex; flex-direction: column; }
@@ -169,7 +141,7 @@ body {
 .step-title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text);
+  color: var(--text-primary);
 }
 .step.active .step-title { color: var(--accent); }
 
@@ -189,11 +161,11 @@ body {
 .form-page.active { display: block; min-height: 200px; }
 
 .form-card {
-  background: var(--surface);
+  background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-sm);
 }
 
 .form-card-header {
@@ -213,7 +185,7 @@ body {
 }
 
 .form-card-title {
-  font-family: 'Syne', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 16px;
   font-weight: 700;
 }
@@ -225,8 +197,8 @@ body {
 /* ── ENLÈVEMENT (lecture seule) ── */
 .pickup-card {
   background: var(--accent-light);
-  border: 1px solid rgba(26,71,42,0.15);
-  border-radius: var(--radius);
+  border: 1px solid rgba(0,201,167,0.2);
+  border-radius: var(--radius-md);
   padding: 16px 20px;
   display: flex;
   align-items: center;
@@ -242,7 +214,7 @@ body {
   flex-shrink: 0;
 }
 
-.pickup-info h4 { font-size: 13px; font-weight: 700; color: var(--accent); }
+.pickup-info h4 { font-size: 13px; font-weight: 700; color: var(--accent-dark); }
 .pickup-info p { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
 .pickup-badge {
   margin-left: auto;
@@ -275,13 +247,13 @@ label {
 
 input[type=text], input[type=email], input[type=tel], input[type=date], textarea, select {
   width: 100%;
-  background: var(--surface2);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius);
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-md);
   padding: 11px 14px;
   font-size: 14px;
-  font-family: 'DM Sans', sans-serif;
-  color: var(--text);
+  font-family: var(--font-body);
+  color: var(--text-primary);
   outline: none;
   transition: all 0.15s;
   appearance: none;
@@ -289,8 +261,8 @@ input[type=text], input[type=email], input[type=tel], input[type=date], textarea
 
 input:focus, textarea:focus, select:focus {
   border-color: var(--accent);
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(26,71,42,0.08);
+  background: var(--bg-surface);
+  box-shadow: 0 0 0 3px rgba(0,201,167,0.12);
 }
 
 input.error, select.error { border-color: var(--danger); }
@@ -302,7 +274,7 @@ input.error, select.error { border-color: var(--danger); }
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-dim);
+  color: var(--text-hint);
   pointer-events: none;
   font-size: 16px;
 }
@@ -310,7 +282,7 @@ input.error, select.error { border-color: var(--danger); }
 textarea { resize: vertical; min-height: 70px; }
 
 select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a7870' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238A9BAE' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 14px center;
   padding-right: 36px;
@@ -325,19 +297,19 @@ select {
   flex: 1;
   min-width: 110px;
   padding: 10px 8px;
-  background: var(--surface2);
+  background: var(--bg-hover);
   border: 1.5px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-md);
   font-size: 13px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   font-weight: 500;
-  color: var(--text);
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.15s;
   text-align: center;
 }
 
-.creneau-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.creneau-btn:hover { border-color: var(--accent); color: var(--accent-dark); background: var(--accent-light); }
 .creneau-btn.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
 
 /* ── LIEU DE LIVRAISON ── */
@@ -345,11 +317,11 @@ select {
 
 .lieu-btn {
   padding: 12px 8px;
-  background: var(--surface2);
+  background: var(--bg-hover);
   border: 1.5px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-md);
   font-size: 12.5px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
@@ -365,9 +337,9 @@ select {
 .articles-list { display: flex; flex-direction: column; gap: 8px; }
 
 .article-item {
-  background: var(--surface2);
+  background: var(--bg-hover);
   border: 1.5px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-md);
   padding: 12px 14px;
   display: flex;
   align-items: center;
@@ -394,10 +366,10 @@ select {
 .article-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
 .article-poids {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 13px;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--accent-dark);
   background: var(--accent-light);
   padding: 4px 10px;
   border-radius: 6px;
@@ -406,19 +378,19 @@ select {
 .btn-remove {
   width: 28px; height: 28px;
   border: none; background: none;
-  color: var(--text-dim);
+  color: var(--text-hint);
   cursor: pointer;
   border-radius: 6px;
   font-size: 16px;
   display: flex; align-items: center; justify-content: center;
   transition: all 0.15s;
 }
-.btn-remove:hover { background: rgba(196,58,42,0.1); color: var(--danger); }
+.btn-remove:hover { background: var(--danger-bg); color: var(--danger); }
 
 .add-article-form {
   background: var(--accent-light);
-  border: 1.5px dashed rgba(26,71,42,0.25);
-  border-radius: var(--radius);
+  border: 1.5px dashed rgba(0,201,167,0.3);
+  border-radius: var(--radius-md);
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -428,9 +400,9 @@ select {
 .add-article-form .form-row { grid-template-columns: 2fr 1fr 1fr; }
 
 .articles-total {
-  background: var(--text);
+  background: var(--text-primary);
   color: #fff;
-  border-radius: var(--radius);
+  border-radius: var(--radius-md);
   padding: 12px 16px;
   display: flex;
   align-items: center;
@@ -441,20 +413,20 @@ select {
 .total-values { display: flex; gap: 20px; }
 .total-val { display: flex; flex-direction: column; align-items: flex-end; }
 .total-val span:first-child { font-size: 11px; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.4px; }
-.total-val strong { font-family: 'DM Mono', monospace; font-size: 15px; }
+.total-val strong { font-family: var(--font-mono); font-size: 15px; }
 
 /* ── CONFIRMATION ── */
 .recap-section {
-  background: var(--surface2);
+  background: var(--bg-hover);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-md);
   overflow: hidden;
   margin-bottom: 12px;
 }
 
 .recap-header {
   padding: 10px 16px;
-  background: var(--surface);
+  background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
   font-size: 11px;
   font-weight: 700;
@@ -486,15 +458,15 @@ select {
 }
 
 .price-card {
-  background: var(--surface);
+  background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-sm);
 }
 
 .price-card-header {
-  background: var(--text);
+  background: var(--text-primary);
   padding: 14px 20px;
   display: flex;
   align-items: center;
@@ -502,7 +474,7 @@ select {
 }
 
 .price-card-header h3 {
-  font-family: 'Syne', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 14px;
   font-weight: 700;
   color: #fff;
@@ -511,7 +483,7 @@ select {
 
 .price-live {
   font-size: 10px;
-  background: var(--success);
+  background: var(--accent);
   color: #fff;
   padding: 2px 8px;
   border-radius: 20px;
@@ -526,7 +498,7 @@ select {
 .price-placeholder {
   text-align: center;
   padding: 20px 0;
-  color: var(--text-dim);
+  color: var(--text-hint);
   font-size: 13px;
 }
 .price-placeholder .ph-icon { font-size: 28px; margin-bottom: 8px; }
@@ -543,32 +515,32 @@ select {
 
 .price-line span:first-child { color: var(--text-muted); }
 .price-line.separator { border-top: 1px solid var(--border); padding-top: 10px; margin-top: 2px; }
-.price-line.tva span { font-size: 12px; color: var(--text-dim); }
+.price-line.tva span { font-size: 12px; color: var(--text-hint); }
 .price-line.total {
   background: var(--accent-light);
   margin: 8px -20px -16px;
   padding: 14px 20px;
-  border-top: 1px solid rgba(26,71,42,0.15);
+  border-top: 1px solid rgba(0,201,167,0.2);
 }
-.price-line.total span:first-child { font-size: 14px; font-weight: 700; color: var(--accent); }
+.price-line.total span:first-child { font-size: 14px; font-weight: 700; color: var(--accent-dark); }
 .price-line.total span:last-child {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 22px;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--accent-dark);
 }
 
 /* Info card */
 .info-card {
-  background: var(--surface);
+  background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 16px 20px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-sm);
 }
 
 .info-card h4 {
-  font-family: 'Syne', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 13px;
   font-weight: 700;
   margin-bottom: 10px;
@@ -599,29 +571,15 @@ select {
   justify-content: space-between;
   padding: 20px 24px;
   border-top: 1px solid var(--border);
-  background: var(--surface2);
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 22px;
-  border: none;
-  border-radius: var(--radius);
-  font-size: 14px;
-  font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
-  cursor: pointer;
-  transition: all 0.15s;
+  background: var(--bg-hover);
 }
 
 .btn-back {
-  background: var(--surface2);
-  border: 1.5px solid var(--border);
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-strong);
   color: var(--text-muted);
 }
-.btn-back:hover { border-color: var(--text-muted); color: var(--text); }
+.btn-back:hover { border-color: var(--text-muted); color: var(--text-primary); }
 
 .btn-next {
   background: var(--accent);
@@ -631,18 +589,18 @@ select {
   font-size: 15px;
   padding: 13px 24px;
 }
-.btn-next:hover { background: #143d22; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(26,71,42,0.25); }
-.btn-next:disabled { background: var(--border); color: var(--text-dim); cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-next:hover { background: var(--accent-dark); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,201,167,0.25); }
+.btn-next:disabled { background: var(--border); color: var(--text-hint); cursor: not-allowed; transform: none; box-shadow: none; }
 
 .btn-submit {
-  background: var(--accent2);
+  background: var(--warning);
   color: #fff;
   flex: 1;
   justify-content: center;
   font-size: 15px;
   padding: 13px 24px;
 }
-.btn-submit:hover { background: #b86022; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(212,116,42,0.3); }
+.btn-submit:hover { background: #6b3a08; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(133,77,14,0.3); }
 
 /* ── SUCCESS STATE ── */
 .success-screen {
@@ -669,7 +627,7 @@ select {
 }
 
 .success-screen h2 {
-  font-family: 'Syne', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 22px;
   font-weight: 800;
   margin-bottom: 8px;
@@ -681,11 +639,11 @@ select {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--surface2);
+  background: var(--bg-hover);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-md);
   padding: 10px 20px;
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 18px;
   font-weight: 600;
   margin-bottom: 24px;
@@ -702,10 +660,10 @@ select {
   padding: 11px 16px;
   background: transparent;
   border: 1.5px dashed var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-md);
   color: var(--text-muted);
   font-size: 13.5px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   cursor: pointer;
   transition: all 0.15s;
   font-weight: 500;
@@ -713,7 +671,7 @@ select {
 
 .btn-add-article:hover {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-dark);
   background: var(--accent-light);
 }
 
@@ -723,7 +681,7 @@ select {
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 16px;
-  color: var(--accent);
+  color: var(--accent-dark);
   font-weight: 700;
 }
 
@@ -731,8 +689,8 @@ select {
 .mini-form {
   display: none;
   background: var(--accent-light);
-  border: 1.5px solid rgba(26,71,42,0.2);
-  border-radius: var(--radius);
+  border: 1.5px solid rgba(0,201,167,0.2);
+  border-radius: var(--radius-md);
   padding: 16px;
   gap: 12px;
   flex-direction: column;
@@ -749,27 +707,27 @@ select {
   background: var(--accent);
   color: #fff;
   border: none;
-  border-radius: var(--radius);
+  border-radius: var(--radius-md);
   padding: 10px 18px;
   font-size: 13.5px;
   font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   cursor: pointer;
   transition: all 0.15s;
   align-self: flex-end;
 }
 
-.btn-confirm-article:hover { background: #143d22; }
+.btn-confirm-article:hover { background: var(--accent-dark); }
 
 /* ── AUTOCOMPLETE ── */
 .autocomplete-list {
   position: absolute;
   top: 100%;
   left: 0; right: 0;
-  background: var(--surface);
+  background: var(--bg-surface);
   border: 1.5px solid var(--accent);
   border-top: none;
-  border-radius: 0 0 var(--radius) var(--radius);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
   z-index: 50;
   max-height: 200px;
   overflow-y: auto;
@@ -1014,7 +972,7 @@ select {
         <div>
           <label>Articles à livrer <span class="required">*</span></label>
           <div class="articles-list" id="articles-list">
-            <div id="empty-articles" style="text-align:center;padding:20px;color:var(--text-dim);font-size:13px">
+            <div id="empty-articles" style="text-align:center;padding:20px;color:var(--text-hint);font-size:13px">
               Aucun article ajouté — cliquez sur le bouton ci-dessous
             </div>
           </div>
@@ -1625,7 +1583,7 @@ function renderArticles() {
       <div class="article-info">
         <div class="article-desc">${a.desc}</div>
         <div class="article-meta">
-          <span style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600">×${a.qte}</span>
+          <span style="background:var(--bg-surface);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600">×${a.qte}</span>
           ${a.longueur ? ` · 📏 ${a.longueur} cm` : ''}
           ${a.lourd ? ' · ⚠️ Lourd' : ''}
         </div>
@@ -1669,7 +1627,7 @@ function renderOptionsLivraison() {
     }
 
     if (type === 'par_unite') {
-      return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:6px">
+      return `<div style="background:var(--bg-hover);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:6px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
           <strong style="font-size:13px">${o.nom}</strong>
           <span style="font-size:11px;color:var(--text-muted)">${(o.prix_unitaire || 0).toFixed(2)} \u20ac/${o.unite_label || 'unit\u00e9'}${o.seuil_gratuit ? ' \u00b7 ' + o.seuil_gratuit + ' gratuit(s)' : ''}</span>
@@ -1686,7 +1644,7 @@ function renderOptionsLivraison() {
     }
 
     if (type === 'par_seuil') {
-      return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
+      return `<div style="background:var(--bg-hover);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
         <div>
           <strong style="font-size:13px">${o.nom}</strong>
           <div style="font-size:11px;color:var(--text-muted)">Si \u2265 ${o.seuil_declencheur} ${o.unite_label || ''} \u2192 ${(o.prix_unitaire || o.prix || 0).toFixed(2)} \u20ac</div>
