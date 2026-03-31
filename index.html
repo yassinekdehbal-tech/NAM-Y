@@ -1,842 +1,514 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NAMY — TMS</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>NAMY — Expéditions</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
 <script src="utils.js"></script>
+<style>
+  /* Page-level overrides for standalone expeditions page */
+  body {
+    overflow: auto;
+  }
+
+  .exp-wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  .exp-header {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .exp-header-left {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+  }
+
+  .exp-logo {
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: 6px;
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .exp-nav {
+    display: flex;
+    gap: 4px;
+  }
+
+  .exp-nav a {
+    padding: 7px 14px;
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+
+  .exp-nav a:hover {
+    background: var(--bg-hover);
+    color: var(--text);
+  }
+
+  .exp-nav a.active {
+    background: var(--primary);
+    color: white;
+  }
+
+  .exp-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  .role-badge {
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(139,92,246,0.15);
+    color: var(--ai);
+  }
+
+  .btn-logout {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--danger);
+    font-size: 12.5px;
+    padding: 5px 12px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+
+  .btn-logout:hover {
+    background: rgba(239,68,68,0.1);
+    border-color: var(--danger);
+  }
+
+  /* Main body */
+  .exp-body {
+    flex: 1;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+  }
+
+  /* Period buttons */
+  .period-btns {
+    display: flex;
+    gap: 4px;
+  }
+
+  .period-btn {
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 12.5px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .period-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text);
+  }
+
+  .period-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+  }
+
+  /* Filters row */
+  .filters-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    background: var(--bg-card);
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .filter-group label {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .filter-sep {
+    width: 1px;
+    height: 28px;
+    background: var(--border);
+    margin: 0 4px;
+  }
+
+  /* Statut filter buttons */
+  .statut-btns {
+    display: flex;
+    gap: 3px;
+  }
+
+  .statut-btn {
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .statut-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text);
+  }
+
+  .statut-btn.active {
+    color: white;
+  }
+
+  .statut-btn[data-statut="en_attente"].active { background: var(--warning); border-color: var(--warning); }
+  .statut-btn[data-statut="planifie"].active { background: var(--info); border-color: var(--info); }
+  .statut-btn[data-statut="en_cours"].active { background: var(--primary); border-color: var(--primary); }
+  .statut-btn[data-statut="livre"].active { background: var(--success); border-color: var(--success); }
+  .statut-btn[data-statut="echec"].active { background: var(--danger); border-color: var(--danger); }
+  .statut-btn[data-statut="litige"].active { background: #dc2626; border-color: #dc2626; }
+
+  /* Pagination */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 12px 0;
+  }
+
+  .page-btn {
+    min-width: 32px;
+    height: 32px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .page-btn:hover { background: var(--bg-hover); color: var(--text); }
+  .page-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
+  .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .page-info {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 0 8px;
+  }
+
+  /* Export footer */
+  .exp-footer {
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .footer-info {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* Table responsive */
+  @media (max-width: 1024px) {
+    .exp-body { padding: 12px; }
+    .filters-row { flex-direction: column; align-items: stretch; }
+    .filter-sep { display: none; }
+    .table-container { overflow-x: auto; }
+  }
+
+  /* Status change form in modal */
+  .status-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .status-form select,
+  .status-form textarea {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    color: var(--text);
+    font-size: 13.5px;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    width: 100%;
+  }
+
+  .status-form textarea { min-height: 80px; resize: vertical; }
+  .status-form select:focus,
+  .status-form textarea:focus { border-color: var(--primary); }
+</style>
 </head>
 <body>
-<div id="app">
-  <!-- Sidebar -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-logo">
-      <span class="logo-text">N A M Y</span>
-    </div>
-    <nav class="sidebar-nav">
-      <a href="#" class="nav-item active" data-page="expeditions">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 17H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-4m-6 4l3-3-3-3"/></svg>
-        Expéditions
-      </a>
-      <a href="#" class="nav-item" data-page="dispatch">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
-        Dispatch
-      </a>
-      <a href="#" class="nav-item" data-page="planning">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        Planning
-      </a>
-      <a href="#" class="nav-item" data-page="map">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-        Map chauffeurs
-      </a>
-      <a href="#" class="nav-item" data-page="statistiques">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        Statistiques
-      </a>
-      <a href="#" class="nav-item" data-page="extraction">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Extraction
-      </a>
-      <a href="#" class="nav-item" data-page="administration">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
-        Administration
-      </a>
-    </nav>
-    <div class="sidebar-bottom">
-      <a href="#" class="nav-item nav-logout">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        Déconnexion
-      </a>
-    </div>
-  </aside>
+<div class="exp-wrapper">
 
-  <!-- Main content -->
-  <main class="main-content">
-    <!-- Top bar -->
-    <div class="topbar">
-      <div class="topbar-notice">
-        <span class="notice-dot"></span>
-        <span>CONTACT EXPLOITATION — NIZAR Lun–Ven 8h–16h : <strong>06 52 59 76 07</strong> · YAQUINE Sam–Dim 8h–16h : <strong>07 67 44 08 16</strong> · SALLE Lun–Dim 16h–20h : <a href="mailto:salle@fissaliv.com">salle@fissaliv.com</a></span>
+  <!-- HEADER -->
+  <header class="exp-header">
+    <div class="exp-header-left">
+      <a href="index.html" class="exp-logo">N A M Y</a>
+      <nav class="exp-nav">
+        <a href="index.html" class="active">Expeditions</a>
+        <a href="dispatch.html">Dispatch</a>
+        <a href="grilles-tarifaires.html">Grilles</a>
+        <a href="admin.html">Admin</a>
+      </nav>
+    </div>
+    <div class="exp-header-right">
+      <div class="user-info">
+        <span id="user-name">—</span>
+        <span class="role-badge" id="user-role">—</span>
       </div>
+      <button class="btn-logout" onclick="logout()">Deconnexion</button>
+    </div>
+  </header>
+
+  <!-- BODY -->
+  <div class="exp-body">
+
+    <!-- Page title -->
+    <div class="page-header">
+      <h1>Liste des expeditions</h1>
     </div>
 
-    <!-- Pages -->
-    <div class="page active" id="page-expeditions">
-      <div class="page-header">
-        <h1>Liste des expéditions</h1>
-        <button class="btn btn-primary" onclick="openModal('modal-create-expedition')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Créer une expédition
-        </button>
+    <!-- FILTERS BAR -->
+    <div class="filters-row">
+      <!-- Period -->
+      <div class="filter-group">
+        <label>Periode :</label>
+        <div class="period-btns">
+          <button class="period-btn" data-period="today" onclick="setPeriod('today',this)">Aujourd'hui</button>
+          <button class="period-btn" data-period="7d" onclick="setPeriod('7d',this)">7j</button>
+          <button class="period-btn active" data-period="30d" onclick="setPeriod('30d',this)">30j</button>
+          <button class="period-btn" data-period="custom" onclick="setPeriod('custom',this)">Personnalise</button>
+        </div>
       </div>
 
-      <!-- Filters -->
-      <div class="filters-bar">
-        <input type="text" placeholder="ID" class="filter-input filter-sm" id="filter-id">
-        <input type="text" placeholder="Expéditeur (Nom / CP / Ville)" class="filter-input" id="filter-expediteur">
-        <input type="text" placeholder="Destinataire (Nom / CP / Ville)" class="filter-input" id="filter-destinataire">
-        <input type="date" class="filter-input filter-date" id="filter-date" value="2026-03-29">
-        <select class="filter-select" id="filter-statut">
-          <option value="">Tous les statuts</option>
-          <option value="en_attente">En attente</option>
-          <option value="planifie">Planifié</option>
-          <option value="en_cours">En cours</option>
-          <option value="livre">Livré</option>
-          <option value="litige">Litige</option>
+      <!-- Custom dates (hidden by default) -->
+      <div class="filter-group" id="custom-dates" style="display:none">
+        <input type="date" class="filter-input filter-date" id="filter-date-start">
+        <span style="color:var(--text-muted)">a</span>
+        <input type="date" class="filter-input filter-date" id="filter-date-end">
+      </div>
+
+      <div class="filter-sep"></div>
+
+      <!-- Statut -->
+      <div class="filter-group">
+        <label>Statut :</label>
+        <div class="statut-btns">
+          <button class="statut-btn" data-statut="en_attente" onclick="toggleStatut(this)">En attente</button>
+          <button class="statut-btn" data-statut="planifie" onclick="toggleStatut(this)">Planifie</button>
+          <button class="statut-btn" data-statut="en_cours" onclick="toggleStatut(this)">En cours</button>
+          <button class="statut-btn" data-statut="livre" onclick="toggleStatut(this)">Livre</button>
+          <button class="statut-btn" data-statut="echec" onclick="toggleStatut(this)">Echec</button>
+          <button class="statut-btn" data-statut="litige" onclick="toggleStatut(this)">Litige</button>
+        </div>
+      </div>
+
+      <div class="filter-sep"></div>
+
+      <!-- Magasin -->
+      <div class="filter-group">
+        <select class="filter-select" id="filter-magasin" onchange="applyFilters()">
+          <option value="">Tous les magasins</option>
         </select>
-        <select class="filter-select" id="filter-chauffeur">
+      </div>
+
+      <!-- Chauffeur -->
+      <div class="filter-group">
+        <select class="filter-select" id="filter-chauffeur" onchange="applyFilters()">
           <option value="">Tous les chauffeurs</option>
         </select>
-        <button class="btn btn-secondary btn-sm" onclick="filterExpeditions()">Filtrer</button>
-        <button class="btn btn-ghost btn-sm" onclick="resetFilters()">Réinitialiser</button>
       </div>
 
-      <!-- Stats rapides -->
-      <div class="quick-stats">
-        <div class="stat-card">
-          <span class="stat-value" id="stat-total">0</span>
-          <span class="stat-label">Total</span>
-        </div>
-        <div class="stat-card stat-warning">
-          <span class="stat-value" id="stat-attente">0</span>
-          <span class="stat-label">En attente</span>
-        </div>
-        <div class="stat-card stat-info">
-          <span class="stat-value" id="stat-planifie">0</span>
-          <span class="stat-label">Planifiées</span>
-        </div>
-        <div class="stat-card stat-success">
-          <span class="stat-value" id="stat-livre">0</span>
-          <span class="stat-label">Livrées</span>
-        </div>
-        <div class="stat-card stat-danger">
-          <span class="stat-value" id="stat-litige">0</span>
-          <span class="stat-label">Litiges</span>
-        </div>
+      <div class="filter-sep"></div>
+
+      <!-- Search -->
+      <div class="filter-group">
+        <input type="text" class="filter-input" id="filter-search" placeholder="Rechercher..." oninput="applyFilters()">
       </div>
 
-      <!-- Table -->
-      <div class="table-container">
-        <table class="data-table" id="expeditions-table">
-          <thead>
-            <tr>
-              <th class="sortable" data-col="id">ID <span class="sort-icon">↕</span></th>
-              <th class="sortable" data-col="tournee">Tournée <span class="sort-icon">↕</span></th>
-              <th class="sortable" data-col="expediteur">Expéditeur <span class="sort-icon">↕</span></th>
-              <th class="sortable" data-col="destinataire">Destinataire <span class="sort-icon">↕</span></th>
-              <th class="sortable" data-col="date">Date de livraison <span class="sort-icon">↕</span></th>
-              <th>Infos Expédition</th>
-              <th>Options</th>
-              <th class="sortable" data-col="prix">Prix TTC <span class="sort-icon">↕</span></th>
-              <th>Statut</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="expeditions-tbody"></tbody>
-        </table>
+      <!-- Reset -->
+      <button class="btn btn-ghost btn-sm" onclick="resetFilters()">Reinitialiser</button>
+    </div>
+
+    <!-- STATS ROW -->
+    <div class="quick-stats">
+      <div class="stat-card">
+        <span class="stat-value" id="stat-total">0</span>
+        <span class="stat-label">Total</span>
+      </div>
+      <div class="stat-card stat-warning">
+        <span class="stat-value" id="stat-attente">0</span>
+        <span class="stat-label">En attente</span>
+      </div>
+      <div class="stat-card stat-info">
+        <span class="stat-value" id="stat-planifie">0</span>
+        <span class="stat-label">Planifie</span>
+      </div>
+      <div class="stat-card" style="--stat-color: var(--primary)">
+        <span class="stat-value" id="stat-encours" style="color:var(--primary)">0</span>
+        <span class="stat-label">En cours</span>
+      </div>
+      <div class="stat-card stat-success">
+        <span class="stat-value" id="stat-livre">0</span>
+        <span class="stat-label">Livre</span>
+      </div>
+      <div class="stat-card stat-danger">
+        <span class="stat-value" id="stat-litige">0</span>
+        <span class="stat-label">Litige / Echec</span>
       </div>
     </div>
 
-    <!-- PAGE DISPATCH -->
-    <div class="page" id="page-dispatch">
-      <div class="page-header">
-        <h1>Dispatch</h1>
-        <button class="btn btn-primary" onclick="openModal('modal-create-tournee')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Créer une tournée
-        </button>
-      </div>
-      <div class="dispatch-layout">
-        <div class="dispatch-map-container">
-          <div id="dispatch-map" class="map-placeholder">
-            <div class="map-overlay-info">Carte interactive — Intégration Leaflet/OpenStreetMap</div>
-            <div class="map-pins-demo">
-              <div class="map-pin pin-red" style="top:35%;left:48%"><span>12119</span></div>
-              <div class="map-pin pin-red" style="top:42%;left:52%"><span>12124</span></div>
-              <div class="map-pin pin-red" style="top:38%;left:55%"><span>12125</span></div>
-              <div class="map-pin pin-green" style="top:30%;left:50%"><span>12080</span></div>
-              <div class="map-pin pin-green" style="top:45%;left:45%"><span>12074</span></div>
-              <div class="map-pin pin-green" style="top:50%;left:58%"><span>12035</span></div>
-            </div>
-          </div>
-        </div>
-        <div class="dispatch-panels">
-          <div class="dispatch-panel">
-            <div class="panel-header">
-              <h3>Expéditions à affecter <span class="badge badge-warning" id="dispatch-count">0</span></h3>
-              <button class="btn btn-ai btn-sm" onclick="autoDispatch()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                Auto-dispatch IA
-              </button>
-            </div>
-            <div class="dispatch-list" id="dispatch-unassigned"></div>
-          </div>
-          <div class="dispatch-panel">
-            <div class="panel-header">
-              <h3>Tournées ouvertes du <span id="dispatch-date">29/03/2026</span></h3>
-            </div>
-            <div id="dispatch-tournees"></div>
-          </div>
-        </div>
-      </div>
+    <!-- TABLE -->
+    <div class="table-container">
+      <table class="data-table" id="expeditions-table">
+        <thead>
+          <tr>
+            <th class="sortable" onclick="sortBy('date')">Date <span class="sort-icon" id="sort-date">&#8595;</span></th>
+            <th class="sortable" onclick="sortBy('id')">N° <span class="sort-icon" id="sort-id">&#8597;</span></th>
+            <th class="sortable" onclick="sortBy('expediteur')">Magasin <span class="sort-icon" id="sort-expediteur">&#8597;</span></th>
+            <th class="sortable" onclick="sortBy('destinataire')">Destinataire <span class="sort-icon" id="sort-destinataire">&#8597;</span></th>
+            <th>Statut</th>
+            <th class="sortable" onclick="sortBy('chauffeur')">Chauffeur <span class="sort-icon" id="sort-chauffeur">&#8597;</span></th>
+            <th class="sortable" onclick="sortBy('prix_ttc')">Prix TTC <span class="sort-icon" id="sort-prix_ttc">&#8597;</span></th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="expeditions-tbody"></tbody>
+      </table>
     </div>
 
-    <!-- PAGE PLANNING -->
-    <div class="page" id="page-planning">
-      <div class="page-header">
-        <h1>Planning des chauffeurs</h1>
-        <div class="week-nav">
-          <button class="btn btn-secondary btn-sm" onclick="prevWeek()">←</button>
-          <span id="week-label">Semaine actuelle & suivante — 23/03/2026 – 05/04/2026</span>
-          <button class="btn btn-secondary btn-sm" onclick="nextWeek()">→</button>
-        </div>
-      </div>
-      <div class="table-container">
-        <table class="planning-table" id="planning-table">
-          <thead id="planning-thead"></thead>
-          <tbody id="planning-tbody"></tbody>
-        </table>
-      </div>
-    </div>
+    <!-- PAGINATION -->
+    <div class="pagination" id="pagination"></div>
 
-    <!-- PAGE MAP -->
-    <div class="page" id="page-map">
-      <div class="page-header">
-        <h1>Map chauffeurs</h1>
-        <div class="legend">
-          <span class="legend-item"><span class="legend-dot dot-green"></span> En tournée</span>
-          <span class="legend-item"><span class="legend-dot dot-red"></span> Disponible</span>
-        </div>
-      </div>
-      <div id="map-chauffeurs" class="map-placeholder map-full">
-        <div class="map-overlay-info">Carte temps réel — GPS chauffeurs</div>
-        <div class="map-pins-demo">
-          <div class="map-driver-pin pin-green" style="top:25%;left:40%"><div class="driver-avatar">TM</div><span>TAREK</span></div>
-          <div class="map-driver-pin pin-green" style="top:35%;left:55%"><div class="driver-avatar">GG</div><span>GORE</span></div>
-          <div class="map-driver-pin pin-red" style="top:50%;left:48%"><div class="driver-avatar">DT</div><span>DAMA</span></div>
-          <div class="map-driver-pin pin-red" style="top:40%;left:35%"><div class="driver-avatar">RS</div><span>RACHID</span></div>
-          <div class="map-driver-pin pin-green" style="top:60%;left:52%"><div class="driver-avatar">MK</div><span>MOHAMED</span></div>
-          <div class="map-driver-pin pin-red" style="top:30%;left:62%"><div class="driver-avatar">AE</div><span>AMINE</span></div>
-        </div>
-      </div>
-    </div>
+  </div>
 
-    <!-- PAGE STATISTIQUES -->
-    <div class="page" id="page-statistiques">
-      <div class="page-header">
-        <h1>Statistiques</h1>
-        <button class="btn btn-secondary" onclick="openModal('modal-dates')">Sélectionner les dates</button>
-      </div>
-      <div class="stats-tabs">
-        <button class="tab-btn active" onclick="switchTab('magasins')">🏪 Magasins</button>
-        <button class="tab-btn" onclick="switchTab('chauffeurs')">🚚 Chauffeurs</button>
-      </div>
-      <div id="stats-magasins" class="stats-content">
-        <div class="kpi-row" id="kpi-row"></div>
-        <div class="table-container">
-          <table class="data-table">
-            <thead><tr><th>Magasin</th><th>Livraisons</th><th>Devis</th><th>CA HT</th><th>Taux RCL</th></tr></thead>
-            <tbody id="stats-magasins-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-      <div id="stats-chauffeurs" class="stats-content" style="display:none">
-        <div class="table-container">
-          <table class="data-table">
-            <thead><tr><th>Chauffeur</th><th>Livraisons</th><th>Devis</th><th>CA HT</th><th>Taux RCL</th></tr></thead>
-            <tbody id="stats-chauffeurs-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+  <!-- FOOTER -->
+  <div class="exp-footer">
+    <span class="footer-info" id="footer-info">0 expeditions</span>
+    <button class="btn btn-secondary btn-sm" onclick="exportCSV()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Exporter CSV
+    </button>
+  </div>
 
-    <!-- PAGE EXTRACTION -->
-    <div class="page" id="page-extraction">
-      <div class="page-header"><h1>Extraction</h1></div>
-      <div class="card" style="max-width:600px">
-        <p class="text-muted">Extrayez vos expéditions au format PDF ou CSV sur une période donnée.</p>
-        <div class="form-group">
-          <label>Entreprise</label>
-          <select class="form-control" id="extract-entreprise">
-            <option value="">Toutes les entreprises</option>
-          </select>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Du</label>
-            <input type="date" class="form-control" value="2026-03-29" id="extract-from">
-          </div>
-          <div class="form-group">
-            <label>Au</label>
-            <input type="date" class="form-control" value="2026-04-05" id="extract-to">
-          </div>
-        </div>
-        <div class="btn-group">
-          <button class="btn btn-danger" onclick="generateExport('pdf')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            Générer PDF
-          </button>
-          <button class="btn btn-success" onclick="generateExport('csv')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            Générer CSV
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- PAGE ADMINISTRATION -->
-    <div class="page" id="page-administration">
-      <div class="page-header"><h1>Administration</h1></div>
-      <div class="admin-grid">
-        <div class="admin-section">
-          <h3>Administration</h3>
-          <a href="#" class="admin-link" onclick="showAdminSub('configuration')">⚙️ Configuration</a>
-        </div>
-        <div class="admin-section">
-          <h3>Exploitation</h3>
-          <a href="#" class="admin-link" onclick="navigateTo('map')">🗺️ Map chauffeurs</a>
-          <a href="#" class="admin-link" onclick="showAdminSub('chauffeurs')">🚚 Chauffeurs</a>
-          <a href="#" class="admin-link" onclick="showAdminSub('vehicules')">🚐 Véhicules</a>
-          <a href="#" class="admin-link" onclick="showAdminSub('utilisateurs')">👤 Utilisateurs</a>
-          <a href="#" class="admin-link" onclick="showAdminSub('entreprises')">🏢 Entreprises</a>
-        </div>
-        <div class="admin-section">
-          <h3>Facturation</h3>
-          <a href="#" class="admin-link" onclick="showAdminSub('tarifs')">💶 Grilles tarifaires</a>
-        </div>
-      </div>
-
-      <!-- Sous-sections admin -->
-      <div id="admin-chauffeurs" class="admin-sub" style="display:none">
-        <div class="sub-header">
-          <h2>Liste des chauffeurs</h2>
-          <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-chauffeur')">+ Ajouter</button>
-        </div>
-        <input type="text" placeholder="Rechercher..." class="filter-input" style="margin-bottom:1rem;width:300px">
-        <div class="table-container">
-          <table class="data-table">
-            <thead><tr><th>ID</th><th>Prénom</th><th>Nom</th><th>Actions</th></tr></thead>
-            <tbody id="chauffeurs-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div id="admin-entreprises" class="admin-sub" style="display:none">
-        <div class="sub-header">
-          <h2>Liste des entreprises</h2>
-          <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-entreprise')">+ Ajouter</button>
-        </div>
-        <div class="table-container">
-          <table class="data-table">
-            <thead><tr><th>ID</th><th>Entreprise</th><th>Adresse</th><th>Actions</th></tr></thead>
-            <tbody id="entreprises-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div id="admin-vehicules" class="admin-sub" style="display:none">
-        <div class="sub-header">
-          <h2>Liste des véhicules</h2>
-          <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-vehicule')">+ Ajouter</button>
-        </div>
-        <div class="table-container">
-          <table class="data-table">
-            <thead><tr><th>ID</th><th>Véhicule</th><th>Plaque</th><th>Actions</th></tr></thead>
-            <tbody id="vehicules-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div id="admin-utilisateurs" class="admin-sub" style="display:none">
-        <div class="sub-header">
-          <h2>Liste des utilisateurs</h2>
-          <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-utilisateur')">+ Ajouter</button>
-        </div>
-        <div class="table-container">
-          <table class="data-table">
-            <thead><tr><th>ID</th><th>Prénom</th><th>Nom</th><th>Email</th><th>Rôle</th><th>Actions</th></tr></thead>
-            <tbody id="utilisateurs-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div id="admin-configuration" class="admin-sub" style="display:none">
-        <div class="sub-header">
-          <h2>Configuration</h2>
-        </div>
-        <div class="card" style="padding:24px;color:var(--text-muted)">
-          <p>Paramètres généraux de l'application NAMY.</p>
-          <p style="margin-top:12px;font-size:13px">Version : 1.0.0 · Supabase : gwbvfohizdxwhmcoqvgh</p>
-        </div>
-      </div>
-
-      <div id="admin-tarifs" class="admin-sub" style="display:none">
-        <div class="sub-header">
-          <h2>Grilles tarifaires</h2>
-          <button class="btn btn-primary btn-sm">+ Créer une grille</button>
-        </div>
-        <div class="table-container">
-          <table class="data-table">
-            <thead><tr><th>Poids départ (≥)</th><th>Poids fin (&lt;)</th><th>Colis unique (&lt;kg)</th><th>Dimension max (cm)</th><th>Lieu livraison</th><th>Prix</th><th>Actions</th></tr></thead>
-            <tbody id="tarifs-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </main>
 </div>
 
-<!-- MODALS -->
-<div class="modal-overlay" id="modal-create-expedition" style="display:none">
+<!-- MODAL: DETAIL EXPEDITION -->
+<div class="modal-overlay" id="modal-detail" style="display:none">
   <div class="modal modal-large">
     <div class="modal-header">
-      <h2>Créer une expédition</h2>
-      <button class="modal-close" onclick="closeModal('modal-create-expedition')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-section">
-        <div class="section-badge">Admin</div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Client payeur <span class="required">*</span></label>
-            <select class="form-control" id="new-client" onchange="updateClientForm()">
-              <option value="">Sélectionner...</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Prestation <span class="required">*</span></label>
-            <select class="form-control" id="new-prestation">
-              <option>TRUFFAUT PIECE DU CHOIX STD</option>
-              <option>FISSALIV STD</option>
-              <option>EXPRESS</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-section">
-        <div class="section-badge">1</div>
-        <h4>Date &amp; Prestation</h4>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Date de livraison <span class="required">*</span></label>
-            <input type="date" class="form-control" id="new-date" value="2026-03-29">
-          </div>
-          <div class="form-group">
-            <label>Créneau horaire <span class="required">*</span></label>
-            <div class="creneau-btns">
-              <button class="creneau-btn" onclick="selectCreneau(this, '09:00-12:00')">09:00 - 12:00</button>
-              <button class="creneau-btn" onclick="selectCreneau(this, '12:00-16:00')">12:00 - 16:00</button>
-              <button class="creneau-btn" onclick="selectCreneau(this, '15:00-18:00')">15:00 - 18:00</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-row-equal">
-        <div class="form-section">
-          <div class="section-badge">2</div>
-          <h4>Expéditeur <button class="btn-inverser" onclick="inverserAdresses()">⇄ Inverser</button></h4>
-          <div class="form-group">
-            <label>Nom de l'expéditeur <span class="required">*</span></label>
-            <input type="text" class="form-control" id="new-exp-nom" placeholder="Nom expéditeur">
-          </div>
-          <div class="form-group">
-            <label>Adresse <span class="required">*</span></label>
-            <input type="text" class="form-control" id="new-exp-adresse" placeholder="Adresse">
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Code postal</label>
-              <input type="text" class="form-control" id="new-exp-cp" placeholder="CP">
-            </div>
-            <div class="form-group">
-              <label>Ville</label>
-              <input type="text" class="form-control" id="new-exp-ville" placeholder="Ville">
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Téléphone</label>
-            <input type="text" class="form-control" id="new-exp-tel" placeholder="Téléphone">
-          </div>
-          <div class="form-group">
-            <label>Instructions d'enlèvement</label>
-            <input type="text" class="form-control" id="new-exp-instructions" placeholder="Instructions...">
-          </div>
-        </div>
-
-        <div class="form-section">
-          <div class="section-badge">3</div>
-          <h4>Destinataire</h4>
-          <div class="form-group">
-            <label>Nom du destinataire <span class="required">*</span></label>
-            <input type="text" class="form-control" id="new-dest-nom" placeholder="Nom destinataire">
-          </div>
-          <div class="form-group">
-            <label>Adresse <span class="required">*</span></label>
-            <input type="text" class="form-control" id="new-dest-adresse" placeholder="Adresse (min 3 caractères)">
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Code postal <span class="required">*</span></label>
-              <input type="text" class="form-control" id="new-dest-cp" placeholder="CP">
-            </div>
-            <div class="form-group">
-              <label>Ville <span class="required">*</span></label>
-              <input type="text" class="form-control" id="new-dest-ville" placeholder="Ville">
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Téléphone <span class="required">*</span></label>
-            <input type="text" class="form-control" id="new-dest-tel" placeholder="Téléphone">
-          </div>
-          <div class="form-group">
-            <label>Email <span class="required">*</span></label>
-            <input type="email" class="form-control" id="new-dest-email" placeholder="Email">
-          </div>
-          <div class="form-group">
-            <label>Instructions de livraison</label>
-            <input type="text" class="form-control" id="new-dest-instructions" placeholder="Ex: 1er étage, digicode...">
-          </div>
-        </div>
-      </div>
-
-      <div class="form-row-equal">
-        <div class="form-section">
-          <div class="section-badge">4</div>
-          <h4>Colisage &amp; Options</h4>
-          <div class="form-group">
-            <label>Lieu de livraison <span class="required">*</span></label>
-            <select class="form-control" id="new-lieu" onchange="recalculerPrix()">
-              <option>Pièce du choix</option>
-              <option>Pied de camion</option>
-              <option>Rez-de-chaussée</option>
-            </select>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Poids total (kg) <span class="required">*</span></label>
-              <input type="number" class="form-control" id="new-poids-total" placeholder="0" oninput="recalculerPrix()">
-            </div>
-            <div class="form-group">
-              <label>Poids colis lourd (kg) <span class="required">*</span></label>
-              <input type="number" class="form-control" id="new-poids-lourd" placeholder="0">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Taille colis long (cm) <span class="required">*</span></label>
-              <input type="number" class="form-control" id="new-taille" placeholder="0" oninput="recalculerPrix()">
-            </div>
-            <div class="form-group">
-              <label>Nb de colis <span class="required">*</span></label>
-              <input type="number" class="form-control" id="new-nb-colis" placeholder="0">
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Nb colis lourds (≥70kg)</label>
-            <input type="number" class="form-control" id="new-nb-lourds" placeholder="0">
-          </div>
-          <div class="form-group">
-            <label>Description de la marchandise <span class="required">*</span></label>
-            <input type="text" class="form-control" id="new-description" placeholder="Ex: meuble, plantes...">
-          </div>
-        </div>
-
-        <div class="form-section">
-          <div class="section-badge">5</div>
-          <h4>Tarification</h4>
-          <div id="tarif-info" class="tarif-placeholder">
-            <p>Remplissez les informations pour calculer le prix :</p>
-            <ul>
-              <li>Créneau horaire</li>
-              <li>Adresse destinataire valide</li>
-              <li>Informations de colisage</li>
-            </ul>
-          </div>
-          <div id="tarif-result" style="display:none">
-            <table class="tarif-table">
-              <tr><td>Tarif de base</td><td id="tarif-base">—</td></tr>
-              <tr><td>Supplément colis lourd</td><td id="tarif-supplement">—</td></tr>
-              <tr class="tarif-total-ht"><td>TOTAL HT</td><td id="tarif-ht">—</td></tr>
-              <tr class="tarif-tva"><td>TVA (20%)</td><td id="tarif-tva">—</td></tr>
-              <tr class="tarif-total-ttc"><td><strong>TOTAL TTC</strong></td><td id="tarif-ttc">—</td></tr>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-create-expedition')">Annuler</button>
-      <button class="btn btn-primary" onclick="createExpedition()">Valider l'expédition</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal Créer tournée -->
-<div class="modal-overlay" id="modal-create-tournee" style="display:none">
-  <div class="modal">
-    <div class="modal-header">
-      <h2>Créer une tournée</h2>
-      <button class="modal-close" onclick="closeModal('modal-create-tournee')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label>Nom de la tournée <span class="required">*</span></label>
-        <input type="text" class="form-control" id="new-tournee-nom" placeholder="Ex: TAREK 29/03">
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Date de début <span class="required">*</span></label>
-          <input type="date" class="form-control" id="new-tournee-date" value="2026-03-30">
-        </div>
-        <div class="form-group">
-          <label>Heure de début <span class="required">*</span></label>
-          <input type="time" class="form-control" id="new-tournee-heure" value="08:00">
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Chauffeur</label>
-        <select class="form-control" id="new-tournee-chauffeur">
-          <option value="">Non assigné</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Couleur de la tournée</label>
-        <div class="color-picker-row">
-          <input type="color" class="color-picker" id="new-tournee-couleur" value="#076460">
-          <input type="text" class="form-control" id="new-tournee-couleur-hex" value="#076460" style="width:120px">
-        </div>
-      </div>
-      <div class="tournee-preview" id="tournee-preview">
-        <strong>Aperçu :</strong>
-        <div class="tournee-badge" id="preview-badge" style="background:#076460">TOURNÉE</div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-create-tournee')">Annuler</button>
-      <button class="btn btn-primary" onclick="createTournee()">Créer la tournée</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal detail expédition -->
-<div class="modal-overlay" id="modal-detail-expedition" style="display:none">
-  <div class="modal modal-large">
-    <div class="modal-header">
-      <h2>Expédition <span id="detail-id"></span></h2>
-      <div class="modal-header-actions">
-        <button class="btn btn-secondary btn-sm">📄 Lettre de voiture</button>
-        <button class="btn btn-info btn-sm">📍 Lien de suivi</button>
-        <button class="btn btn-secondary btn-sm" onclick="dupliquerExpedition()">⧉ Dupliquer</button>
-        <button class="btn btn-danger btn-sm">⚠ Litige</button>
-        <button class="modal-close" onclick="closeModal('modal-detail-expedition')">✕</button>
-      </div>
+      <h2>Expedition <span id="detail-id" style="font-family:'DM Mono',monospace"></span></h2>
+      <button class="modal-close" onclick="closeModal('modal-detail')">&times;</button>
     </div>
     <div class="modal-body" id="detail-body"></div>
-  </div>
-</div>
-
-<!-- Modal créer véhicule -->
-<div class="modal-overlay" id="modal-create-vehicule" style="display:none">
-  <div class="modal">
-    <div class="modal-header">
-      <h2>Ajouter un véhicule</h2>
-      <button class="modal-close" onclick="closeModal('modal-create-vehicule')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label>Type de véhicule <span class="required">*</span></label>
-        <input type="text" class="form-control" id="new-veh-nom" placeholder="Ex : Fourgon 20m³">
-      </div>
-      <div class="form-group">
-        <label>Plaque d'immatriculation <span class="required">*</span></label>
-        <input type="text" class="form-control" id="new-veh-plaque" placeholder="Ex : AB-123-CD" style="text-transform:uppercase">
-      </div>
-    </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-create-vehicule')">Annuler</button>
-      <button class="btn btn-primary" onclick="createVehicule()">Ajouter le véhicule</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-detail')">Fermer</button>
     </div>
   </div>
 </div>
 
-<!-- Modal créer utilisateur -->
-<div class="modal-overlay" id="modal-create-utilisateur" style="display:none">
+<!-- MODAL: CHANGE STATUS -->
+<div class="modal-overlay" id="modal-status" style="display:none">
   <div class="modal">
     <div class="modal-header">
-      <h2>Ajouter un utilisateur</h2>
-      <button class="modal-close" onclick="closeModal('modal-create-utilisateur')">✕</button>
+      <h2>Modifier le statut</h2>
+      <button class="modal-close" onclick="closeModal('modal-status')">&times;</button>
     </div>
     <div class="modal-body">
-      <div class="form-row">
+      <input type="hidden" id="status-exp-id">
+      <div class="status-form">
         <div class="form-group">
-          <label>Prénom <span class="required">*</span></label>
-          <input type="text" class="form-control" id="new-user-prenom" placeholder="Prénom">
-        </div>
-        <div class="form-group">
-          <label>Nom <span class="required">*</span></label>
-          <input type="text" class="form-control" id="new-user-nom" placeholder="Nom">
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Email <span class="required">*</span></label>
-        <input type="email" class="form-control" id="new-user-email" placeholder="email@exemple.fr">
-      </div>
-      <div class="form-group">
-        <label>Mot de passe <span class="required">*</span></label>
-        <input type="password" class="form-control" id="new-user-password" placeholder="8 caractères minimum">
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Rôle <span class="required">*</span></label>
-          <select class="form-control" id="new-user-role">
-            <option value="">Sélectionner...</option>
-            <option value="admin">Admin</option>
-            <option value="client">Client</option>
-            <option value="fournisseur">Fournisseur</option>
-            <option value="dispatcher">Dispatcher</option>
-            <option value="vendeur">Vendeur</option>
-            <option value="livreur">Livreur</option>
+          <label>Nouveau statut</label>
+          <select id="status-new" class="form-control">
+            <option value="en_attente">En attente</option>
+            <option value="planifie">Planifie</option>
+            <option value="en_cours">En cours</option>
+            <option value="livre">Livre</option>
+            <option value="echec">Echec</option>
+            <option value="litige">Litige</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Entreprise</label>
-          <select class="form-control" id="new-user-entreprise">
-            <option value="">Aucune</option>
-          </select>
+          <label>Commentaire (optionnel)</label>
+          <textarea id="status-comment" class="form-control" placeholder="Ajouter un commentaire..."></textarea>
         </div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-create-utilisateur')">Annuler</button>
-      <button class="btn btn-primary" onclick="createUtilisateur()">Créer l'utilisateur</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-status')">Annuler</button>
+      <button class="btn btn-primary" onclick="confirmStatusChange()">Valider</button>
     </div>
   </div>
 </div>
 
-<!-- Modal créer chauffeur -->
-<div class="modal-overlay" id="modal-create-chauffeur" style="display:none">
-  <div class="modal">
-    <div class="modal-header">
-      <h2>Ajouter un chauffeur</h2>
-      <button class="modal-close" onclick="closeModal('modal-create-chauffeur')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-row">
-        <div class="form-group">
-          <label>Prénom <span class="required">*</span></label>
-          <input type="text" class="form-control" id="new-chauff-prenom" placeholder="Prénom">
-        </div>
-        <div class="form-group">
-          <label>Nom <span class="required">*</span></label>
-          <input type="text" class="form-control" id="new-chauff-nom" placeholder="Nom">
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Téléphone</label>
-        <input type="tel" class="form-control" id="new-chauff-tel" placeholder="06 12 34 56 78">
-      </div>
-      <div class="form-group">
-        <label>Entreprise</label>
-        <select class="form-control" id="new-chauff-entreprise">
-          <option value="">Aucune</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>
-          <input type="checkbox" id="new-chauff-actif" checked> Actif
-        </label>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-create-chauffeur')">Annuler</button>
-      <button class="btn btn-primary" onclick="createChauffeur()">Ajouter le chauffeur</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal sélection dates stats -->
-<div class="modal-overlay" id="modal-dates" style="display:none">
-  <div class="modal">
-    <div class="modal-header">
-      <h2>Période de statistiques</h2>
-      <button class="modal-close" onclick="closeModal('modal-dates')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-row">
-        <div class="form-group">
-          <label>Date de début</label>
-          <input type="date" class="form-control" id="stats-date-from" value="2026-03-01">
-        </div>
-        <div class="form-group">
-          <label>Date de fin</label>
-          <input type="date" class="form-control" id="stats-date-to" value="2026-03-30">
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-dates')">Annuler</button>
-      <button class="btn btn-primary" onclick="applyStatsDateFilter()">Appliquer</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal créer entreprise -->
-<div class="modal-overlay" id="modal-create-entreprise" style="display:none">
-  <div class="modal">
-    <div class="modal-header">
-      <h2>Ajouter une entreprise</h2>
-      <button class="modal-close" onclick="closeModal('modal-create-entreprise')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label>Nom de l'entreprise <span class="required">*</span></label>
-        <input type="text" class="form-control" id="new-ent-nom" placeholder="Ex : TRUFFAUT VERSAILLES">
-      </div>
-      <div class="form-group">
-        <label>Adresse <span class="required">*</span></label>
-        <input type="text" class="form-control" id="new-ent-adresse" placeholder="Ex : 12 Rue de la Paix">
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Code postal <span class="required">*</span></label>
-          <input type="text" class="form-control" id="new-ent-cp" placeholder="75001" maxlength="5">
-        </div>
-        <div class="form-group">
-          <label>Ville <span class="required">*</span></label>
-          <input type="text" class="form-control" id="new-ent-ville" placeholder="Paris">
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Téléphone</label>
-        <input type="tel" class="form-control" id="new-ent-tel" placeholder="01 23 45 67 89">
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Latitude</label>
-          <input type="number" step="0.001" class="form-control" id="new-ent-lat" placeholder="48.856">
-        </div>
-        <div class="form-group">
-          <label>Longitude</label>
-          <input type="number" step="0.001" class="form-control" id="new-ent-lng" placeholder="2.352">
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-create-entreprise')">Annuler</button>
-      <button class="btn btn-primary" onclick="createEntreprise()">Ajouter l'entreprise</button>
-    </div>
-  </div>
-</div>
-
-<!-- Toast notification -->
+<!-- TOAST -->
 <div id="toast" class="toast" style="display:none"></div>
 
 <script src="data.js"></script>

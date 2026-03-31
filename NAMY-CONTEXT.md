@@ -48,7 +48,7 @@
 | `dashboard-client.html` | Dashboard Client/Enseigne (7 KPIs + 5 graphiques, filtré RLS) | ✅ Branché |
 | `dashboard-transporteur.html` | Dashboard Transporteur (8 KPIs + 6 graphiques + avis, filtré RLS) | ✅ Branché |
 | `admin.html` | Gestion comptes + entreprises + paramètres contractuels | ✅ Branché |
-| `dispatch.html` | Carte Leaflet + création tournées | ✅ Branché |
+| `dispatch.html` | Dispatch : carte Leaflet + tournées + assignation + nav dates | ✅ Branché |
 | `formulaire-vendeur.html` | Saisie expédition vendeur (3 étapes) | ✅ Branché |
 | `grilles-tarifaires.html` | 3 types de grilles (poids/zone/colis) | ✅ Branché |
 | `chauffeur.html` | App mobile PWA livreur | ✅ Branché |
@@ -57,7 +57,7 @@
 | `data.js` | Chargement données Supabase + fallback local | — |
 | `app.js` | Logique métier index.html | — |
 | `styles.css` | Styles globaux index.html | — |
-| `index.html` | Liste expéditions principale | ✅ Branché |
+| `index.html` | Liste expéditions paginée + filtres + export CSV | ✅ Branché |
 
 ---
 
