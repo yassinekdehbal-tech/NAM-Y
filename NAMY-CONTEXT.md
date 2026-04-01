@@ -271,6 +271,32 @@ const { data } = await db.functions.invoke('create-entreprise', {
 - [x] ETA calculé automatiquement (35 min/stop, haversine × 1.3)
 - [x] Supabase Realtime sur tournees + tournee_stops
 
+### Session 01/04/2026 soir
+- [x] Refonte dispatch.html : 3 vues (Timeline axe 6h-20h, Éditeur drag&drop SortableJS, Carte Leaflet temps réel)
+- [x] Dispatch Supabase Realtime sur tournees + tournee_stops + positions_chauffeurs
+- [x] ETA haversine × 1.3 ÷ 30km/h, panneau latéral tournée, alertes retard
+- [x] nav.js : topbar universelle sur 8 pages, liens dynamiques par rôle
+- [x] nav.js : lien "+ Expédition" visible pour admin/dispatcher/client/vendeur, masqué fournisseur/livreur
+- [x] nav.js : "Grilles" masqué pour client
+- [x] Fix RLS entreprises : policies SELECT/INSERT/UPDATE/DELETE sur entreprises, chauffeurs, vehicules, tournees, utilisateurs
+- [x] Fix bug jours livraison admin.html : double toggle label+checkbox → div avec data-jour
+- [x] Autocomplétion adresse via api-adresse.data.gouv.fr (BAN) dans formulaire-vendeur.html (debounce 250ms, lat/lng)
+- [x] admin.html : édition utilisateur (modal pré-rempli + UPDATE Supabase)
+- [x] admin.html : édition entreprise (modal pré-rempli + UPDATE Supabase)
+- [x] admin.html : grille tarifaire dans fiche entreprise (dropdown + upsert clients_grilles)
+- [x] grilles-tarifaires.html : bouton supprimer grille avec protection si clients assignés
+- [x] grilles-tarifaires.html : multi-sélection clients dans "Associer un client" (cases à cocher + upsert masse)
+- [x] dashboard-client.html : fix header masqué (display:none supprimé)
+- [x] dashboard-client.html : checklist onboarding vérifie dynamiquement les vraies tables
+- [x] dashboard-client.html : création vendeur avec entreprise_id dynamique + messages d'erreur explicites
+- [x] dashboard-client.html : fix colonnes date_livraison/dest_nom → date/destinataire
+
+### Bugs ouverts
+- [ ] Client : double "Expéditions" dans topbar sur index.html (nav.js + nav locale)
+- [ ] Client : nav admin affichée sur index.html au lieu de nav client
+- [ ] Client : redirection forcée depuis index.html si rôle non admin/dispatcher
+- [ ] Création vendeur depuis dashboard-client : entreprise_id parfois null (récupération dynamique ajoutée, à confirmer)
+
 ### À faire
 - [ ] SMS automatique client (Twilio/Vonage)
 - [ ] Import historique ancien NAMY
