@@ -108,7 +108,7 @@
 <body>
 
 <!-- HEADER -->
-<header class="hdr" style="display:none">
+<header class="hdr">
   <div class="logo">N A M Y</div>
   <span class="hdr-sep">/</span>
   <div class="hdr-title">Espace Client &mdash; <strong id="entreprise-name">...</strong></div>
@@ -521,16 +521,24 @@ async function checkAlerts() {
 // ─── ONBOARDING ──────────────────────────────────────────────
 async function checkOnboarding() {
   try {
-    const { data } = await db.from('parametres_entreprise').select('onboarding')
-      .eq('entreprise_id', entrepriseId).single();
-    if (!data || !data.onboarding) return;
+    // Vérifier dynamiquement si chaque étape est complétée
+    const [paramsRes, grilleRes, vendeurRes, expRes] = await Promise.allSettled([
+      db.from('parametres_entreprise').select('id, jours_service').eq('entreprise_id', entrepriseId).single(),
+      db.from('clients_grilles').select('id').eq('client_id', entrepriseId).limit(1),
+      db.from('utilisateurs').select('id').eq('entreprise_id', entrepriseId).eq('role', 'vendeur').limit(1),
+      db.from('expeditions').select('id').eq('entreprise_id', entrepriseId).limit(1),
+    ]);
 
-    const ob = data.onboarding;
+    const hasHoraires = paramsRes.status === 'fulfilled' && paramsRes.value.data?.jours_service?.length > 0;
+    const hasGrille = grilleRes.status === 'fulfilled' && grilleRes.value.data?.length > 0;
+    const hasVendeur = vendeurRes.status === 'fulfilled' && vendeurRes.value.data?.length > 0;
+    const hasTest = expRes.status === 'fulfilled' && expRes.value.data?.length > 0;
+
     const steps = [
-      { key: 'horaires', label: 'Configurer les horaires du magasin', done: ob.horaires },
-      { key: 'grille', label: 'Assigner une grille tarifaire', done: ob.grille },
-      { key: 'vendeur', label: 'Cr\u00e9er le premier vendeur', done: ob.vendeur },
-      { key: 'test', label: 'Faire une exp\u00e9dition test', done: ob.test },
+      { key: 'horaires', label: 'Configurer les horaires du magasin', done: hasHoraires },
+      { key: 'grille', label: 'Assigner une grille tarifaire', done: hasGrille },
+      { key: 'vendeur', label: 'Cr\u00e9er le premier vendeur', done: hasVendeur },
+      { key: 'test', label: 'Faire une exp\u00e9dition test', done: hasTest },
     ];
     const completed = steps.filter(s => s.done).length;
     if (completed >= steps.length) return; // onboarding terminé
@@ -1125,35 +1133,44 @@ async function createVendeur() {
   btn.textContent = 'Création...';
 
   try {
-    const { data: session } = await db.auth.getSession();
-    const { data, error } = await db.functions.invoke('create-user', {
+    const resp = await db.functions.invoke('create-user', {
       body: {
         email, password, role: 'vendeur', prenom, nom,
         entreprise_id: entrepriseId
       }
     });
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
 
+    // La Edge Function peut retourner l'erreur dans data ou dans error
+    const result = resp.data;
+    if (resp.error) throw new Error(resp.error.message || 'Erreur réseau');
+    if (result?.error) throw new Error(result.error);
+    if (!result?.user) throw new Error('Réponse inattendue du serveur');
+
+    // Permissions vendeur
     const perms = {
       expeditions: { create: true, read_own: true },
-      voir_prix: document.getElementById('av-perm-prix').checked,
-      mode_devis: document.getElementById('av-perm-devis').checked,
-      annuler_expedition: document.getElementById('av-perm-annuler').checked,
-      voir_historique: document.getElementById('av-perm-histo').checked,
+      voir_prix: document.getElementById('av-perm-prix')?.checked ?? true,
+      mode_devis: document.getElementById('av-perm-devis')?.checked ?? false,
+      annuler_expedition: document.getElementById('av-perm-annuler')?.checked ?? false,
+      voir_historique: document.getElementById('av-perm-histo')?.checked ?? true,
     };
-    if (data?.user?.id) {
-      await db.from('utilisateurs').update({ permissions: perms }).eq('id', data.user.id);
+
+    // Mettre à jour les permissions via auth_id (plus fiable que id)
+    const authId = result.user.auth_id;
+    if (authId) {
+      await db.from('utilisateurs').update({ permissions: perms }).eq('auth_id', authId);
     }
 
-    showToast(`Vendeur ${prenom} ${nom} créé avec succès`, 'success');
+    showToast(`Vendeur ${prenom} ${nom} créé avec succès`);
     closeAddVendeur();
     ['av-prenom','av-nom','av-email'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('av-password').value = 'Namy2024!';
-    loadTeam();
-    loadVendeurs();
+
+    // Recharger la liste après un court délai (laisser Supabase propager)
+    setTimeout(() => { loadTeam(); loadVendeurs(); }, 500);
   } catch(e) {
-    showToast('Erreur: ' + (e.message || e), 'danger');
+    console.error('createVendeur error:', e);
+    showToast('Erreur création vendeur : ' + (e.message || String(e)), 'warning');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Créer le compte vendeur';
