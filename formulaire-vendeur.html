@@ -839,14 +839,13 @@ select {
         <div class="date-creneau">
           <div class="form-group">
             <label>Date de livraison <span class="required">*</span></label>
-            <input type="date" id="livraison-date" oninput="updateSidebar()">
+            <input type="date" id="livraison-date" oninput="onDateChange()">
+            <div id="date-warning" style="display:none;font-size:11px;color:var(--danger);margin-top:4px"></div>
           </div>
           <div class="form-group">
             <label>Créneau horaire <span class="required">*</span></label>
-            <div class="creneau-grid">
-              <button class="creneau-btn" onclick="selectCreneau(this,'09:00-12:00')">09h–12h</button>
-              <button class="creneau-btn" onclick="selectCreneau(this,'12:00-16:00')">12h–16h</button>
-              <button class="creneau-btn" onclick="selectCreneau(this,'15:00-18:00')">15h–18h</button>
+            <div class="creneau-grid" id="creneaux-container">
+              <div style="color:var(--text-muted);font-size:12px;padding:8px">Sélectionnez une date pour voir les créneaux</div>
             </div>
             <span class="error-msg" id="err-creneau">Choisissez un créneau</span>
           </div>
@@ -1558,6 +1557,152 @@ function hideError(errId, inputId) {
   document.getElementById(inputId).classList.remove('error');
 }
 
+// ─── DATE & CRÉNEAU VALIDATION ───────────────────────────────
+let fermeturesNamy = [];
+let fermeturesEntreprise = [];
+let joursService = [];
+let creneauxEntreprise = [];
+let limiteJour = 0;
+
+async function loadDateConstraints() {
+  const sessionUser = JSON.parse(sessionStorage.getItem('namy_user') || 'null');
+  if (!sessionUser || !sessionUser.entreprise_id) return;
+  try {
+    // Fermetures NAMY
+    const { data: fn } = await db.from('fermetures_namy').select('date,raison');
+    fermeturesNamy = (fn || []).map(f => ({ date: f.date, raison: f.raison || 'Fermeture NAMY' }));
+
+    // Paramètres entreprise
+    const { data: params } = await db.from('parametres_entreprise').select('jours_service,fermetures_exceptionnelles,limite_commandes_jour')
+      .eq('entreprise_id', sessionUser.entreprise_id).single();
+    if (params) {
+      joursService = params.jours_service || ['lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+      fermeturesEntreprise = (params.fermetures_exceptionnelles || []).map(d => ({ date: d, raison: 'Fermeture magasin' }));
+      limiteJour = params.limite_commandes_jour || 0;
+    }
+
+    // Créneaux
+    const { data: cr } = await db.from('creneaux_livraison').select('*')
+      .eq('entreprise_id', sessionUser.entreprise_id).eq('actif', true).order('heure_debut');
+    creneauxEntreprise = cr || [];
+  } catch(e) { console.warn('Date constraints error:', e); }
+}
+
+const JOUR_NAMES = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+
+function getDateBlockReason(dateStr) {
+  // Check NAMY fermetures
+  const namy = fermeturesNamy.find(f => f.date === dateStr);
+  if (namy) return namy.raison;
+
+  // Check entreprise fermetures
+  const ent = fermeturesEntreprise.find(f => f.date === dateStr);
+  if (ent) return ent.raison;
+
+  // Check jour de service
+  const d = new Date(dateStr);
+  const jourName = JOUR_NAMES[d.getDay()];
+  if (!joursService.includes(jourName)) return 'Jour non ouvré';
+
+  return null; // Date OK
+}
+
+async function onDateChange() {
+  const dateInput = document.getElementById('livraison-date');
+  const warning = document.getElementById('date-warning');
+  const dateStr = dateInput.value;
+
+  updateSidebar();
+
+  if (!dateStr) {
+    warning.style.display = 'none';
+    document.getElementById('creneaux-container').innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:8px">Sélectionnez une date pour voir les créneaux</div>';
+    return;
+  }
+
+  const blockReason = getDateBlockReason(dateStr);
+  if (blockReason) {
+    warning.style.display = 'block';
+    warning.textContent = 'Date indisponible : ' + blockReason;
+    dateInput.style.borderColor = 'var(--danger)';
+    document.getElementById('creneaux-container').innerHTML = '<div style="color:var(--danger);font-size:12px;padding:8px">Aucun créneau disponible pour cette date</div>';
+    selectedCreneau = null;
+    return;
+  }
+
+  warning.style.display = 'none';
+  dateInput.style.borderColor = '';
+
+  // Check daily limit
+  const sessionUser = JSON.parse(sessionStorage.getItem('namy_user') || 'null');
+  if (limiteJour > 0 && sessionUser && sessionUser.entreprise_id) {
+    try {
+      const { count } = await db.from('expeditions').select('*', { count: 'exact', head: true })
+        .eq('entreprise_id', sessionUser.entreprise_id).eq('date_livraison', dateStr);
+      if (count >= limiteJour) {
+        warning.style.display = 'block';
+        warning.textContent = 'Ce jour est complet (' + count + '/' + limiteJour + ' livraisons)';
+        dateInput.style.borderColor = 'var(--danger)';
+        document.getElementById('creneaux-container').innerHTML = '<div style="color:var(--danger);font-size:12px;padding:8px">Limite journalière atteinte</div>';
+        selectedCreneau = null;
+        return;
+      }
+    } catch(e) {}
+  }
+
+  // Render available créneaux
+  await renderAvailableCreneaux(dateStr);
+}
+
+async function renderAvailableCreneaux(dateStr) {
+  const container = document.getElementById('creneaux-container');
+  const sessionUser = JSON.parse(sessionStorage.getItem('namy_user') || 'null');
+
+  // If no custom créneaux defined, show defaults
+  if (!creneauxEntreprise.length) {
+    container.innerHTML = [
+      { debut: '09:00', fin: '12:00', label: '09h–12h', value: '09:00-12:00' },
+      { debut: '12:00', fin: '16:00', label: '12h–16h', value: '12:00-16:00' },
+      { debut: '15:00', fin: '18:00', label: '15h–18h', value: '15:00-18:00' },
+    ].map(c => `<button class="creneau-btn" onclick="selectCreneau(this,'${c.value}')">${c.label}</button>`).join('');
+    return;
+  }
+
+  // Use custom créneaux
+  let html = '';
+  for (const c of creneauxEntreprise) {
+    const debut = (c.heure_debut || '').slice(0, 5);
+    const fin = (c.heure_fin || '').slice(0, 5);
+    const value = debut + '-' + fin;
+    const label = debut.replace(':', 'h') + '–' + fin.replace(':', 'h');
+
+    let disabled = false;
+    let extra = '';
+
+    if (c.limite_colis > 0 && sessionUser && sessionUser.entreprise_id) {
+      try {
+        const { count } = await db.from('expeditions').select('*', { count: 'exact', head: true })
+          .eq('entreprise_id', sessionUser.entreprise_id)
+          .eq('date_livraison', dateStr)
+          .eq('creneau', value);
+        if (count >= c.limite_colis) {
+          disabled = true;
+          extra = ` (Complet ${count}/${c.limite_colis})`;
+        } else {
+          extra = ` (${count}/${c.limite_colis})`;
+        }
+      } catch(e) {}
+    }
+
+    if (disabled) {
+      html += `<button class="creneau-btn" disabled style="opacity:.5;cursor:not-allowed">${label}${extra}</button>`;
+    } else {
+      html += `<button class="creneau-btn" onclick="selectCreneau(this,'${value}')">${label}${extra}</button>`;
+    }
+  }
+  container.innerHTML = html;
+}
+
 // ─── CRÉNEAUX & LIEU ────────────────────────────────────────
 function selectCreneau(btn, val) {
   document.querySelectorAll('.creneau-btn').forEach(b => b.classList.remove('selected'));
@@ -2083,7 +2228,7 @@ async function loadSuiviData() {
 }
 
 // ─── INIT ───────────────────────────────────────────────────
-loadVendeurData();
+loadVendeurData().then(() => loadDateConstraints());
 </script>
 </body>
 </html>

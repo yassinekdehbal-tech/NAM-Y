@@ -82,7 +82,17 @@ frais_annexes           → Suppléments par grille
 options_livraison       → Options proposées au vendeur
 clients_grilles         → Assignation grille ↔ entreprise + mode devis
 positions_chauffeurs    → GPS temps réel chauffeurs (Realtime activé)
+creneaux_livraison      → Créneaux horaires par entreprise (heure_debut, heure_fin, limite)
+fermetures_namy         → Fermetures globales plateforme (date, raison)
 ```
+
+**Colonnes ajoutées à parametres_entreprise** :
+- `fermetures_exceptionnelles` date[] — fermetures spécifiques entreprise
+- `suspendu` boolean — suspension du compte
+- `raison_suspension` text — motif de suspension
+- `suspendu_le` timestamptz — date de suspension
+- `suspendu_par` uuid — admin qui a suspendu
+- `historique_suspensions` jsonb — journal suspension/réactivation
 
 **Statuts expédition** : `en_attente` → `planifie` → `en_cours` → `livre` / `litige` / `annule`
 **Statuts tournée** : `brouillon` → `publie` → `en_cours` → `termine` / `annule`
@@ -235,8 +245,17 @@ const { data } = await db.functions.invoke('create-entreprise', {
 - [x] Gestion livreurs par le fournisseur (création via Edge Function + toggle actif/suspendu + permissions)
 - [x] Edge Function create-entreprise (bypass RLS, onboarding auto)
 - [x] Données de test : 3 entreprises, 5 expéditions, 1 tournée, 5 comptes utilisateurs
+- [x] Calendrier NAMY : vue mensuelle + gestion fermetures globales (admin.html)
+- [x] Fiche entreprise enrichie : créneaux livraison, fermetures exceptionnelles, suspension/réactivation
+- [x] Suspension cascade : blocage login pour comptes suspendus + sous-comptes
+- [x] Dashboard client : onglet Paramètres (créneaux, limite, fermetures, historique suspensions)
+- [x] Formulaire vendeur : validation dates (fermetures NAMY + magasin + jours ouvrés + limite jour)
+- [x] Formulaire vendeur : créneaux dynamiques (chargés depuis creneaux_livraison, limites en temps réel)
+- [x] Dashboard admin : KPI "Magasins proches limite" (≥80% limite journalière)
+- [x] Migration SQL : tables creneaux_livraison, fermetures_namy + colonnes suspension
 
 ### À faire
+- [ ] Appliquer migration 20260401140000_calendrier_parametres.sql via SQL Editor
 - [ ] Déployer Edge Function create-entreprise
 - [ ] Corriger CHECK constraint utilisateurs (accepter nouveaux rôles)
 - [ ] SMS automatique client (Twilio/Vonage)
@@ -297,4 +316,4 @@ Toutes les migrations sont **appliquées** sur le projet Supabase gwbvfohizdxwhm
 
 ---
 
-*Dernière mise à jour : 01 avril 2026 — session après-midi (hiérarchie rôles)*
+*Dernière mise à jour : 01 avril 2026 — session après-midi (calendrier + paramètres opérationnels)*

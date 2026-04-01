@@ -91,6 +91,9 @@
     <div class="nav-link" onclick="switchSection('entreprises')">
       <span>🏢</span> Entreprises <span class="nav-count" id="count-entreprises">0</span>
     </div>
+    <div class="nav-link" onclick="switchSection('calendrier')">
+      📅 Calendrier
+    </div>
   </div>
 
   <div class="main">
@@ -166,6 +169,50 @@
         </table>
       </div>
     </div>
+
+  <!-- CALENDRIER NAMY -->
+  <div class="section" id="section-calendrier" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="page-title">Calendrier NAMY — Fermetures globales</div>
+      <button class="btn-add" onclick="openAddFermeture()">+ Fermeture</button>
+    </div>
+
+    <!-- Calendar -->
+    <div class="card" style="padding:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <button onclick="calPrev()" style="background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;cursor:pointer;font-size:14px">&laquo;</button>
+        <div id="cal-title" style="font-size:15px;font-weight:700"></div>
+        <button onclick="calNext()" style="background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;cursor:pointer;font-size:14px">&raquo;</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center">
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Lun</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Mar</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Mer</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Jeu</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Ven</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Sam</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Dim</div>
+      </div>
+      <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
+    </div>
+
+    <!-- Liste fermetures -->
+    <div class="card" style="margin-top:16px">
+      <div class="ch"><span class="ct">Fermetures enregistrées</span></div>
+      <div style="padding:12px">
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+          <thead><tr style="border-bottom:1px solid var(--border)">
+            <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--text-muted);font-weight:600">Date</th>
+            <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--text-muted);font-weight:600">Raison</th>
+            <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text-muted);font-weight:600">Action</th>
+          </tr></thead>
+          <tbody id="fermetures-tbody"></tbody>
+        </table>
+        <div id="fermetures-empty" style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;display:none">Aucune fermeture programmée</div>
+      </div>
+    </div>
+  </div>
+
   </div>
 </div>
 
@@ -319,10 +366,55 @@
         <label class="perm-item" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="dimanche"> Dimanche</label>
         <label class="perm-item" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="feries"> Jours f&eacute;ri&eacute;s</label>
       </div>
+
+      <!-- CRÉNEAUX LIVRAISON -->
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div class="fl" style="margin:0">Créneaux livraison</div>
+          <button onclick="addCreneau()" style="background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:4px 10px;font-size:11px;cursor:pointer;font-family:var(--font-body);font-weight:600">+ Créneau</button>
+        </div>
+        <div id="ee-creneaux-list" style="display:flex;flex-direction:column;gap:6px"></div>
+        <div id="ee-creneaux-empty" style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px">Aucun créneau défini</div>
+      </div>
+
+      <!-- FERMETURES EXCEPTIONNELLES -->
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div class="fl">Fermetures exceptionnelles</div>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <input type="date" class="fi" id="ee-fermeture-date" style="flex:1">
+          <button onclick="addFermetureExc()" style="background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 14px;font-size:12px;cursor:pointer;font-family:var(--font-body);font-weight:600">Ajouter</button>
+        </div>
+        <div id="ee-fermetures-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+      </div>
+
+      <!-- SUSPENSION -->
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div class="fl">Statut du compte</div>
+        <div id="ee-suspension-status" style="margin-top:6px"></div>
+        <div id="ee-suspension-history" style="margin-top:8px;font-size:12px;color:var(--text-muted)"></div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-edit-ent')">Annuler</button>
       <button class="btn btn-primary" onclick="saveEntrepriseParams()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Ajouter fermeture -->
+<div class="modal-overlay" id="modal-add-fermeture" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <span class="modal-title">Ajouter une fermeture</span>
+      <button class="modal-close" onclick="closeModal('modal-add-fermeture')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="fg"><label class="fl">Date</label><input type="date" class="fi" id="nf-date"></div>
+      <div class="fg"><label class="fl">Raison</label><input type="text" class="fi" id="nf-raison" placeholder="Ex: Jour férié, maintenance..."></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-fermeture')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveFermeture()">Enregistrer</button>
     </div>
   </div>
 </div>
@@ -397,9 +489,12 @@ function renderAll() {
 // ─── SECTION SWITCH ─────────────────────────────────────────
 function switchSection(name) {
   document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-  document.getElementById('section-' + name).classList.add('active');
+  const el = document.getElementById('section-' + name);
+  if (el.classList.contains('section')) { el.style.display = 'block'; } else { el.classList.add('active'); }
   event.currentTarget.classList.add('active');
+  if (name === 'calendrier') initCalendar();
 }
 
 // ─── STATS ──────────────────────────────────────────────────
@@ -791,6 +886,17 @@ async function editEntreprise(id) {
     cb.checked = on;
   });
 
+  // Load creneaux
+  await loadCreneaux(id);
+
+  // Load fermetures exceptionnelles
+  editFermetures = (params && params.fermetures_exceptionnelles) ? [...params.fermetures_exceptionnelles] : [];
+  renderFermeturesExc();
+
+  // Load suspension status
+  editSuspensionData = params || {};
+  renderSuspensionStatus();
+
   openModal('modal-edit-ent');
 }
 
@@ -816,17 +922,283 @@ async function saveEntrepriseParams() {
     jours_service: jours,
     ouvert_dimanche: jours.includes('dimanche'),
     ouvert_feries: ouvertFeries,
+    fermetures_exceptionnelles: editFermetures,
   };
 
   try {
     // Upsert : insert or update
     const { error } = await db.from('parametres_entreprise').upsert(params, { onConflict: 'entreprise_id' });
     if (error) throw error;
+
+    // Save creneaux
+    await saveCreneaux(editingEntId);
+
     closeModal('modal-edit-ent');
     showToast('Param\u00e8tres enregistr\u00e9s');
   } catch (e) {
     showToast('Erreur: ' + e.message, 'warning');
   }
+}
+
+// ─── CALENDRIER NAMY ─────────────────────────────────────────
+let calYear, calMonth, fermeturesNamy = [];
+
+function initCalendar() {
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+  loadFermetures();
+}
+
+async function loadFermetures() {
+  try {
+    const { data } = await db.from('fermetures_namy').select('*').order('date');
+    fermeturesNamy = data || [];
+  } catch(e) { fermeturesNamy = []; }
+  renderCalendar();
+  renderFermeturesList();
+}
+
+function renderCalendar() {
+  const months = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  document.getElementById('cal-title').textContent = months[calMonth] + ' ' + calYear;
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+
+  const first = new Date(calYear, calMonth, 1);
+  let startDay = first.getDay(); // 0=Sun
+  startDay = startDay === 0 ? 6 : startDay - 1; // Convert to Mon=0
+
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const today = new Date().toISOString().split('T')[0];
+  const closedDates = new Set(fermeturesNamy.map(f => f.date));
+
+  // Empty cells before first day
+  for (let i = 0; i < startDay; i++) {
+    grid.innerHTML += '<div style="padding:8px"></div>';
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isClosed = closedDates.has(dateStr);
+    const isToday = dateStr === today;
+    const fermeture = fermeturesNamy.find(f => f.date === dateStr);
+
+    let style = 'padding:8px;border-radius:var(--radius-sm);font-size:13px;cursor:default;';
+    if (isClosed) style += 'background:var(--danger-bg);color:var(--danger);font-weight:700;';
+    else if (isToday) style += 'background:var(--accent-light);color:var(--accent-dark);font-weight:700;';
+
+    const title = fermeture ? fermeture.raison || 'Fermé' : '';
+    grid.innerHTML += `<div style="${style}" title="${title}">${d}</div>`;
+  }
+}
+
+function renderFermeturesList() {
+  const tbody = document.getElementById('fermetures-tbody');
+  const empty = document.getElementById('fermetures-empty');
+  const upcoming = fermeturesNamy.filter(f => f.date >= new Date().toISOString().split('T')[0]);
+
+  if (!upcoming.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = upcoming.map(f => `<tr style="border-bottom:1px solid var(--border)">
+    <td style="padding:8px 12px;font-family:var(--font-mono)">${f.date}</td>
+    <td style="padding:8px 12px">${f.raison || '—'}</td>
+    <td style="padding:8px 12px;text-align:right">
+      <button onclick="deleteFermeture('${f.id}')" style="background:none;border:1px solid var(--danger);color:var(--danger);border-radius:var(--radius-sm);padding:3px 10px;font-size:11px;cursor:pointer">Supprimer</button>
+    </td>
+  </tr>`).join('');
+}
+
+function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); }
+function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); }
+
+function openAddFermeture() { openModal('modal-add-fermeture'); }
+
+async function saveFermeture() {
+  const date = document.getElementById('nf-date').value;
+  const raison = document.getElementById('nf-raison').value.trim();
+  if (!date) { showToast('Sélectionnez une date', 'warning'); return; }
+
+  try {
+    const { error } = await db.from('fermetures_namy').insert({ date, raison: raison || null });
+    if (error) throw error;
+    showToast('Fermeture ajoutée', 'success');
+    closeModal('modal-add-fermeture');
+    document.getElementById('nf-date').value = '';
+    document.getElementById('nf-raison').value = '';
+    loadFermetures();
+  } catch(e) {
+    showToast('Erreur: ' + e.message, 'danger');
+  }
+}
+
+async function deleteFermeture(id) {
+  try {
+    await db.from('fermetures_namy').delete().eq('id', id);
+    showToast('Fermeture supprimée', 'success');
+    loadFermetures();
+  } catch(e) { showToast('Erreur: ' + e.message, 'danger'); }
+}
+
+// ─── CRÉNEAUX LIVRAISON ──────────────────────────────────────
+let editCreneaux = [];
+
+async function loadCreneaux(entId) {
+  try {
+    const { data } = await db.from('creneaux_livraison').select('*')
+      .eq('entreprise_id', entId).order('heure_debut');
+    editCreneaux = data || [];
+  } catch(e) { editCreneaux = []; }
+  renderCreneaux();
+}
+
+function renderCreneaux() {
+  const list = document.getElementById('ee-creneaux-list');
+  const empty = document.getElementById('ee-creneaux-empty');
+  if (!editCreneaux.length) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  list.innerHTML = editCreneaux.map((c, i) => `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg-hover);border-radius:var(--radius-sm);font-size:12px">
+    <span style="font-family:var(--font-mono);font-weight:600">${(c.heure_debut||'').slice(0,5)} — ${(c.heure_fin||'').slice(0,5)}</span>
+    <span style="color:var(--text-muted)">Limite: ${c.limite_colis || '∞'}</span>
+    <button onclick="removeCreneau(${i})" style="margin-left:auto;background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px">&times;</button>
+  </div>`).join('');
+}
+
+function addCreneau() {
+  const debut = prompt('Heure début (HH:MM)', '09:00');
+  const fin = prompt('Heure fin (HH:MM)', '12:00');
+  if (!debut || !fin) return;
+  const limite = parseInt(prompt('Limite colis (0 = illimité)', '0')) || 0;
+  editCreneaux.push({ heure_debut: debut, heure_fin: fin, limite_colis: limite, actif: true });
+  renderCreneaux();
+}
+
+async function removeCreneau(index) {
+  const c = editCreneaux[index];
+  if (c.id) {
+    try { await db.from('creneaux_livraison').delete().eq('id', c.id); } catch(e) {}
+  }
+  editCreneaux.splice(index, 1);
+  renderCreneaux();
+}
+
+async function saveCreneaux(entId) {
+  // Delete existing and re-insert
+  try {
+    await db.from('creneaux_livraison').delete().eq('entreprise_id', entId);
+    if (editCreneaux.length) {
+      const rows = editCreneaux.map(c => ({
+        entreprise_id: entId,
+        heure_debut: c.heure_debut,
+        heure_fin: c.heure_fin,
+        limite_colis: c.limite_colis || 0,
+        actif: c.actif !== false,
+      }));
+      await db.from('creneaux_livraison').insert(rows);
+    }
+  } catch(e) { console.warn('Save creneaux error:', e); }
+}
+
+// ─── FERMETURES EXCEPTIONNELLES ──────────────────────────────
+let editFermetures = [];
+
+function renderFermeturesExc() {
+  const list = document.getElementById('ee-fermetures-list');
+  if (!editFermetures.length) { list.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">Aucune fermeture</span>'; return; }
+  list.innerHTML = editFermetures.map((d, i) => `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--danger-bg);color:var(--danger);border-radius:12px;font-size:11px;font-weight:600">
+    ${d} <button onclick="removeFermetureExc(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px">&times;</button>
+  </span>`).join('');
+}
+
+function addFermetureExc() {
+  const date = document.getElementById('ee-fermeture-date').value;
+  if (!date || editFermetures.includes(date)) return;
+  editFermetures.push(date);
+  editFermetures.sort();
+  renderFermeturesExc();
+  document.getElementById('ee-fermeture-date').value = '';
+}
+
+function removeFermetureExc(index) {
+  editFermetures.splice(index, 1);
+  renderFermeturesExc();
+}
+
+// ─── SUSPENSION ──────────────────────────────────────────────
+let editSuspensionData = {};
+
+function renderSuspensionStatus() {
+  const el = document.getElementById('ee-suspension-status');
+  const histEl = document.getElementById('ee-suspension-history');
+  const isSuspended = editSuspensionData.suspendu;
+
+  if (isSuspended) {
+    el.innerHTML = `<div style="display:flex;align-items:center;gap:10px">
+      <span style="padding:4px 12px;background:var(--danger-bg);color:var(--danger);border-radius:12px;font-size:12px;font-weight:700">SUSPENDU</span>
+      <span style="font-size:12px;color:var(--text-muted)">${editSuspensionData.raison_suspension || ''}</span>
+      <button onclick="reactivateCompte()" style="margin-left:auto;padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;font-family:var(--font-body);font-weight:600">Réactiver</button>
+    </div>`;
+  } else {
+    el.innerHTML = `<div style="display:flex;align-items:center;gap:10px">
+      <span style="padding:4px 12px;background:var(--accent-light);color:var(--accent-dark);border-radius:12px;font-size:12px;font-weight:700">ACTIF</span>
+      <button onclick="suspendCompte()" style="margin-left:auto;padding:6px 14px;background:var(--danger);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;font-family:var(--font-body);font-weight:600">Suspendre</button>
+    </div>`;
+  }
+
+  // History
+  const hist = editSuspensionData.historique_suspensions || [];
+  if (hist.length) {
+    histEl.innerHTML = '<div style="font-weight:600;margin-bottom:4px">Historique :</div>' +
+      hist.slice(-5).reverse().map(h => `<div style="padding:3px 0">${h.date?.slice(0,10) || ''} — ${h.action} ${h.raison ? ': ' + h.raison : ''}</div>`).join('');
+  } else {
+    histEl.innerHTML = '';
+  }
+}
+
+async function suspendCompte() {
+  const raison = prompt('Raison de la suspension (obligatoire) :');
+  if (!raison) { showToast('Raison obligatoire', 'warning'); return; }
+
+  const hist = editSuspensionData.historique_suspensions || [];
+  hist.push({ date: new Date().toISOString(), action: 'suspension', raison, par: 'admin' });
+
+  try {
+    await db.from('parametres_entreprise').upsert({
+      entreprise_id: editingEntId,
+      suspendu: true,
+      raison_suspension: raison,
+      suspendu_le: new Date().toISOString(),
+      historique_suspensions: hist,
+    }, { onConflict: 'entreprise_id' });
+
+    editSuspensionData.suspendu = true;
+    editSuspensionData.raison_suspension = raison;
+    editSuspensionData.historique_suspensions = hist;
+    renderSuspensionStatus();
+    showToast('Compte suspendu', 'success');
+  } catch(e) { showToast('Erreur: ' + e.message, 'danger'); }
+}
+
+async function reactivateCompte() {
+  const hist = editSuspensionData.historique_suspensions || [];
+  hist.push({ date: new Date().toISOString(), action: 'reactivation', par: 'admin' });
+
+  try {
+    await db.from('parametres_entreprise').upsert({
+      entreprise_id: editingEntId,
+      suspendu: false,
+      raison_suspension: null,
+      suspendu_le: null,
+      historique_suspensions: hist,
+    }, { onConflict: 'entreprise_id' });
+
+    editSuspensionData.suspendu = false;
+    editSuspensionData.raison_suspension = null;
+    editSuspensionData.historique_suspensions = hist;
+    renderSuspensionStatus();
+    showToast('Compte réactivé', 'success');
+  } catch(e) { showToast('Erreur: ' + e.message, 'danger'); }
 }
 </script>
 </body>

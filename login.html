@@ -177,6 +177,31 @@ async function redirectUser(userId) {
       return;
     }
 
+    // Vérifier suspension du compte
+    if (profil.entreprise_id) {
+      try {
+        const { data: params } = await db
+          .from('parametres_entreprise')
+          .select('suspendu, raison_suspension')
+          .eq('entreprise_id', profil.entreprise_id)
+          .single();
+
+        if (params && params.suspendu) {
+          document.getElementById('ls-txt').innerHTML =
+            '⛔ Votre compte est suspendu.<br><span style="font-size:12px;color:var(--text-muted)">Raison : ' +
+            (params.raison_suspension || 'Non spécifiée') +
+            '</span><br><span style="font-size:12px;color:var(--text-muted)">Contactez NAMY : contact@fissaliv.fr</span>';
+          setTimeout(async () => {
+            await db.auth.signOut();
+            showLogin();
+            document.getElementById('loading').classList.remove('show');
+            document.getElementById('login-box').style.display = 'flex';
+          }, 6000);
+          return;
+        }
+      } catch(e) { /* params not found = not suspended */ }
+    }
+
     // Stocker en session
     sessionStorage.setItem('namy_user', JSON.stringify({
       ...profil,
