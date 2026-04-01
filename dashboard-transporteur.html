@@ -80,6 +80,15 @@
   .filter-select{min-width:unset;width:100%}
   .dash{padding:12px}
 }
+
+.main-tab{padding:12px 20px;border:none;background:none;font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.main-tab:hover{color:var(--text-primary)}
+.main-tab.active{color:var(--accent-dark);border-bottom-color:var(--accent)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-box{background:var(--bg-surface);border-radius:var(--radius-lg);padding:24px;width:100%;max-width:440px;box-shadow:var(--shadow-lg)}
 </style>
 </head>
 <body>
@@ -100,7 +109,16 @@
   </div>
 </header>
 
+<nav style="background:var(--bg-surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;gap:0">
+  <button class="main-tab active" onclick="switchMainTab('dashboard',this)">Tableau de bord</button>
+  <button class="main-tab" onclick="switchMainTab('today',this)">Aujourd'hui</button>
+  <button class="main-tab" onclick="switchMainTab('upcoming',this)">À venir</button>
+  <button class="main-tab" onclick="switchMainTab('history',this)">Historique</button>
+  <button class="main-tab" onclick="switchMainTab('equipe',this)">Mon équipe</button>
+</nav>
+
 <!-- MAIN DASHBOARD -->
+<div class="tab-panel active" id="panel-dashboard">
 <main class="dash">
 
   <!-- FILTERS -->
@@ -205,6 +223,122 @@
 
   </div>
 </main>
+</div>
+
+<div class="tab-panel" id="panel-today">
+  <div class="dash">
+    <h2 style="font-size:16px;font-weight:700;margin:0 0 12px">Tournées du jour</h2>
+    <div class="card">
+      <div class="ch"><span class="ct">Tournées assignées à mes livreurs</span><span class="cs" id="today-count">0</span></div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+          <thead><tr style="border-bottom:1px solid var(--border);text-align:left">
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Tournée</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Livreur</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Véhicule</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Stops</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Statut</th>
+          </tr></thead>
+          <tbody id="today-tbody"></tbody>
+        </table>
+      </div>
+      <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;display:none" id="today-empty">Aucune tournée aujourd'hui</div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-panel" id="panel-upcoming">
+  <div class="dash">
+    <h2 style="font-size:16px;font-weight:700;margin:0 0 12px">Expéditions à venir</h2>
+    <div class="card">
+      <div class="ch"><span class="ct">Expéditions planifiées</span><span class="cs" id="upcoming-count">0</span></div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+          <thead><tr style="border-bottom:1px solid var(--border);text-align:left">
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Date</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Destinataire</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Ville</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Créneau</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Poids</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Statut</th>
+          </tr></thead>
+          <tbody id="upcoming-tbody"></tbody>
+        </table>
+      </div>
+      <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;display:none" id="upcoming-empty">Aucune expédition à venir</div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-panel" id="panel-history">
+  <div class="dash">
+    <h2 style="font-size:16px;font-weight:700;margin:0 0 12px">Historique</h2>
+    <div class="card">
+      <div class="ch"><span class="ct">Expéditions passées</span><span class="cs" id="history-count">0</span></div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+          <thead><tr style="border-bottom:1px solid var(--border);text-align:left">
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Date</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Destinataire</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Ville</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Statut</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Prix TTC</th>
+          </tr></thead>
+          <tbody id="history-tbody"></tbody>
+        </table>
+      </div>
+      <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;display:none" id="history-empty">Aucune expédition dans l'historique</div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-panel" id="panel-equipe">
+  <div class="dash">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <h2 style="font-size:16px;font-weight:700;margin:0">Mon équipe — Livreurs</h2>
+      <button style="padding:8px 16px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-family:var(--font-body);font-size:12px;font-weight:600;cursor:pointer" onclick="openAddLivreur()">+ Ajouter un livreur</button>
+    </div>
+    <div class="card">
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+          <thead><tr style="border-bottom:1px solid var(--border);text-align:left">
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Livreur</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Email</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Statut</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Permissions</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Actions</th>
+          </tr></thead>
+          <tbody id="team-tbody"></tbody>
+        </table>
+      </div>
+      <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;display:none" id="team-empty">Aucun livreur dans votre équipe</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Ajouter livreur -->
+<div class="modal-overlay" id="modal-add-livreur">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 style="font-size:15px;font-weight:700;margin:0">Ajouter un livreur</h3>
+      <button onclick="closeAddLivreur()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-muted)">&times;</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted)">Prénom</label><input type="text" id="al-prenom" style="background:var(--bg-hover);border:1.5px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;font-family:var(--font-body);font-size:14px;color:var(--text-primary);outline:none;width:100%"></div>
+      <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted)">Nom</label><input type="text" id="al-nom" style="background:var(--bg-hover);border:1.5px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;font-family:var(--font-body);font-size:14px;color:var(--text-primary);outline:none;width:100%"></div>
+      <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted)">Email</label><input type="email" id="al-email" style="background:var(--bg-hover);border:1.5px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;font-family:var(--font-body);font-size:14px;color:var(--text-primary);outline:none;width:100%"></div>
+      <div style="display:flex;flex-direction:column;gap:6px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted)">Mot de passe temporaire</label><input type="text" id="al-password" value="Namy2024!" style="background:var(--bg-hover);border:1.5px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;font-family:var(--font-body);font-size:14px;color:var(--text-primary);outline:none;width:100%"></div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted)">Permissions</label>
+        <label style="font-size:12px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="al-perm-prix"> Voir les prix</label>
+        <label style="font-size:12px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="al-perm-contact" checked> Voir contact client</label>
+        <label style="font-size:12px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="al-perm-litige"> Signaler litige</label>
+        <label style="font-size:12px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="al-perm-ordre"> Modifier ordre stops</label>
+      </div>
+      <button id="al-btn" onclick="createLivreur()" style="padding:12px;background:var(--accent);border:none;border-radius:var(--radius-md);color:#fff;font-family:var(--font-body);font-size:14px;font-weight:700;cursor:pointer;margin-top:4px">Créer le compte livreur</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast"></div>
 
@@ -263,7 +397,7 @@ const DEMO_COMMENTS = [
 // ─── INIT ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   const user = getSessionUser();
-  if (!user || user.role !== 'fournisseur') {
+  if (!user || !['fournisseur','exploitant'].includes(user.role)) {
     window.location.href = 'login.html';
     return;
   }
@@ -704,6 +838,190 @@ function renderComments() {
       <div class="comment-meta">${c.author} — ${c.date}</div>
     </div>`;
   }).join('');
+}
+
+// ─── TAB SYSTEM ──────────────────────────────────────────────
+function switchMainTab(tab, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.main-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  btn.classList.add('active');
+  if (tab === 'equipe') loadTeam();
+  if (tab === 'today') loadTodayTab();
+  if (tab === 'upcoming') loadUpcomingTab();
+  if (tab === 'history') loadHistoryTab();
+}
+
+// ─── TODAY TAB ───────────────────────────────────────────────
+async function loadTodayTab() {
+  const today = new Date().toISOString().split('T')[0];
+  try {
+    const { data } = await db.from('tournees').select('*')
+      .eq('date_tournee', today).order('heure_depart');
+    // Filter by our chauffeurs if we have them
+    const rows = data || [];
+    document.getElementById('today-count').textContent = rows.length + ' tournée(s)';
+    const tbody = document.getElementById('today-tbody');
+    const empty = document.getElementById('today-empty');
+    if (!rows.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    const SC = { brouillon:'#6B7280', publie:'#3B82F6', en_cours:'#F59E0B', termine:'#10B981', annule:'#9CA3AF' };
+    tbody.innerHTML = rows.map(t => `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px 12px;font-weight:600">${t.nom || '—'}</td>
+      <td style="padding:8px 12px">${t.chauffeur_id || '—'}</td>
+      <td style="padding:8px 12px;color:var(--text-muted)">${t.vehicule_id || '—'}</td>
+      <td style="padding:8px 12px;font-family:var(--font-mono)">—</td>
+      <td style="padding:8px 12px"><span style="padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${SC[t.statut]||'#6B7280'}22;color:${SC[t.statut]||'#6B7280'}">${t.statut}</span></td>
+    </tr>`).join('');
+  } catch(e) { console.warn('Today tab error:', e); }
+}
+
+// ─── UPCOMING TAB ────────────────────────────────────────────
+async function loadUpcomingTab() {
+  const today = new Date().toISOString().split('T')[0];
+  try {
+    const { data } = await db.from('expeditions').select('*')
+      .gt('date_livraison', today).in('statut', ['en_attente','planifie'])
+      .order('date_livraison').limit(100);
+    const rows = data || [];
+    document.getElementById('upcoming-count').textContent = rows.length + ' expédition(s)';
+    const tbody = document.getElementById('upcoming-tbody');
+    const empty = document.getElementById('upcoming-empty');
+    if (!rows.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    tbody.innerHTML = rows.map(e => `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px 12px">${e.date_livraison || ''}</td>
+      <td style="padding:8px 12px;font-weight:600">${e.dest_nom || ''}</td>
+      <td style="padding:8px 12px;color:var(--text-muted)">${e.dest_ville || ''}</td>
+      <td style="padding:8px 12px;font-size:11px">${e.creneau || ''}</td>
+      <td style="padding:8px 12px;font-family:var(--font-mono)">${e.poids_total ? e.poids_total + ' kg' : '—'}</td>
+      <td style="padding:8px 12px"><span style="padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#3B82F622;color:#3B82F6">${e.statut}</span></td>
+    </tr>`).join('');
+  } catch(e) { console.warn('Upcoming tab error:', e); }
+}
+
+// ─── HISTORY TAB ─────────────────────────────────────────────
+async function loadHistoryTab() {
+  const today = new Date().toISOString().split('T')[0];
+  try {
+    const { data } = await db.from('expeditions').select('*')
+      .lt('date_livraison', today)
+      .order('date_livraison', { ascending: false }).limit(200);
+    const rows = data || [];
+    document.getElementById('history-count').textContent = rows.length + ' expédition(s)';
+    const tbody = document.getElementById('history-tbody');
+    const empty = document.getElementById('history-empty');
+    if (!rows.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    const SC = { en_attente:'#6B7280', planifie:'#3B82F6', en_cours:'#F59E0B', livre:'#10B981', echec:'#EF4444', litige:'#DC2626', annule:'#9CA3AF' };
+    tbody.innerHTML = rows.map(e => `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px 12px">${e.date_livraison || ''}</td>
+      <td style="padding:8px 12px;font-weight:600">${e.dest_nom || ''}</td>
+      <td style="padding:8px 12px;color:var(--text-muted)">${e.dest_ville || ''}</td>
+      <td style="padding:8px 12px"><span style="padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${SC[e.statut]||'#6B7280'}22;color:${SC[e.statut]||'#6B7280'}">${e.statut}</span></td>
+      <td style="padding:8px 12px;font-family:var(--font-mono)">${e.prix_ttc ? e.prix_ttc.toLocaleString('fr-FR') + ' €' : '—'}</td>
+    </tr>`).join('');
+  } catch(e) { console.warn('History tab error:', e); }
+}
+
+// ─── TEAM (MON EQUIPE) ──────────────────────────────────────
+async function loadTeam() {
+  try {
+    const { data, error } = await db.from('utilisateurs')
+      .select('id,prenom,nom,email,actif,permissions,statut')
+      .eq('role', 'chauffeur')
+      .eq('entreprise_id', entrepriseId)
+      .order('prenom');
+    if (error) throw error;
+    renderTeam(data || []);
+  } catch(e) {
+    // Also try 'livreur' role
+    try {
+      const { data } = await db.from('utilisateurs')
+        .select('id,prenom,nom,email,actif,permissions,statut')
+        .in('role', ['chauffeur','livreur'])
+        .eq('entreprise_id', entrepriseId)
+        .order('prenom');
+      renderTeam(data || []);
+    } catch(e2) { renderTeam([]); }
+  }
+}
+
+function renderTeam(members) {
+  const tbody = document.getElementById('team-tbody');
+  const empty = document.getElementById('team-empty');
+  if (!members.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = members.map(m => {
+    const perms = m.permissions || {};
+    const tags = [
+      perms.voir_prix ? 'Prix' : null,
+      perms.voir_contact_client ? 'Contact' : null,
+      perms.signaler_litige ? 'Litige' : null,
+      perms.modifier_ordre_stops ? 'Ordre' : null,
+    ].filter(Boolean).map(p => `<span style="padding:2px 6px;background:var(--accent-light);color:var(--accent-dark);border-radius:4px;font-size:10px;font-weight:600">${p}</span>`).join(' ');
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:10px 12px;font-weight:600">${m.prenom || ''} ${m.nom || ''}</td>
+      <td style="padding:10px 12px;color:var(--text-muted);font-size:12px">${m.email}</td>
+      <td style="padding:10px 12px">
+        <button onclick="toggleLivreurStatus('${m.id}',${m.actif})" style="padding:3px 10px;border-radius:10px;border:none;font-size:11px;font-weight:600;cursor:pointer;background:${m.actif ? 'var(--accent-light)' : 'var(--danger-bg)'};color:${m.actif ? 'var(--accent-dark)' : 'var(--danger)'}">${m.actif ? 'Actif' : 'Suspendu'}</button>
+      </td>
+      <td style="padding:10px 12px">${tags || '<span style="color:var(--text-muted);font-size:11px">Standard</span>'}</td>
+      <td style="padding:10px 12px"><button onclick="editLivreurPerms('${m.id}')" style="padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-surface);font-size:11px;cursor:pointer;color:var(--text-muted)">Permissions</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function toggleLivreurStatus(id, currentActif) {
+  try {
+    await db.from('utilisateurs').update({ actif: !currentActif }).eq('id', id);
+    showToast(!currentActif ? 'Livreur activé' : 'Livreur suspendu');
+    loadTeam();
+  } catch(e) { showToast('Erreur: ' + e.message); }
+}
+
+function editLivreurPerms(id) { showToast('Gestion permissions à venir'); }
+
+// ─── ADD LIVREUR ─────────────────────────────────────────────
+function openAddLivreur() { document.getElementById('modal-add-livreur').classList.add('show'); }
+function closeAddLivreur() { document.getElementById('modal-add-livreur').classList.remove('show'); }
+
+async function createLivreur() {
+  const prenom = document.getElementById('al-prenom').value.trim();
+  const nom = document.getElementById('al-nom').value.trim();
+  const email = document.getElementById('al-email').value.trim();
+  const password = document.getElementById('al-password').value;
+  if (!prenom || !nom || !email || !password) { showToast('Remplissez tous les champs'); return; }
+
+  const btn = document.getElementById('al-btn');
+  btn.disabled = true; btn.textContent = 'Création...';
+
+  try {
+    const { data, error } = await db.functions.invoke('create-user', {
+      body: { email, password, role: 'livreur', prenom, nom, entreprise_id: entrepriseId }
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    const perms = {
+      tournees: { read_assigned: true },
+      stops: { update_status: true, upload_photo: true, upload_signature: true },
+      voir_prix: document.getElementById('al-perm-prix').checked,
+      voir_contact_client: document.getElementById('al-perm-contact').checked,
+      signaler_litige: document.getElementById('al-perm-litige').checked,
+      modifier_ordre_stops: document.getElementById('al-perm-ordre').checked,
+    };
+    if (data?.user?.id) {
+      await db.from('utilisateurs').update({ permissions: perms }).eq('id', data.user.id);
+    }
+
+    showToast('Livreur ' + prenom + ' ' + nom + ' créé');
+    closeAddLivreur();
+    ['al-prenom','al-nom','al-email'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('al-password').value = 'Namy2024!';
+    loadTeam();
+  } catch(e) { showToast('Erreur: ' + (e.message || e)); }
+  finally { btn.disabled = false; btn.textContent = 'Créer le compte livreur'; }
 }
 </script>
 </body>

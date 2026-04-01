@@ -605,12 +605,13 @@ async function createUser() {
     const entVille = document.getElementById('cu-ent-ville').value.trim();
 
     try {
-      const { data, error } = await db.from('entreprises').insert({
-        nom: entNom, type: entType, adresse: entAdresse, ville: entVille
-      }).select().single();
+      const { data: resp, error } = await db.functions.invoke('create-entreprise', {
+        body: { nom: entNom, type: entType, adresse: entAdresse, ville: entVille }
+      });
       if (error) throw error;
-      entreprise_id = data.id;
-      entreprises.push(data);
+      if (resp?.error) throw new Error(resp.error);
+      entreprise_id = resp.entreprise.id;
+      entreprises.push(resp.entreprise);
     } catch (e) {
       showToast('Erreur cr\u00e9ation entreprise: ' + e.message, 'danger');
       btn.disabled = false; btn.textContent = 'Cr\u00e9er le compte';
@@ -711,26 +712,20 @@ async function createEntreprise() {
   if (!nom) { showToast('Donnez un nom', 'warning'); return; }
 
   try {
-    const { data, error } = await db.from('entreprises').insert({
-      nom, type,
-      adresse: document.getElementById('ne-adresse').value.trim(),
-      cp: document.getElementById('ne-cp').value.trim(),
-      ville: document.getElementById('ne-ville').value.trim(),
-      telephone: document.getElementById('ne-tel').value.trim(),
-    }).select().single();
+    const { data: resp, error } = await db.functions.invoke('create-entreprise', {
+      body: {
+        nom, type,
+        adresse: document.getElementById('ne-adresse').value.trim(),
+        cp: document.getElementById('ne-cp').value.trim(),
+        ville: document.getElementById('ne-ville').value.trim(),
+        telephone: document.getElementById('ne-tel').value.trim(),
+      }
+    });
     if (error) throw error;
+    if (resp?.error) throw new Error(resp.error);
+    const data = resp.entreprise;
     entreprises.push(data);
     filteredEnts = [...entreprises];
-
-    // Auto-créer la checklist onboarding si client
-    if (type === 'client') {
-      try {
-        await db.from('parametres_entreprise').insert({
-          entreprise_id: data.id,
-          onboarding: { horaires: false, grille: false, vendeur: false, test: false }
-        });
-      } catch (e) { console.warn('Onboarding init failed:', e); }
-    }
   } catch (e) {
     showToast('Erreur: ' + e.message, 'warning');
     return;

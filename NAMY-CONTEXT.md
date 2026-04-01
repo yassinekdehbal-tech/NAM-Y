@@ -95,9 +95,9 @@ positions_chauffeurs    → GPS temps réel chauffeurs (Realtime activé)
 | Rôle | Ancien nom | Accès | Redirect après login |
 |---|---|---|---|
 | `admin` | admin | Tout — gestion comptes incluse | `dashboard.html` |
-| `client` | dirigeant | Stats enseigne, expéditions, extraction | `dashboard-client.html` |
-| `fournisseur` | — (nouveau) | Stats transport, chauffeurs, performance | `dashboard-transporteur.html` |
-| `dispatcher` | exploitant | Dispatch, tournées, expéditions, stats | `dashboard.html` |
+| `client` | dirigeant | Stats enseigne, expéditions, gestion vendeurs | `dashboard-client.html` |
+| `fournisseur` | — (nouveau) | Stats transport, gestion livreurs, tournées | `dashboard-transporteur.html` |
+| `dispatcher` | exploitant | Dispatch, tournées, carte chauffeurs | `dispatch.html` |
 | `vendeur` | vendeur | Création expéditions (son magasin) | `formulaire-vendeur.html` |
 | `livreur` | chauffeur | Tournées assignées, statuts, photos, signatures | `chauffeur.html` |
 
@@ -110,8 +110,10 @@ positions_chauffeurs    → GPS temps réel chauffeurs (Realtime activé)
 { "dispatch": true, "tournees": true, "expeditions": true, "grilles": true,
   "entreprises": true, "utilisateurs": true, "statistiques": true, "extraction": true, "configuration": true }
 
-// client
+// client (+ permissions vendeur granulaires)
 { "expeditions": true, "statistiques": true, "extraction": true }
+// permissions vendeur (gérées par le client) :
+// voir_prix, mode_devis, annuler_expedition, voir_historique
 
 // dispatcher
 { "dispatch": true, "tournees": true, "expeditions": true, "statistiques": true, "extraction": true }
@@ -119,9 +121,11 @@ positions_chauffeurs    → GPS temps réel chauffeurs (Realtime activé)
 // vendeur
 { "expeditions": { "create": true, "read_own": true } }
 
-// livreur
+// livreur (+ permissions livreur granulaires)
 { "tournees": { "read_assigned": true },
   "stops": { "update_status": true, "upload_photo": true, "upload_signature": true } }
+// permissions livreur (gérées par le fournisseur) :
+// voir_prix, voir_contact_client, signaler_litige, modifier_ordre_stops
 ```
 
 ---
@@ -144,11 +148,19 @@ positions_chauffeurs    → GPS temps réel chauffeurs (Realtime activé)
 | Fonction | Description | Statut |
 |---|---|---|
 | `create-user` | Crée un compte Auth + profil utilisateurs | ✅ Déployée |
+| `create-entreprise` | Crée une entreprise (bypass RLS) + paramètres onboarding | ⬜ À déployer |
 
-**Appel** :
+**Appel create-user** :
 ```javascript
 const { data } = await db.functions.invoke('create-user', {
   body: { email, password, prenom, nom, role, entreprise_id }
+});
+```
+
+**Appel create-entreprise** :
+```javascript
+const { data } = await db.functions.invoke('create-entreprise', {
+  body: { nom, type, adresse, cp, ville, telephone, email }
 });
 ```
 
@@ -215,8 +227,18 @@ const { data } = await db.functions.invoke('create-user', {
 - [x] Edge Function create-user déployée (6 rôles)
 - [x] Arctic Design System (thème light) sur toutes les pages
 - [x] Fichiers partagés : supabase-client.js, utils.js, arctic.css
+- [x] Hiérarchie rôles complète (admin/dispatcher/client/vendeur/fournisseur/livreur)
+- [x] Login : redirections par rôle (dispatcher → dispatch.html)
+- [x] Dashboard client : onglets Tableau de bord / Expéditions / Mon équipe
+- [x] Dashboard transporteur : onglets Tableau de bord / Aujourd'hui / À venir / Historique / Mon équipe
+- [x] Gestion vendeurs par le client (création via Edge Function + toggle actif/suspendu + permissions)
+- [x] Gestion livreurs par le fournisseur (création via Edge Function + toggle actif/suspendu + permissions)
+- [x] Edge Function create-entreprise (bypass RLS, onboarding auto)
+- [x] Données de test : 3 entreprises, 5 expéditions, 1 tournée, 5 comptes utilisateurs
 
 ### À faire
+- [ ] Déployer Edge Function create-entreprise
+- [ ] Corriger CHECK constraint utilisateurs (accepter nouveaux rôles)
 - [ ] SMS automatique client (Twilio/Vonage)
 - [ ] Import historique ancien NAMY
 - [ ] Nom de domaine nam-y.com
@@ -259,9 +281,20 @@ Les fichiers sont dans `supabase/migrations/` :
 - `20260331140000_options_livraison_calcul.sql` — Colonnes calcul options
 - `20260331160000_utilisateurs_statut.sql` — Colonne statut utilisateurs
 - `20260331170000_parametres_contractuels.sql` — Paramètres contractuels entreprise
+- `20260401080000_positions_chauffeurs.sql` — Table positions_chauffeurs (GPS temps réel)
+- `20260401090000_onboarding_checklist.sql` — Onboarding checklist
+- `seed_test_data.sql` — Données de test (3 entreprises, 5 expéditions, 1 tournée)
 
 Toutes les migrations sont **appliquées** sur le projet Supabase gwbvfohizdxwhmcoqvgh.
 
+**Schéma réel vérifié** (colonnes diffèrent des migrations locales) :
+- `entreprises` : id(UUID), nom, type, adresse, cp, ville, **telephone**, email, actif
+- `vehicules` : id(UUID), immatriculation, type, libelle, actif, capacite_m3
+- `tournees` : id(UUID), nom, **date_tournee**, **heure_depart**, chauffeur_id, vehicule_id, statut, couleur
+- `expeditions` : id(SERIAL), entreprise_id, **exp_nom**, exp_adresse, exp_cp, exp_ville, **dest_nom**, dest_adresse, dest_cp, dest_ville, **dest_telephone**, dest_email, **date_livraison**, creneau, **option_livraison**, **poids_total**, nb_colis, description, prix_ht, prix_ttc, statut, tournee_id(UUID), lat, lng
+- `grilles_tarifaires` : id(UUID), nom, type, **rayon_km**, **majoration_ferie**, actif
+- `lignes_tarifaires_poids` : grille_id(UUID), poids_min, poids_max, **colis_max_kg**, **dim_max_cm**, **prix_pied**, **prix_lieu**, ordre
+
 ---
 
-*Dernière mise à jour : 01 avril 2026 — session matinée*
+*Dernière mise à jour : 01 avril 2026 — session après-midi (hiérarchie rôles)*
