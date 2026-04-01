@@ -244,23 +244,22 @@
 <!-- Modal associer client -->
 <div class="mo" id="modal-associate-client" style="display:none">
   <div class="md">
-    <div class="mh"><span class="mt">Associer un client</span><button class="mc" onclick="hideModal('modal-associate-client')">&#10005;</button></div>
+    <div class="mh"><span class="mt">Associer des clients</span><button class="mc" onclick="hideModal('modal-associate-client')">&#10005;</button></div>
     <div class="mb">
       <div class="fg">
-        <label class="fl">Entreprise *</label>
-        <select class="fc" id="assoc-entreprise">
-          <option value="">-- S&eacute;lectionnez une entreprise --</option>
-        </select>
+        <label class="fl">Entreprises disponibles</label>
+        <div id="assoc-list" style="max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-md);display:flex;flex-direction:column"></div>
+        <div id="assoc-empty" style="display:none;padding:16px;text-align:center;color:var(--text-hint);font-size:13px">Toutes les entreprises sont d&eacute;j&agrave; assign&eacute;es</div>
       </div>
       <div class="fg">
-        <label class="fl" style="display:flex;align-items:center;gap:8px;cursor:pointer">
-          <input type="checkbox" id="assoc-devis"> Activer le mode devis
-        </label>
+        <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="document.getElementById('assoc-devis').checked=!document.getElementById('assoc-devis').checked">
+          <input type="checkbox" id="assoc-devis" style="cursor:pointer"> <span style="font-size:12px;color:var(--text-secondary)">Activer le mode devis pour les clients s&eacute;lectionn&eacute;s</span>
+        </div>
       </div>
     </div>
     <div class="mf">
       <button class="btn bg" onclick="hideModal('modal-associate-client')">Annuler</button>
-      <button class="btn bp" onclick="associateClient()">Associer</button>
+      <button class="btn bp" id="assoc-btn" onclick="associateClients()">Associer (0)</button>
     </div>
   </div>
 </div>
@@ -1354,82 +1353,91 @@ async function createGrille() {
 
 // ─── ACTIONS: ASSOCIATE CLIENT ─────────────────────────────────
 function openAssociateClientModal(gid) {
-  // Populate the entreprises dropdown
-  const select = getEl('assoc-entreprise');
-  select.innerHTML = '<option value="">-- S\u00e9lectionnez une entreprise --</option>';
+  const list = getEl('assoc-list');
+  const emptyMsg = getEl('assoc-empty');
+  const btn = getEl('assoc-btn');
 
-  // Use entreprises from Supabase, or fall back to existing CLIENTS not yet assigned
   const sources = entreprisesList.length > 0 ? entreprisesList : [];
-  const alreadyAssigned = CLIENTS.filter(c => c.gid == gid).map(c => c.nom);
+  const alreadyAssignedIds = CLIENTS.filter(c => c.gid == gid).map(c => c.client_id || c.nom);
 
-  if (sources.length > 0) {
-    sources.forEach(e => {
-      if (!alreadyAssigned.includes(e.nom)) {
-        select.innerHTML += `<option value="${e.id}">${e.nom}</option>`;
-      }
-    });
+  const available = sources.filter(e => !alreadyAssignedIds.includes(e.id) && !alreadyAssignedIds.includes(e.nom));
+
+  if (available.length === 0) {
+    list.style.display = 'none';
+    emptyMsg.style.display = 'block';
+    btn.textContent = 'Associer (0)';
+    btn.disabled = true;
   } else {
-    // Fallback: allow typing a custom name or show all known client names not yet assigned
-    const allKnownNames = [...new Set(CLIENTS.map(c => c.nom))];
-    allKnownNames.forEach(nom => {
-      if (!alreadyAssigned.includes(nom)) {
-        select.innerHTML += `<option value="${nom}">${nom}</option>`;
-      }
-    });
+    list.style.display = 'flex';
+    emptyMsg.style.display = 'none';
+    btn.disabled = false;
+
+    list.innerHTML = available.map(e =>
+      `<label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;font-size:13px" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''">
+        <input type="checkbox" value="${e.id}" data-nom="${e.nom}" class="assoc-check" onchange="updateAssocCount()" style="cursor:pointer;width:16px;height:16px;accent-color:var(--accent)">
+        <div style="flex:1">
+          <div style="font-weight:500;color:var(--text-primary)">${e.nom}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${e.type || 'client'}${e.ville ? ' \u00b7 ' + e.ville : ''}</div>
+        </div>
+      </label>`
+    ).join('');
   }
 
-  // Reset checkbox
   getEl('assoc-devis').checked = false;
-
-  // Store the target grille id for the modal
   getEl('modal-associate-client').dataset.grilleId = gid;
+  updateAssocCount();
   showModal('modal-associate-client');
 }
 
-async function associateClient() {
+function updateAssocCount() {
+  const checked = document.querySelectorAll('.assoc-check:checked').length;
+  const btn = getEl('assoc-btn');
+  btn.textContent = 'Associer (' + checked + ')';
+  btn.disabled = checked === 0;
+}
+
+async function associateClients() {
   const modal = getEl('modal-associate-client');
   const grilleId = modal.dataset.grilleId;
-  const selectEl = getEl('assoc-entreprise');
-  const selectedValue = selectEl.value;
-  const selectedText = selectEl.options[selectEl.selectedIndex]?.text || '';
   const modeDevis = getEl('assoc-devis').checked;
+  const checkboxes = document.querySelectorAll('.assoc-check:checked');
 
-  if (!selectedValue) {
-    showToast('\u26a0\ufe0f S\u00e9lectionnez une entreprise', 'warning');
+  if (checkboxes.length === 0) {
+    showToast('S\u00e9lectionnez au moins une entreprise', 'warning');
     return;
   }
 
-  let newId;
-  try {
-    const insertData = {
-      grille_id: grilleId,
-      client_id: selectedValue,
-      mode_devis: modeDevis
-    };
-    const { data, error } = await db.from('clients_grilles').insert(insertData).select().single();
+  const btn = getEl('assoc-btn');
+  btn.disabled = true;
+  btn.textContent = 'Association...';
 
-    if (data && !error) {
-      newId = data.id;
+  let count = 0;
+  for (const cb of checkboxes) {
+    const clientId = cb.value;
+    const clientNom = cb.dataset.nom;
+
+    let newId;
+    try {
+      const { data, error } = await db.from('clients_grilles').upsert({
+        grille_id: grilleId,
+        client_id: clientId,
+        mode_devis: modeDevis
+      }, { onConflict: 'client_id,grille_id' }).select().single();
+      if (data && !error) newId = data.id;
+    } catch (err) {
+      console.warn('[GRILLES] Supabase associate failed:', clientNom, err);
     }
-  } catch (err) {
-    console.warn('[GRILLES] Supabase associate client failed:', err);
-  }
 
-  if (!newId) {
-    newId = 'local-' + Date.now();
-  }
+    if (!newId) newId = 'local-' + Date.now() + '-' + count;
 
-  CLIENTS.push({
-    id: newId,
-    nom: selectedText,
-    gid: grilleId,
-    devis: modeDevis
-  });
+    CLIENTS.push({ id: newId, nom: clientNom, client_id: clientId, gid: grilleId, devis: modeDevis });
+    count++;
+  }
 
   hideModal('modal-associate-client');
   renderSidebar();
   renderGrid(activeGrilleId);
-  showToast(`\u2705 "${selectedText}" associ\u00e9 \u00e0 la grille`);
+  showToast(count + ' client(s) associ\u00e9(s) \u00e0 la grille');
 }
 
 async function removeClientFromGrille(clientId, grilleId) {
