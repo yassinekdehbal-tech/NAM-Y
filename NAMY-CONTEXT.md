@@ -81,6 +81,7 @@ lignes_tarifaires_colis → Catégories (LITERIE...) × nb colis
 frais_annexes           → Suppléments par grille
 options_livraison       → Options proposées au vendeur
 clients_grilles         → Assignation grille ↔ entreprise + mode devis
+positions_chauffeurs    → GPS temps réel chauffeurs (Realtime activé)
 ```
 
 **Statuts expédition** : `en_attente` → `planifie` → `en_cours` → `livre` / `litige` / `annule`
@@ -204,13 +205,18 @@ const { data } = await db.functions.invoke('create-user', {
 - [x] Liste expéditions paginée + filtres + export CSV + changement statut
 - [x] Formulaire vendeur : auto-complétion destinataires + prix temps réel
 - [x] Dispatch : vue urgences "À assigner" + assignation en masse
-- [x] Migrations SQL appliquées (schéma complet + RLS + storage)
+- [x] Optimisation ordre stops (nearest neighbor + haversine)
+- [x] Alertes proactives dashboard client (taux échec, récurrence, limite, devis)
+- [x] Géolocalisation temps réel chauffeurs (GPS 30s + Supabase Realtime)
+- [x] Suivi simplifié vendeur (onglet "Mes livraisons" + Realtime)
+- [x] Mode hors-ligne app chauffeur (localStorage buffer + sync auto)
+- [x] Onboarding guidé nouveaux clients (checklist 4 étapes)
+- [x] Migrations SQL appliquées (schéma complet + RLS + storage + positions + onboarding)
 - [x] Edge Function create-user déployée (6 rôles)
 - [x] Arctic Design System (thème light) sur toutes les pages
 - [x] Fichiers partagés : supabase-client.js, utils.js, arctic.css
 
 ### À faire
-- [ ] Géolocalisation livreur temps réel
 - [ ] SMS automatique client (Twilio/Vonage)
 - [ ] Import historique ancien NAMY
 - [ ] Nom de domaine nam-y.com
@@ -258,4 +264,4 @@ Toutes les migrations sont **appliquées** sur le projet Supabase gwbvfohizdxwhm
 
 ---
 
-*Dernière mise à jour : 31 mars 2026 — session nuit*
+*Dernière mise à jour : 01 avril 2026 — session matinée*
