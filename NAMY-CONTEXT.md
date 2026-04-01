@@ -47,8 +47,9 @@
 | `dashboard.html` | Dashboard Admin NAMY (8 KPIs + 5 graphiques Chart.js) | ✅ Branché |
 | `dashboard-client.html` | Dashboard Client/Enseigne (7 KPIs + 5 graphiques, filtré RLS) | ✅ Branché |
 | `dashboard-transporteur.html` | Dashboard Transporteur (8 KPIs + 6 graphiques + avis, filtré RLS) | ✅ Branché |
-| `admin.html` | Gestion comptes + entreprises + paramètres contractuels | ✅ Branché |
-| `dispatch.html` | Dispatch : carte Leaflet + tournées + assignation + nav dates | ✅ Branché |
+| `admin.html` | Administration : Fiche entreprise (point d'entrée), calendrier NAMY, grilles, comptes internes | ✅ Branché |
+| `dispatch.html` | Dispatch 3 vues : Timeline (axe temps) + Éditeur tournées (drag&drop) + Carte temps réel | ✅ Branché |
+| `nav.js` | Navigation universelle partagée (topbar dynamique par rôle) | — |
 | `formulaire-vendeur.html` | Saisie expédition vendeur (3 étapes) | ✅ Branché |
 | `grilles-tarifaires.html` | 3 types de grilles (poids/zone/colis) | ✅ Branché |
 | `chauffeur.html` | App mobile PWA livreur | ✅ Branché |
@@ -82,7 +83,17 @@ frais_annexes           → Suppléments par grille
 options_livraison       → Options proposées au vendeur
 clients_grilles         → Assignation grille ↔ entreprise + mode devis
 positions_chauffeurs    → GPS temps réel chauffeurs (Realtime activé)
+creneaux_livraison      → Créneaux horaires par entreprise (heure_debut, heure_fin, limite)
+fermetures_namy         → Fermetures globales plateforme (date, raison)
 ```
+
+**Colonnes ajoutées à parametres_entreprise** :
+- `fermetures_exceptionnelles` date[] — fermetures spécifiques entreprise
+- `suspendu` boolean — suspension du compte
+- `raison_suspension` text — motif de suspension
+- `suspendu_le` timestamptz — date de suspension
+- `suspendu_par` uuid — admin qui a suspendu
+- `historique_suspensions` jsonb — journal suspension/réactivation
 
 **Statuts expédition** : `en_attente` → `planifie` → `en_cours` → `livre` / `litige` / `annule`
 **Statuts tournée** : `brouillon` → `publie` → `en_cours` → `termine` / `annule`
@@ -95,9 +106,9 @@ positions_chauffeurs    → GPS temps réel chauffeurs (Realtime activé)
 | Rôle | Ancien nom | Accès | Redirect après login |
 |---|---|---|---|
 | `admin` | admin | Tout — gestion comptes incluse | `dashboard.html` |
-| `client` | dirigeant | Stats enseigne, expéditions, extraction | `dashboard-client.html` |
-| `fournisseur` | — (nouveau) | Stats transport, chauffeurs, performance | `dashboard-transporteur.html` |
-| `dispatcher` | exploitant | Dispatch, tournées, expéditions, stats | `dashboard.html` |
+| `client` | dirigeant | Stats enseigne, expéditions, gestion vendeurs | `dashboard-client.html` |
+| `fournisseur` | — (nouveau) | Stats transport, gestion livreurs, tournées | `dashboard-transporteur.html` |
+| `dispatcher` | exploitant | Dispatch, tournées, carte chauffeurs | `dispatch.html` |
 | `vendeur` | vendeur | Création expéditions (son magasin) | `formulaire-vendeur.html` |
 | `livreur` | chauffeur | Tournées assignées, statuts, photos, signatures | `chauffeur.html` |
 
@@ -110,8 +121,10 @@ positions_chauffeurs    → GPS temps réel chauffeurs (Realtime activé)
 { "dispatch": true, "tournees": true, "expeditions": true, "grilles": true,
   "entreprises": true, "utilisateurs": true, "statistiques": true, "extraction": true, "configuration": true }
 
-// client
+// client (+ permissions vendeur granulaires)
 { "expeditions": true, "statistiques": true, "extraction": true }
+// permissions vendeur (gérées par le client) :
+// voir_prix, mode_devis, annuler_expedition, voir_historique
 
 // dispatcher
 { "dispatch": true, "tournees": true, "expeditions": true, "statistiques": true, "extraction": true }
@@ -119,9 +132,11 @@ positions_chauffeurs    → GPS temps réel chauffeurs (Realtime activé)
 // vendeur
 { "expeditions": { "create": true, "read_own": true } }
 
-// livreur
+// livreur (+ permissions livreur granulaires)
 { "tournees": { "read_assigned": true },
   "stops": { "update_status": true, "upload_photo": true, "upload_signature": true } }
+// permissions livreur (gérées par le fournisseur) :
+// voir_prix, voir_contact_client, signaler_litige, modifier_ordre_stops
 ```
 
 ---
@@ -144,11 +159,19 @@ positions_chauffeurs    → GPS temps réel chauffeurs (Realtime activé)
 | Fonction | Description | Statut |
 |---|---|---|
 | `create-user` | Crée un compte Auth + profil utilisateurs | ✅ Déployée |
+| `create-entreprise` | Crée une entreprise (bypass RLS) + paramètres onboarding | ⬜ À déployer |
 
-**Appel** :
+**Appel create-user** :
 ```javascript
 const { data } = await db.functions.invoke('create-user', {
   body: { email, password, prenom, nom, role, entreprise_id }
+});
+```
+
+**Appel create-entreprise** :
+```javascript
+const { data } = await db.functions.invoke('create-entreprise', {
+  body: { nom, type, adresse, cp, ville, telephone, email }
 });
 ```
 
@@ -215,6 +238,38 @@ const { data } = await db.functions.invoke('create-user', {
 - [x] Edge Function create-user déployée (6 rôles)
 - [x] Arctic Design System (thème light) sur toutes les pages
 - [x] Fichiers partagés : supabase-client.js, utils.js, arctic.css
+- [x] Hiérarchie rôles complète (admin/dispatcher/client/vendeur/fournisseur/livreur)
+- [x] Login : redirections par rôle (dispatcher → dispatch.html)
+- [x] Dashboard client : onglets Tableau de bord / Expéditions / Mon équipe
+- [x] Dashboard transporteur : onglets Tableau de bord / Aujourd'hui / À venir / Historique / Mon équipe
+- [x] Gestion vendeurs par le client (création via Edge Function + toggle actif/suspendu + permissions)
+- [x] Gestion livreurs par le fournisseur (création via Edge Function + toggle actif/suspendu + permissions)
+- [x] Edge Function create-entreprise (bypass RLS, onboarding auto)
+- [x] Données de test : 3 entreprises, 5 expéditions, 1 tournée, 5 comptes utilisateurs
+- [x] Calendrier NAMY : vue mensuelle + gestion fermetures globales (admin.html)
+- [x] Fiche entreprise enrichie : créneaux livraison, fermetures exceptionnelles, suspension/réactivation
+- [x] Suspension cascade : blocage login pour comptes suspendus + sous-comptes
+- [x] Dashboard client : onglet Paramètres (créneaux, limite, fermetures, historique suspensions)
+- [x] Formulaire vendeur : validation dates (fermetures NAMY + magasin + jours ouvrés + limite jour)
+- [x] Formulaire vendeur : créneaux dynamiques (chargés depuis creneaux_livraison, limites en temps réel)
+- [x] Dashboard admin : KPI "Magasins proches limite" (≥80% limite journalière)
+- [x] Migration SQL : tables creneaux_livraison, fermetures_namy + colonnes suspension
+- [x] Refonte admin.html : entreprise = point d'entrée unique (fiche complète avec onglets)
+- [x] Admin : fiche entreprise avec sections Infos / Comptes / Grille / Planning
+- [x] Admin : comptes internes NAMY (admin + dispatcher uniquement)
+- [x] Admin : onglet Grilles tarifaires (lien vers gestionnaire)
+- [x] Login : tous rôles → index.html (sauf livreur → chauffeur.html)
+- [x] index.html : filtrage expéditions par rôle (entreprise_id / livreurs)
+- [x] index.html : nav dynamique masquée selon le rôle
+- [x] nav.js : navigation universelle partagée sur 8 pages (liens dynamiques par rôle)
+- [x] RLS entreprises corrigé (policies SELECT/INSERT/UPDATE/DELETE ajoutées)
+- [x] Dispatch refonte 3 vues : Timeline (axe 6h-20h), Éditeur (drag&drop SortableJS), Carte temps réel
+- [x] Timeline : blocs stops colorés (vert/bleu/orange/rouge/gris), ligne heure actuelle
+- [x] Panneau latéral tournée (KPIs, ETA, stops, contact livreur)
+- [x] Éditeur : colonne gauche tournées + non-assignées, droite détail avec drag&drop
+- [x] Carte : filtres par tournée, positions livreurs Realtime
+- [x] ETA calculé automatiquement (35 min/stop, haversine × 1.3)
+- [x] Supabase Realtime sur tournees + tournee_stops
 
 ### À faire
 - [ ] SMS automatique client (Twilio/Vonage)
@@ -259,9 +314,20 @@ Les fichiers sont dans `supabase/migrations/` :
 - `20260331140000_options_livraison_calcul.sql` — Colonnes calcul options
 - `20260331160000_utilisateurs_statut.sql` — Colonne statut utilisateurs
 - `20260331170000_parametres_contractuels.sql` — Paramètres contractuels entreprise
+- `20260401080000_positions_chauffeurs.sql` — Table positions_chauffeurs (GPS temps réel)
+- `20260401090000_onboarding_checklist.sql` — Onboarding checklist
+- `seed_test_data.sql` — Données de test (3 entreprises, 5 expéditions, 1 tournée)
 
 Toutes les migrations sont **appliquées** sur le projet Supabase gwbvfohizdxwhmcoqvgh.
 
+**Schéma réel vérifié** (colonnes diffèrent des migrations locales) :
+- `entreprises` : id(UUID), nom, type, adresse, cp, ville, **telephone**, email, actif
+- `vehicules` : id(UUID), immatriculation, type, libelle, actif, capacite_m3
+- `tournees` : id(UUID), nom, **date_tournee**, **heure_depart**, chauffeur_id, vehicule_id, statut, couleur
+- `expeditions` : id(SERIAL), entreprise_id, **exp_nom**, exp_adresse, exp_cp, exp_ville, **dest_nom**, dest_adresse, dest_cp, dest_ville, **dest_telephone**, dest_email, **date_livraison**, creneau, **option_livraison**, **poids_total**, nb_colis, description, prix_ht, prix_ttc, statut, tournee_id(UUID), lat, lng
+- `grilles_tarifaires` : id(UUID), nom, type, **rayon_km**, **majoration_ferie**, actif
+- `lignes_tarifaires_poids` : grille_id(UUID), poids_min, poids_max, **colis_max_kg**, **dim_max_cm**, **prix_pied**, **prix_lieu**, ordre
+
 ---
 
-*Dernière mise à jour : 01 avril 2026 — session matinée*
+*Dernière mise à jour : 01 avril 2026 — session soir (refonte dispatch 3 vues + nav universelle)*

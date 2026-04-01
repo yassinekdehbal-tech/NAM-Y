@@ -9,6 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
 <script src="utils.js"></script>
+<script src="nav.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 /* HEADER */
@@ -83,6 +84,13 @@
 .alert-close{background:none;border:none;color:inherit;opacity:.5;cursor:pointer;font-size:14px;padding:4px}
 .alert-close:hover{opacity:1}
 
+/* MAIN TABS */
+.main-tab{padding:12px 20px;border:none;background:none;font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.main-tab:hover{color:var(--text-primary)}
+.main-tab.active{color:var(--accent-dark);border-bottom-color:var(--accent)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
 /* RESPONSIVE */
 @media(max-width:768px){
   .hdr{flex-wrap:wrap;height:auto;padding:10px 14px;gap:8px}
@@ -100,7 +108,7 @@
 <body>
 
 <!-- HEADER -->
-<header class="hdr">
+<header class="hdr" style="display:none">
   <div class="logo">N A M Y</div>
   <span class="hdr-sep">/</span>
   <div class="hdr-title">Espace Client &mdash; <strong id="entreprise-name">...</strong></div>
@@ -116,7 +124,16 @@
   </div>
 </header>
 
+<!-- TAB NAV -->
+<nav style="background:var(--bg-surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;gap:0">
+  <button class="main-tab active" onclick="switchMainTab('dashboard',this)">Tableau de bord</button>
+  <button class="main-tab" onclick="switchMainTab('expeditions',this)">Expéditions</button>
+  <button class="main-tab" onclick="switchMainTab('equipe',this)">Mon équipe</button>
+  <button class="main-tab" onclick="switchMainTab('settings',this)">Paramètres</button>
+</nav>
+
 <!-- MAIN -->
+<div class="tab-panel active" id="panel-dashboard">
 <div class="dash">
 
   <!-- ALERTES PROACTIVES -->
@@ -239,6 +256,151 @@
   </div>
 
 </div>
+</div>
+
+<div class="tab-panel" id="panel-expeditions">
+  <div class="dash">
+    <!-- Sub-tabs -->
+    <div style="display:flex;gap:8px;margin-bottom:4px">
+      <button class="per-btn on" onclick="switchExpTab('today',this)">Aujourd'hui</button>
+      <button class="per-btn" onclick="switchExpTab('upcoming',this)">À venir</button>
+      <button class="per-btn" onclick="switchExpTab('history',this)">Historique</button>
+    </div>
+    <!-- Filters -->
+    <div class="filters-row">
+      <div>
+        <div class="filter-label">Vendeur</div>
+        <select class="filter-select" id="exp-f-vendeur" onchange="loadExpeditionsTab()"><option value="">Tous</option></select>
+      </div>
+      <div>
+        <div class="filter-label">Statut</div>
+        <select class="filter-select" id="exp-f-statut" onchange="loadExpeditionsTab()">
+          <option value="">Tous</option>
+          <option value="en_attente">En attente</option>
+          <option value="planifie">Planifié</option>
+          <option value="en_cours">En cours</option>
+          <option value="livre">Livré</option>
+          <option value="litige">Litige</option>
+        </select>
+      </div>
+    </div>
+    <!-- Table -->
+    <div class="card">
+      <div class="ch"><span class="ct" id="exp-tab-title">Expéditions du jour</span><span class="cs" id="exp-tab-count">0</span></div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px" id="exp-table">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);text-align:left">
+              <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">ID</th>
+              <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Date</th>
+              <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Destinataire</th>
+              <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Ville</th>
+              <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Créneau</th>
+              <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Statut</th>
+              <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Prix TTC</th>
+            </tr>
+          </thead>
+          <tbody id="exp-tbody"></tbody>
+        </table>
+      </div>
+      <div style="padding:12px 16px;text-align:center;color:var(--text-muted);font-size:12px;display:none" id="exp-empty">Aucune expédition trouvée</div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-panel" id="panel-equipe">
+  <div class="dash">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <h2 style="font-size:16px;font-weight:700;color:var(--text-primary);margin:0">Mon équipe — Vendeurs</h2>
+      <button class="btn" style="width:auto;padding:8px 16px;font-size:12px" onclick="openAddVendeur()">+ Ajouter un vendeur</button>
+    </div>
+    <div class="card">
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);text-align:left">
+              <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Vendeur</th>
+              <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Email</th>
+              <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Statut</th>
+              <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Permissions</th>
+              <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:600">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="team-tbody"></tbody>
+        </table>
+      </div>
+      <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;display:none" id="team-empty">Aucun vendeur dans votre équipe</div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-panel" id="panel-settings">
+  <div class="dash">
+    <h2 style="font-size:16px;font-weight:700;margin:0 0 16px">Paramètres de mon magasin</h2>
+
+    <!-- Créneaux (lecture seule) -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="ch"><span class="ct">Créneaux de livraison</span><span class="cs">Définis par l'administrateur</span></div>
+      <div style="padding:12px" id="settings-creneaux">
+        <div style="color:var(--text-muted);font-size:13px">Chargement...</div>
+      </div>
+    </div>
+
+    <!-- Limite jour (lecture seule) -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="ch"><span class="ct">Limite journalière</span></div>
+      <div style="padding:12px" id="settings-limite">
+        <div style="color:var(--text-muted);font-size:13px">Chargement...</div>
+      </div>
+    </div>
+
+    <!-- Fermetures exceptionnelles (éditable) -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="ch">
+        <span class="ct">Fermetures exceptionnelles</span>
+      </div>
+      <div style="padding:12px">
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <input type="date" class="filter-select" id="s-fermeture-date" style="flex:1">
+          <button onclick="addMyFermeture()" style="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;font-family:var(--font-body);font-weight:600">Ajouter</button>
+        </div>
+        <div id="settings-fermetures" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+    </div>
+
+    <!-- Historique suspensions (lecture seule) -->
+    <div class="card">
+      <div class="ch"><span class="ct">Historique des suspensions</span></div>
+      <div style="padding:12px" id="settings-suspensions">
+        <div style="color:var(--text-muted);font-size:13px">Aucune suspension enregistrée</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Ajouter vendeur -->
+<div id="modal-add-vendeur" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center">
+  <div style="background:var(--bg-surface);border-radius:var(--radius-lg);padding:24px;width:100%;max-width:440px;box-shadow:var(--shadow-lg)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 style="font-size:15px;font-weight:700;margin:0">Ajouter un vendeur</h3>
+      <button onclick="closeAddVendeur()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-muted)">&times;</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="fg"><label class="fl">Prénom</label><input type="text" class="fi" id="av-prenom"></div>
+      <div class="fg"><label class="fl">Nom</label><input type="text" class="fi" id="av-nom"></div>
+      <div class="fg"><label class="fl">Email</label><input type="email" class="fi" id="av-email"></div>
+      <div class="fg"><label class="fl">Mot de passe temporaire</label><input type="text" class="fi" id="av-password" value="Namy2024!"></div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label class="fl">Permissions</label>
+        <label style="font-size:12px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="av-perm-prix" checked> Voir les prix</label>
+        <label style="font-size:12px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="av-perm-devis"> Mode devis</label>
+        <label style="font-size:12px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="av-perm-annuler"> Annuler expédition</label>
+        <label style="font-size:12px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="av-perm-histo"> Voir historique</label>
+      </div>
+      <button class="btn" onclick="createVendeur()" id="av-btn" style="margin-top:4px">Créer le compte vendeur</button>
+    </div>
+  </div>
+</div>
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
@@ -280,7 +442,7 @@ const DEMO_EXPEDITIONS = (() => {
 // ─── INIT ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   sessionUser = getSessionUser();
-  if (!sessionUser || sessionUser.role !== 'client') {
+  if (!sessionUser || !['client','dirigeant'].includes(sessionUser.role)) {
     window.location.href = 'login.html';
     return;
   }
@@ -435,6 +597,15 @@ async function loadVendeurs() {
         opt.textContent = vendeurMap[v.id];
         sel.appendChild(opt);
       });
+      const sel2 = document.getElementById('exp-f-vendeur');
+      if (sel2) {
+        data.forEach(v => {
+          const opt = document.createElement('option');
+          opt.value = v.id;
+          opt.textContent = vendeurMap[v.id];
+          sel2.appendChild(opt);
+        });
+      }
     }
   } catch(e) { console.warn('Vendeurs fallback', e); }
 }
@@ -807,6 +978,269 @@ function renderChartTaux(data) {
       }
     }
   });
+}
+
+// ─── TAB SYSTEM ──────────────────────────────────────────────
+function switchMainTab(tab, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.main-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  btn.classList.add('active');
+  if (tab === 'equipe') loadTeam();
+  if (tab === 'expeditions') loadExpeditionsTab();
+  if (tab === 'settings') loadSettings();
+}
+
+// ─── EXPEDITIONS TAB ─────────────────────────────────────────
+let expTabMode = 'today';
+function switchExpTab(mode, btn) {
+  expTabMode = mode;
+  document.querySelectorAll('#panel-expeditions .per-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  loadExpeditionsTab();
+}
+
+async function loadExpeditionsTab() {
+  const today = new Date().toISOString().split('T')[0];
+  const titles = { today: 'Expéditions du jour', upcoming: 'Expéditions à venir', history: 'Historique des expéditions' };
+  document.getElementById('exp-tab-title').textContent = titles[expTabMode];
+
+  let query = db.from('expeditions').select('*').eq('entreprise_id', entrepriseId);
+  if (expTabMode === 'today') query = query.eq('date_livraison', today);
+  else if (expTabMode === 'upcoming') query = query.gt('date_livraison', today);
+  else query = query.lt('date_livraison', today);
+  query = query.order('date_livraison', { ascending: expTabMode !== 'history' });
+
+  const vendeur = document.getElementById('exp-f-vendeur').value;
+  const statut = document.getElementById('exp-f-statut').value;
+  if (vendeur) query = query.eq('created_by', vendeur);
+  if (statut) query = query.eq('statut', statut);
+
+  try {
+    const { data, error } = await query.limit(100);
+    if (error) throw error;
+    renderExpTable(data || []);
+  } catch(e) {
+    console.warn('Expeditions tab error:', e);
+    renderExpTable([]);
+  }
+}
+
+const STATUT_COLORS = {
+  en_attente: '#6B7280', planifie: '#3B82F6', en_cours: '#F59E0B',
+  livre: '#10B981', echec: '#EF4444', litige: '#DC2626', annule: '#9CA3AF'
+};
+
+function renderExpTable(data) {
+  const tbody = document.getElementById('exp-tbody');
+  const empty = document.getElementById('exp-empty');
+  document.getElementById('exp-tab-count').textContent = data.length + ' expédition' + (data.length > 1 ? 's' : '');
+  if (!data.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = data.map(e => `<tr style="border-bottom:1px solid var(--border)">
+    <td style="padding:8px 12px;font-family:var(--font-mono);font-size:11px">#${e.id}</td>
+    <td style="padding:8px 12px">${e.date_livraison || ''}</td>
+    <td style="padding:8px 12px;font-weight:600">${e.dest_nom || ''}</td>
+    <td style="padding:8px 12px;color:var(--text-muted)">${e.dest_ville || ''}</td>
+    <td style="padding:8px 12px;font-size:11px">${e.creneau || ''}</td>
+    <td style="padding:8px 12px"><span style="padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${STATUT_COLORS[e.statut] || '#6B7280'}22;color:${STATUT_COLORS[e.statut] || '#6B7280'}">${e.statut || ''}</span></td>
+    <td style="padding:8px 12px;font-family:var(--font-mono)">${e.prix_ttc ? e.prix_ttc.toLocaleString('fr-FR') + ' €' : '—'}</td>
+  </tr>`).join('');
+}
+
+// ─── TEAM (MON EQUIPE) ──────────────────────────────────────
+async function loadTeam() {
+  try {
+    const { data, error } = await db.from('utilisateurs')
+      .select('id,prenom,nom,email,actif,permissions,statut')
+      .eq('role', 'vendeur')
+      .eq('entreprise_id', entrepriseId)
+      .order('prenom');
+    if (error) throw error;
+    renderTeam(data || []);
+  } catch(e) {
+    console.warn('Team load error:', e);
+    renderTeam([]);
+  }
+}
+
+function renderTeam(members) {
+  const tbody = document.getElementById('team-tbody');
+  const empty = document.getElementById('team-empty');
+  if (!members.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = members.map(m => {
+    const perms = m.permissions || {};
+    const permTags = [
+      perms.voir_prix ? 'Prix' : null,
+      perms.mode_devis ? 'Devis' : null,
+      perms.annuler_expedition ? 'Annuler' : null,
+      perms.voir_historique ? 'Historique' : null,
+    ].filter(Boolean).map(p => `<span style="padding:2px 6px;background:var(--accent-light);color:var(--accent-dark);border-radius:4px;font-size:10px;font-weight:600">${p}</span>`).join(' ');
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:10px 12px;font-weight:600">${m.prenom || ''} ${m.nom || ''}</td>
+      <td style="padding:10px 12px;color:var(--text-muted);font-size:12px">${m.email}</td>
+      <td style="padding:10px 12px">
+        <button onclick="toggleVendeurStatus('${m.id}',${m.actif})" style="padding:3px 10px;border-radius:10px;border:none;font-size:11px;font-weight:600;cursor:pointer;background:${m.actif ? 'var(--accent-light)' : 'var(--danger-bg)'};color:${m.actif ? 'var(--accent-dark)' : 'var(--danger)'}">${m.actif ? 'Actif' : 'Suspendu'}</button>
+      </td>
+      <td style="padding:10px 12px">${permTags || '<span style="color:var(--text-muted);font-size:11px">Standard</span>'}</td>
+      <td style="padding:10px 12px"><button onclick="editVendeurPerms('${m.id}')" style="padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-surface);font-size:11px;cursor:pointer;color:var(--text-muted)">Permissions</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function toggleVendeurStatus(id, currentActif) {
+  try {
+    await db.from('utilisateurs').update({ actif: !currentActif }).eq('id', id);
+    showToast(!currentActif ? 'Vendeur activé' : 'Vendeur suspendu', 'success');
+    loadTeam();
+  } catch(e) { showToast('Erreur: ' + e.message, 'danger'); }
+}
+
+async function editVendeurPerms(id) {
+  showToast('Utilisez le bouton Actions pour gérer les permissions', 'info');
+}
+
+// ─── ADD VENDEUR MODAL ───────────────────────────────────────
+function openAddVendeur() {
+  document.getElementById('modal-add-vendeur').style.display = 'flex';
+}
+function closeAddVendeur() {
+  document.getElementById('modal-add-vendeur').style.display = 'none';
+}
+
+async function createVendeur() {
+  const prenom = document.getElementById('av-prenom').value.trim();
+  const nom = document.getElementById('av-nom').value.trim();
+  const email = document.getElementById('av-email').value.trim();
+  const password = document.getElementById('av-password').value;
+
+  if (!prenom || !nom || !email || !password) {
+    showToast('Remplissez tous les champs', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('av-btn');
+  btn.disabled = true;
+  btn.textContent = 'Création...';
+
+  try {
+    const { data: session } = await db.auth.getSession();
+    const { data, error } = await db.functions.invoke('create-user', {
+      body: {
+        email, password, role: 'vendeur', prenom, nom,
+        entreprise_id: entrepriseId
+      }
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    const perms = {
+      expeditions: { create: true, read_own: true },
+      voir_prix: document.getElementById('av-perm-prix').checked,
+      mode_devis: document.getElementById('av-perm-devis').checked,
+      annuler_expedition: document.getElementById('av-perm-annuler').checked,
+      voir_historique: document.getElementById('av-perm-histo').checked,
+    };
+    if (data?.user?.id) {
+      await db.from('utilisateurs').update({ permissions: perms }).eq('id', data.user.id);
+    }
+
+    showToast(`Vendeur ${prenom} ${nom} créé avec succès`, 'success');
+    closeAddVendeur();
+    ['av-prenom','av-nom','av-email'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('av-password').value = 'Namy2024!';
+    loadTeam();
+    loadVendeurs();
+  } catch(e) {
+    showToast('Erreur: ' + (e.message || e), 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Créer le compte vendeur';
+  }
+}
+
+// ─── SETTINGS TAB ────────────────────────────────────────────
+async function loadSettings() {
+  try {
+    // Créneaux
+    const { data: creneaux } = await db.from('creneaux_livraison').select('*')
+      .eq('entreprise_id', entrepriseId).eq('actif', true).order('heure_debut');
+    const crEl = document.getElementById('settings-creneaux');
+    if (creneaux && creneaux.length) {
+      crEl.innerHTML = creneaux.map(c => `<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--bg-hover);border-radius:var(--radius-sm);font-size:13px;margin:2px">
+        <span style="font-family:var(--font-mono);font-weight:600">${(c.heure_debut||'').slice(0,5)} — ${(c.heure_fin||'').slice(0,5)}</span>
+        ${c.limite_colis > 0 ? '<span style="color:var(--text-muted);font-size:11px">max ' + c.limite_colis + '</span>' : ''}
+      </div>`).join('');
+    } else {
+      crEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px">Créneaux par défaut (09h-12h, 12h-16h, 15h-18h)</div>';
+    }
+
+    // Params
+    const { data: params } = await db.from('parametres_entreprise').select('*')
+      .eq('entreprise_id', entrepriseId).single();
+
+    // Limite
+    const limEl = document.getElementById('settings-limite');
+    if (params && params.limite_commandes_jour > 0) {
+      limEl.innerHTML = `<div style="font-size:22px;font-weight:700;font-family:var(--font-mono)">${params.limite_commandes_jour}</div><div style="font-size:12px;color:var(--text-muted)">livraisons par jour maximum</div>`;
+    } else {
+      limEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px">Pas de limite (illimité)</div>';
+    }
+
+    // Fermetures
+    myFermetures = params?.fermetures_exceptionnelles || [];
+    renderMyFermetures();
+
+    // Suspensions
+    const histEl = document.getElementById('settings-suspensions');
+    const hist = params?.historique_suspensions || [];
+    if (hist.length) {
+      histEl.innerHTML = hist.reverse().map(h => `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:12.5px">
+        <span style="font-family:var(--font-mono)">${(h.date||'').slice(0,10)}</span> —
+        <span style="font-weight:600;color:${h.action === 'suspension' ? 'var(--danger)' : 'var(--accent-dark)'}">${h.action}</span>
+        ${h.raison ? ' : ' + h.raison : ''}
+      </div>`).join('');
+    }
+  } catch(e) { console.warn('Settings load error:', e); }
+}
+
+let myFermetures = [];
+
+function renderMyFermetures() {
+  const el = document.getElementById('settings-fermetures');
+  if (!myFermetures.length) { el.innerHTML = '<span style="color:var(--text-muted);font-size:12px">Aucune fermeture programmée</span>'; return; }
+  el.innerHTML = myFermetures.map((d, i) => `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--danger-bg);color:var(--danger);border-radius:12px;font-size:11px;font-weight:600">
+    ${d} <button onclick="removeMyFermeture(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px">&times;</button>
+  </span>`).join('');
+}
+
+async function addMyFermeture() {
+  const date = document.getElementById('s-fermeture-date').value;
+  if (!date || myFermetures.includes(date)) return;
+  myFermetures.push(date);
+  myFermetures.sort();
+  try {
+    await db.from('parametres_entreprise').upsert({
+      entreprise_id: entrepriseId,
+      fermetures_exceptionnelles: myFermetures,
+    }, { onConflict: 'entreprise_id' });
+    renderMyFermetures();
+    document.getElementById('s-fermeture-date').value = '';
+    showToast('Fermeture ajoutée', 'success');
+  } catch(e) { showToast('Erreur: ' + e.message, 'danger'); }
+}
+
+async function removeMyFermeture(index) {
+  myFermetures.splice(index, 1);
+  try {
+    await db.from('parametres_entreprise').upsert({
+      entreprise_id: entrepriseId,
+      fermetures_exceptionnelles: myFermetures,
+    }, { onConflict: 'entreprise_id' });
+    renderMyFermetures();
+    showToast('Fermeture supprimée', 'success');
+  } catch(e) { showToast('Erreur: ' + e.message, 'danger'); }
 }
 </script>
 </body>

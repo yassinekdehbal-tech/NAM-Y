@@ -9,6 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="supabase-client.js"></script>
 <script src="utils.js"></script>
+<script src="nav.js"></script>
 <style>
 /* HEADER */
 .hdr{background:var(--bg-surface);border-bottom:1px solid var(--border);height:52px;display:flex;align-items:center;padding:0 24px;gap:14px;position:sticky;top:0;z-index:100}
@@ -70,7 +71,7 @@
 <body>
 
 <!-- HEADER -->
-<header class="hdr">
+<header class="hdr" style="display:none">
   <div class="logo">N A M Y</div>
   <span class="hdr-sep">/</span>
   <span class="hdr-page">Dashboard Admin</span>
@@ -149,6 +150,11 @@
       <span class="kpi-icon">⚠️</span>
       <div class="kpi-val" id="kLitiges">—</div>
       <div class="kpi-label">Litiges ouverts</div>
+    </div>
+    <div class="kpi c-warning">
+      <span class="kpi-icon">🏪</span>
+      <div class="kpi-val" id="kLimite">—</div>
+      <div class="kpi-label">Magasins proches limite</div>
     </div>
   </div>
 
@@ -293,6 +299,30 @@ async function loadDashboardData() {
     document.getElementById('kDevis').textContent = devis;
     document.getElementById('kComptes').textContent = comptes;
     document.getElementById('kLitiges').textContent = litiges;
+
+    // Magasins proches limite
+    try {
+      const { data: allParams } = await db.from('parametres_entreprise')
+        .select('entreprise_id, limite_commandes_jour')
+        .gt('limite_commandes_jour', 0);
+
+      if (allParams && allParams.length) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        let prochesLimite = 0;
+
+        for (const p of allParams) {
+          const { count } = await db.from('expeditions')
+            .select('*', { count: 'exact', head: true })
+            .eq('entreprise_id', p.entreprise_id)
+            .eq('date_livraison', todayStr);
+          if (count >= p.limite_commandes_jour * 0.8) prochesLimite++;
+        }
+
+        document.getElementById('kLimite').textContent = prochesLimite;
+      } else {
+        document.getElementById('kLimite').textContent = '0';
+      }
+    } catch(e) { document.getElementById('kLimite').textContent = '—'; }
 
     // ── Chart data from exps ──
     // Volume par client (top 6)

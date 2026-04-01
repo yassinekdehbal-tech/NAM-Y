@@ -105,11 +105,11 @@ body{display:flex;align-items:center;justify-content:center;padding:20px}
 <script>
 // Redirect par rôle
 const REDIRECTS = {
-  admin:       'dashboard.html',
-  client:      'dashboard-client.html',
-  fournisseur: 'dashboard-transporteur.html',
-  dispatcher:  'dashboard.html',
-  vendeur:     'formulaire-vendeur.html',
+  admin:       'index.html',
+  client:      'index.html',
+  fournisseur: 'index.html',
+  dispatcher:  'index.html',
+  vendeur:     'index.html',
   livreur:     'chauffeur.html',
 };
 
@@ -175,6 +175,31 @@ async function redirectUser(userId) {
         document.getElementById('login-box').style.display = 'flex';
       }, 4000);
       return;
+    }
+
+    // Vérifier suspension du compte
+    if (profil.entreprise_id) {
+      try {
+        const { data: params } = await db
+          .from('parametres_entreprise')
+          .select('suspendu, raison_suspension')
+          .eq('entreprise_id', profil.entreprise_id)
+          .single();
+
+        if (params && params.suspendu) {
+          document.getElementById('ls-txt').innerHTML =
+            '⛔ Votre compte est suspendu.<br><span style="font-size:12px;color:var(--text-muted)">Raison : ' +
+            (params.raison_suspension || 'Non spécifiée') +
+            '</span><br><span style="font-size:12px;color:var(--text-muted)">Contactez NAMY : contact@fissaliv.fr</span>';
+          setTimeout(async () => {
+            await db.auth.signOut();
+            showLogin();
+            document.getElementById('loading').classList.remove('show');
+            document.getElementById('login-box').style.display = 'flex';
+          }, 6000);
+          return;
+        }
+      } catch(e) { /* params not found = not suspended */ }
     }
 
     // Stocker en session

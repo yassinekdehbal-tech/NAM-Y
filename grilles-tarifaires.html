@@ -10,6 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
 <script src="utils.js"></script>
+<script src="nav.js"></script>
 <style>
 /* ── HEADER ── */
 .hdr{background:var(--bg-surface);border-bottom:1px solid var(--border);height:52px;display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:100}
@@ -111,7 +112,7 @@
 </style>
 </head>
 <body>
-<header class="hdr">
+<header class="hdr" style="display:none">
   <div class="logo">N A M Y</div>
   <span class="hdr-sub">/ Grilles tarifaires</span>
   <div class="hdr-act">

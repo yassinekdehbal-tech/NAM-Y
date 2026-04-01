@@ -9,8 +9,10 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script src="supabase-client.js"></script>
 <script src="utils.js"></script>
+<script src="nav.js"></script>
 <style>
 :root {
   --sidebar-w:340px; --header-h:54px;
@@ -23,43 +25,83 @@
 
 body{height:100vh;overflow:hidden;font-size:13px}
 
-/* ── HEADER ───────────────────────────────────────────────── */
-.header{
-  height:var(--header-h);background:var(--bg-surface);border-bottom:1px solid var(--border);
-  display:flex;align-items:center;padding:0 14px;gap:12px;
-  position:fixed;top:0;left:0;right:0;z-index:1000;
+/* ── DISPATCH BAR ── */
+.dispatch-bar{background:var(--bg-surface);border-bottom:1px solid var(--border);height:48px;display:flex;align-items:center;padding:0 16px;gap:12px}
+.dispatch-bar-left,.dispatch-bar-right{display:flex;align-items:center;gap:6px}
+.dispatch-bar-center{margin:0 auto;display:flex;background:var(--bg-page);border:1px solid var(--border);border-radius:6px;padding:2px;gap:2px}
+.view-btn{padding:6px 16px;border:none;border-radius:4px;background:none;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer;transition:all .15s}
+.view-btn.active{background:var(--accent);color:#fff}
+.view-btn:hover:not(.active){color:var(--text-primary)}
+.d-btn{padding:6px 10px;border:1px solid var(--border);border-radius:4px;background:var(--bg-surface);color:var(--text-muted);cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif}
+.d-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── VIEW PANELS ── */
+.view-panel{display:none;height:calc(100vh - 100px)}
+.view-panel.active{display:block}
+
+/* ── TIMELINE ── */
+.timeline-wrapper{overflow:auto;height:100%;position:relative}
+.timeline-table{width:max-content;min-width:100%;border-collapse:collapse;font-size:12px}
+.timeline-table th{position:sticky;top:0;background:var(--bg-surface);border-bottom:1px solid var(--border);padding:8px 10px;text-align:left;font-size:11px;color:var(--text-muted);font-weight:600;white-space:nowrap;z-index:10}
+.timeline-table td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap}
+.tl-col-fixed{position:sticky;left:0;background:var(--bg-surface);z-index:5}
+.tl-col-fixed:nth-child(2){left:160px}
+.tl-col-fixed:nth-child(3){left:280px}
+.tl-col-fixed:nth-child(4){left:380px}
+.tl-col-fixed:nth-child(5){left:440px}
+.tl-time-cell{position:relative;min-width:840px}
+.tl-block{position:absolute;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;cursor:pointer;transition:opacity .15s;min-width:18px}
+.tl-block:hover{opacity:.85;z-index:20}
+.tl-now-line{position:absolute;top:0;bottom:0;width:2px;background:#EF4444;z-index:15;pointer-events:none}
+.tl-tournee-name{display:flex;align-items:center;gap:6px;font-weight:600;font-size:12px;cursor:pointer}
+.tl-tournee-name:hover{color:var(--accent)}
+.tl-color-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.tl-badge{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+
+/* ── EDITOR ── */
+.editor-layout{display:flex;height:100%}
+.editor-left{width:300px;border-right:1px solid var(--border);overflow-y:auto;padding:12px;background:var(--bg-surface);display:flex;flex-direction:column;gap:8px}
+.editor-right{flex:1;overflow-y:auto;padding:20px;background:var(--bg-page)}
+.editor-section-urgent{background:var(--danger-dim);border:1px solid rgba(153,27,27,.15);border-radius:8px;padding:10px;margin-bottom:8px}
+.editor-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-hint);padding:4px 0}
+.editor-tournee-item{padding:10px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .15s;background:var(--bg-surface)}
+.editor-tournee-item:hover{border-color:var(--accent)}
+.editor-tournee-item.selected{border-color:var(--accent);background:var(--primary-dim)}
+.editor-stop-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-surface);margin-bottom:4px;cursor:grab}
+.editor-stop-item:active{cursor:grabbing}
+.editor-stop-num{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.sortable-ghost{opacity:.4}
+
+/* ── MAP LAYOUT ── */
+.map-layout{display:flex;height:100%}
+.map-sidebar{width:240px;background:var(--bg-surface);border-right:1px solid var(--border);overflow-y:auto}
+
+/* ── MAP (shared) ── */
+.map-container{flex:1;position:relative}
+#map{width:100%;height:100%}
+
+.map-legend{
+  position:absolute;bottom:14px;left:14px;z-index:500;
+  background:rgba(255,255,255,.92);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:10px 14px;backdrop-filter:blur(8px);display:flex;flex-direction:column;gap:5px;
 }
-.logo{font-family:'DM Mono',monospace;font-size:14px;font-weight:500;letter-spacing:5px;flex-shrink:0}
-.logo-sub{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:400;color:var(--text-muted);letter-spacing:0;margin-left:4px}
+.legend-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:2px}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-muted)}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 
-.header-date{display:flex;align-items:center;gap:5px;background:var(--bg-hover);border:1px solid var(--border);border-radius:var(--radius-sm);padding:3px 6px}
-.header-date input[type=date]{background:none;border:none;color:var(--text-primary);font-family:'DM Mono',monospace;font-size:12.5px;outline:none;cursor:pointer;width:125px}
-.header-date input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.7);cursor:pointer}
+/* ── SIDE PANEL ── */
+.side-panel{position:fixed;right:0;top:100px;bottom:0;width:380px;background:var(--bg-surface);border-left:1px solid var(--border);box-shadow:0 24px 64px rgba(0,0,0,.10);z-index:50;overflow-y:auto}
+.sp-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}
+.sp-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 20px}
+.sp-kpi{text-align:center}
+.sp-kpi-val{font-family:'DM Mono',monospace;font-size:18px;font-weight:700}
+.sp-kpi-label{font-size:10px;color:var(--text-muted);text-transform:uppercase}
+.sp-stop-item{display:flex;align-items:center;gap:8px;padding:8px 20px;border-bottom:1px solid var(--border);font-size:12px}
 
-.d-btn{
-  background:none;border:1px solid var(--border);border-radius:4px;
-  color:var(--text-muted);font-size:11.5px;padding:3px 8px;cursor:pointer;
-  font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap;
-}
-.d-btn:hover{background:var(--bg-active);color:var(--text-primary);border-color:var(--border-strong)}
-.d-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-.d-btn.all{border-style:dashed;border-color:var(--border-strong);color:var(--text-hint);font-size:10.5px}
-.d-btn.all:hover{color:var(--text-muted);border-color:var(--text-muted)}
-.d-btn.all.active{background:var(--warning);color:#000;border-color:var(--warning);font-weight:600}
+/* ── STOP POPUP ── */
+.stop-popup{position:fixed;z-index:100;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 24px 64px rgba(0,0,0,.10);padding:16px;max-width:320px;font-size:12.5px}
 
-.header-filters{display:flex;gap:6px;flex:1;overflow-x:auto}
-.filter-chip{
-  display:flex;align-items:center;gap:5px;padding:4px 10px;
-  background:var(--bg-hover);border:1px solid var(--border);border-radius:20px;
-  font-size:11.5px;color:var(--text-muted);cursor:pointer;transition:all .15s;
-  white-space:nowrap;flex-shrink:0;
-}
-.filter-chip:hover{border-color:var(--accent);color:var(--text-primary)}
-.filter-chip.active{background:var(--primary-dim);border-color:var(--accent);color:var(--accent)}
-.filter-chip select{background:none;border:none;color:inherit;font-family:'DM Sans',sans-serif;font-size:11.5px;outline:none;cursor:pointer;max-width:115px}
-
-.header-actions{display:flex;gap:6px;margin-left:auto;flex-shrink:0}
-
+/* ── BUTTONS ── */
 .btn{
   display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border:none;
   border-radius:var(--radius-sm);font-size:12px;font-weight:600;
@@ -75,138 +117,7 @@ body{height:100vh;overflow:hidden;font-size:13px}
 .btn-danger{background:var(--danger-dim);color:var(--danger);border:1px solid transparent}
 .btn-danger:hover{border-color:var(--danger)}
 
-/* ── LAYOUT ───────────────────────────────────────────────── */
-.app{display:flex;height:calc(100vh - var(--header-h));margin-top:var(--header-h)}
-
-/* ── MAP ──────────────────────────────────────────────────── */
-.map-container{flex:1;position:relative}
-#map{width:100%;height:100%}
-
-.map-legend{
-  position:absolute;bottom:14px;left:14px;z-index:500;
-  background:rgba(255,255,255,.92);border:1px solid var(--border);border-radius:var(--radius-sm);
-  padding:10px 14px;backdrop-filter:blur(8px);display:flex;flex-direction:column;gap:5px;
-}
-.legend-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:2px}
-.legend-item{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-muted)}
-.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-
-.map-stats{
-  position:absolute;top:14px;right:calc(var(--sidebar-w) + 14px);z-index:500;
-  display:flex;gap:8px;
-}
-.map-stat{
-  background:rgba(255,255,255,.92);border:1px solid var(--border);border-radius:var(--radius-sm);
-  padding:8px 14px;backdrop-filter:blur(8px);text-align:center;
-}
-.map-stat-val{font-family:'DM Mono',monospace;font-size:18px;font-weight:700}
-.map-stat-label{font-size:9.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
-.map-stat-val.orange{color:var(--warning)}
-.map-stat-val.green{color:var(--success)}
-.map-stat-val.blue{color:var(--accent)}
-
-/* ── SIDEBAR ──────────────────────────────────────────────── */
-.sidebar{
-  width:var(--sidebar-w);background:var(--bg-surface);border-left:1px solid var(--border);
-  display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;
-}
-.sidebar-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
-.sidebar-tab{
-  flex:1;padding:11px 6px;background:none;border:none;
-  border-bottom:2px solid transparent;color:var(--text-muted);
-  font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;
-  transition:all .15s;display:flex;align-items:center;justify-content:center;gap:5px;
-}
-.sidebar-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-.sidebar-tab:hover:not(.active){color:var(--text-primary)}
-.tab-badge{background:var(--bg-active);color:var(--text-muted);font-size:10px;font-family:'DM Mono',monospace;padding:1px 6px;border-radius:10px}
-
-.tab-content{display:none;flex-direction:column;flex:1;overflow:hidden}
-.tab-content.active{display:flex}
-
-/* Commandes tab */
-.commandes-header{padding:8px 10px;display:flex;gap:6px;border-bottom:1px solid var(--border);flex-shrink:0}
-.search-input{
-  flex:1;background:var(--bg-hover);border:1px solid var(--border);border-radius:var(--radius-sm);
-  padding:7px 10px;color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:12px;outline:none;
-}
-.search-input:focus{border-color:var(--accent)}
-.commandes-list{flex:1;overflow-y:auto;padding:6px 8px;display:flex;flex-direction:column;gap:5px}
-
-.cmd-card{
-  background:var(--bg-hover);border:1px solid var(--border);border-radius:var(--radius-sm);
-  padding:10px 12px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;
-}
-.cmd-card:hover{border-color:var(--border-strong)}
-.cmd-card.selected{border-color:var(--accent);background:var(--primary-dim)}
-.cmd-card.assigned{opacity:.7}
-.cmd-card.assigned:hover{opacity:1}
-.cmd-tournee-badge{position:absolute;top:0;left:0;width:4px;height:100%;border-radius:2px 0 0 2px}
-.cmd-header{display:flex;justify-content:space-between;margin-bottom:3px}
-.cmd-id{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted)}
-.cmd-date{font-size:10px;color:var(--text-hint)}
-.cmd-dest{font-size:13px;font-weight:700;margin-bottom:2px}
-.cmd-addr{font-size:11px;color:var(--text-muted);margin-bottom:6px}
-.cmd-tags{display:flex;gap:4px;flex-wrap:wrap}
-.tag{font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap}
-.tag-creneau{background:var(--primary-dim);color:var(--accent)}
-.tag-poids{background:var(--warning-dim);color:var(--warning)}
-.tag-option{background:var(--success-dim);color:var(--success)}
-.tag-magasin{background:var(--bg-active);color:var(--text-muted)}
-.tag-assigned{font-weight:600}
-
-.cmd-assign-btn{
-  margin-top:8px;width:100%;padding:6px;background:var(--bg-active);border:1px solid var(--border);
-  border-radius:var(--radius-sm);color:var(--text-muted);font-size:11px;font-weight:600;
-  font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;display:none;
-}
-.cmd-card.selected .cmd-assign-btn{display:block}
-.cmd-assign-btn:hover{background:var(--accent);color:#fff}
-
-/* ── TOURNEES TAB ─────────────────────────────────────────── */
-.tournees-list{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:7px}
-
-.tournee-card{background:var(--bg-hover);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;transition:all .15s}
-.tournee-card.active-tournee{border-color:var(--accent)}
-.tournee-header{padding:11px 12px;display:flex;align-items:center;gap:9px;cursor:pointer}
-.tournee-color-bar{width:4px;height:34px;border-radius:2px;flex-shrink:0}
-.tournee-info{flex:1}
-.tournee-name{font-size:12.5px;font-weight:700;margin-bottom:1px}
-.tournee-meta{font-size:11px;color:var(--text-muted)}
-.tournee-stats{display:flex;gap:8px;align-items:center}
-.t-stat{text-align:center}
-.t-stat-val{font-family:'DM Mono',monospace;font-size:15px;font-weight:700}
-.t-stat-label{font-size:9.5px;color:var(--text-muted)}
-.tournee-status{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:.3px}
-.status-brouillon{background:var(--bg-active);color:var(--text-muted)}
-.status-planifie{background:var(--primary-dim);color:var(--accent)}
-.status-publie{background:var(--success-dim);color:var(--success)}
-
-.tournee-stops{padding:0 12px 8px;display:flex;flex-direction:column;gap:3px;max-height:180px;overflow-y:auto}
-.stop-item{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--border);font-size:11.5px}
-.stop-item:last-child{border-bottom:none}
-.stop-num{width:18px;height:18px;border-radius:50%;background:var(--bg-active);display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:var(--text-muted);flex-shrink:0}
-.stop-info{flex:1}
-.stop-dest{font-weight:600;font-size:11.5px}
-.stop-addr{font-size:10.5px;color:var(--text-muted)}
-.stop-eta{font-family:'DM Mono',monospace;font-size:10.5px;color:var(--accent)}
-.stop-remove{width:18px;height:18px;border:none;background:none;color:var(--text-hint);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;border-radius:3px}
-.stop-remove:hover{background:var(--danger-dim);color:var(--danger)}
-
-.tournee-actions{padding:7px 12px;border-top:1px solid var(--border);display:flex;gap:5px;flex-wrap:wrap}
-
-/* ── AI PANEL ─────────────────────────────────────────────── */
-.ai-panel{background:var(--bg-hover);border:1px solid rgba(124,58,237,.3);border-radius:var(--radius-sm);padding:10px 12px;margin:8px;flex-shrink:0}
-.ai-panel-header{display:flex;align-items:center;gap:7px;margin-bottom:6px}
-.ai-icon{font-size:15px}
-.ai-title{font-size:12px;font-weight:700;color:var(--purple)}
-.ai-desc{font-size:11px;color:var(--text-muted);line-height:1.4;margin-bottom:8px}
-.ai-progress{height:4px;background:var(--bg-active);border-radius:2px;overflow:hidden;margin-bottom:7px;display:none}
-.ai-progress-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--accent));border-radius:2px;animation:aiProgress 2s ease forwards}
-@keyframes aiProgress{from{width:0}to{width:100%}}
-.ai-result{font-size:11px;color:var(--success);display:none}
-
-/* ── MODALS ───────────────────────────────────────────────── */
+/* ── MODALS ── */
 .modal-overlay{
   position:fixed;inset:0;background:rgba(15,25,35,.45);backdrop-filter:blur(4px);
   z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;
@@ -251,7 +162,18 @@ body{height:100vh;overflow:hidden;font-size:13px}
 .assign-meta{font-size:11px;color:var(--text-muted)}
 .assign-count{margin-left:auto;font-family:'DM Mono',monospace;font-size:11.5px;color:var(--text-muted)}
 
-/* ── TOAST ────────────────────────────────────────────────── */
+/* ── AI PANEL ── */
+.ai-panel{background:var(--bg-hover);border:1px solid rgba(124,58,237,.3);border-radius:var(--radius-sm);padding:10px 12px;margin:8px;flex-shrink:0}
+.ai-panel-header{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.ai-icon{font-size:15px}
+.ai-title{font-size:12px;font-weight:700;color:var(--purple)}
+.ai-desc{font-size:11px;color:var(--text-muted);line-height:1.4;margin-bottom:8px}
+.ai-progress{height:4px;background:var(--bg-active);border-radius:2px;overflow:hidden;margin-bottom:7px;display:none}
+.ai-progress-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--accent));border-radius:2px;animation:aiProgress 2s ease forwards}
+@keyframes aiProgress{from{width:0}to{width:100%}}
+.ai-result{font-size:11px;color:var(--success);display:none}
+
+/* ── TOAST ── */
 .toast{
   position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
   background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-sm);
@@ -260,159 +182,105 @@ body{height:100vh;overflow:hidden;font-size:13px}
 }
 @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 
-/* ── SCROLLBAR ────────────────────────────────────────────── */
+/* ── SCROLLBAR ── */
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:2px}
 
-/* ── RESPONSIVE ───────────────────────────────────────────── */
+/* ── RESPONSIVE ── */
 @media(max-width:768px){
-  :root{--sidebar-w:100vw}
-  .app{flex-direction:column-reverse}
-  .sidebar{width:100%;height:50vh;border-left:none;border-top:1px solid var(--border)}
-  .map-container{height:50vh}
-  .map-stats{top:8px;right:8px}
-  .header-filters{display:none}
-  .header-date{gap:3px}
-  .d-btn.all{display:none}
-  .logo-sub{display:none}
+  .dispatch-bar{flex-wrap:wrap;height:auto;padding:8px 12px}
+  .dispatch-bar-center{margin:4px auto}
+  .editor-layout{flex-direction:column}
+  .editor-left{width:100%;max-height:40vh}
+  .map-layout{flex-direction:column}
+  .map-sidebar{width:100%;max-height:120px}
+  .side-panel{width:100%;left:0}
 }
 </style>
 </head>
 <body>
 
-<!-- Header -->
-<header class="header">
-  <div class="logo">N A M Y<span class="logo-sub">/ Dispatch</span></div>
-
-  <div class="header-date">
-    <button class="d-btn" onclick="shiftDate(-1)">&#8592;</button>
+<!-- TOP BAR with view switcher + date nav -->
+<div class="dispatch-bar">
+  <div class="dispatch-bar-left">
+    <button onclick="shiftDate(-1)" class="d-btn">&laquo;</button>
     <input type="date" id="dispatch-date" onchange="loadDayData()">
-    <button class="d-btn" onclick="shiftDate(1)">&#8594;</button>
-    <button class="d-btn" onclick="goToday()">Auj.</button>
-    <button class="d-btn" onclick="goTomorrow()">Demain</button>
-    <button class="d-btn all" id="btn-all-dates" onclick="toggleAllDates()">Toutes</button>
+    <button onclick="shiftDate(1)" class="d-btn">&raquo;</button>
+    <button onclick="goToday()" class="d-btn">Aujourd'hui</button>
+    <span id="date-label" style="font-size:13px;font-weight:600;color:var(--text-primary)"></span>
   </div>
-
-  <div class="header-filters">
-    <div class="filter-chip" id="chip-creneau">
-      <select id="filter-creneau" onchange="applyFilters()">
-        <option value="">Tous creneaux</option>
-        <option>09:00-12:00</option>
-        <option>12:00-16:00</option>
-        <option>15:00-18:00</option>
-      </select>
-    </div>
-    <div class="filter-chip" id="chip-magasin">
-      <select id="filter-magasin" onchange="applyFilters()">
-        <option value="">Tous magasins</option>
-      </select>
-    </div>
-    <div class="filter-chip" id="chip-option">
-      <select id="filter-option" onchange="applyFilters()">
-        <option value="">Toutes options</option>
-        <option>Trottoir</option>
-        <option>Piece du choix</option>
-      </select>
-    </div>
-    <div class="filter-chip" id="chip-statut">
-      <select id="filter-statut" onchange="applyFilters()">
-        <option value="">Tous statuts</option>
-        <option value="non_assigne">Non assignees</option>
-        <option value="assigne">Assignees</option>
-      </select>
-    </div>
+  <div class="dispatch-bar-center">
+    <button class="view-btn active" onclick="switchView('timeline',this)">Timeline</button>
+    <button class="view-btn" onclick="switchView('editor',this)">Editeur</button>
+    <button class="view-btn" onclick="switchView('map',this)">Carte</button>
   </div>
-
-  <div class="header-actions">
-    <button class="btn btn-ai" onclick="autoDispatchIA()">Auto-dispatch IA</button>
-    <button class="btn btn-primary" onclick="openCreateTournee()">+ Creer tournee</button>
+  <div class="dispatch-bar-right">
+    <button class="btn btn-ai" onclick="autoDispatchIA()">IA Auto-dispatch</button>
+    <button class="btn btn-primary" onclick="openCreateTournee()">+ Tournee</button>
   </div>
-</header>
+</div>
 
-<!-- App layout -->
-<div class="app">
-  <!-- Map -->
-  <div class="map-container">
-    <div id="map"></div>
-
-    <div class="map-legend" id="map-legend">
-      <div class="legend-title">Legende</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--warning)"></div>En attente</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Planifie</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--success)"></div>Livre</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--danger)"></div>Echec</div>
-    </div>
-
-    <div class="map-stats">
-      <div class="map-stat">
-        <div class="map-stat-val orange" id="stat-pending">0</div>
-        <div class="map-stat-label">A dispatcher</div>
-      </div>
-      <div class="map-stat">
-        <div class="map-stat-val green" id="stat-assigned">0</div>
-        <div class="map-stat-label">Assignees</div>
-      </div>
-      <div class="map-stat">
-        <div class="map-stat-val blue" id="stat-tours">0</div>
-        <div class="map-stat-label">Tournees</div>
-      </div>
-    </div>
+<!-- VIEW 1: TIMELINE -->
+<div class="view-panel active" id="view-timeline">
+  <div class="timeline-wrapper">
+    <table class="timeline-table">
+      <thead>
+        <tr>
+          <th class="tl-col-fixed" style="width:160px">Tournee</th>
+          <th class="tl-col-fixed" style="width:120px">Livreur</th>
+          <th class="tl-col-fixed" style="width:100px">Vehicule</th>
+          <th class="tl-col-fixed" style="width:60px">Retard</th>
+          <th class="tl-col-fixed" style="width:80px">Statut</th>
+          <th id="tl-time-header"></th>
+        </tr>
+      </thead>
+      <tbody id="timeline-tbody"></tbody>
+    </table>
+    <div class="tl-now-line" id="tl-now-line"></div>
   </div>
+</div>
 
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <div class="sidebar-tabs">
-      <button class="sidebar-tab active" id="tab-commandes" onclick="switchTab('commandes')">
-        Commandes <span class="tab-badge" id="badge-commandes">0</span>
-      </button>
-      <button class="sidebar-tab" id="tab-tournees" onclick="switchTab('tournees')">
-        Tournees <span class="tab-badge" id="badge-tournees">0</span>
-      </button>
+<!-- VIEW 2: EDITOR -->
+<div class="view-panel" id="view-editor" style="display:none">
+  <div class="editor-layout">
+    <div class="editor-left">
+      <div id="editor-unassigned" class="editor-section-urgent"></div>
+      <div class="editor-section-title">Tournees du jour</div>
+      <div id="editor-tournees-list"></div>
+      <button onclick="openCreateTournee()" class="btn btn-primary" style="width:100%;margin-top:8px;font-size:12px">+ Nouvelle tournee</button>
     </div>
-
-    <!-- Tab: Commandes -->
-    <div class="tab-content active" id="content-commandes">
-      <!-- Section urgences -->
-      <div id="urgences-section" style="display:none">
-        <div style="padding:8px 12px;background:var(--danger-bg);border-bottom:1px solid rgba(153,27,27,.15);display:flex;align-items:center;gap:8px">
-          <span style="font-size:14px">&#9888;&#65039;</span>
-          <span style="font-size:12px;font-weight:600;color:var(--danger)">A assigner</span>
-          <span class="badge badge-danger" id="urgences-count" style="margin-left:auto;font-size:10px">0</span>
-        </div>
-        <div id="urgences-list" style="max-height:200px;overflow-y:auto;border-bottom:2px solid var(--danger-bg)"></div>
+    <div class="editor-right">
+      <div id="editor-detail" style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:14px">
+        Selectionnez une tournee
       </div>
-      <div class="commandes-header">
-        <input type="text" class="search-input" placeholder="Rechercher..." id="search-cmd" oninput="searchCommandes(this.value)">
-        <button class="btn btn-ghost btn-sm" onclick="selectAll()">Tout selectionner</button>
-      </div>
-      <div id="mass-assign-bar" style="display:none;padding:8px 12px;background:var(--accent-light);border-bottom:1px solid var(--accent);display:flex;align-items:center;gap:8px">
-        <span style="font-size:12px;font-weight:600;color:var(--accent-dark)" id="mass-assign-count">0 selectionne(s)</span>
-        <select class="form-control" id="mass-assign-tournee" style="height:30px;font-size:12px;flex:1;min-width:0">
-          <option value="">Tournee...</option>
-        </select>
-        <button class="btn btn-accent btn-sm" onclick="massAssign()">Assigner</button>
-        <button class="btn btn-ghost btn-sm" onclick="cancelMassSelect()" style="padding:4px 8px">&#10005;</button>
-      </div>
-      <div class="commandes-list" id="commandes-list"></div>
-    </div>
-
-    <!-- Tab: Tournees -->
-    <div class="tab-content" id="content-tournees">
-      <div class="ai-panel" id="ai-panel">
-        <div class="ai-panel-header">
-          <span class="ai-icon">&#9733;</span>
-          <span class="ai-title">Assistant IA</span>
-        </div>
-        <div class="ai-desc">Analysez les commandes du jour et laissez l'IA creer automatiquement les tournees optimales par zone et creneau.</div>
-        <div class="ai-progress" id="ai-progress"><div class="ai-progress-fill"></div></div>
-        <div class="ai-result" id="ai-result">Tournees generees avec succes</div>
-        <button class="btn btn-ai" style="width:100%;justify-content:center" onclick="autoDispatchIA()">Generer les tournees</button>
-      </div>
-      <div class="tournees-list" id="tournees-list"></div>
     </div>
   </div>
 </div>
+
+<!-- VIEW 3: MAP -->
+<div class="view-panel" id="view-map" style="display:none">
+  <div class="map-layout">
+    <div class="map-sidebar" id="map-sidebar">
+      <div style="padding:12px;font-size:13px;font-weight:700;border-bottom:1px solid var(--border)">Filtres carte</div>
+      <div id="map-filters" style="padding:12px;display:flex;flex-direction:column;gap:8px"></div>
+      <div id="map-legend" style="padding:12px;border-top:1px solid var(--border)"></div>
+    </div>
+    <div id="map" style="flex:1"></div>
+  </div>
+</div>
+
+<!-- SIDE PANEL (timeline tournee detail) -->
+<div class="side-panel" id="side-panel" style="display:none">
+  <div class="sp-header">
+    <div id="sp-title" style="font-weight:700;font-size:15px"></div>
+    <button onclick="closeSidePanel()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-muted)">&times;</button>
+  </div>
+  <div id="sp-content"></div>
+</div>
+
+<!-- STOP POPUP -->
+<div class="stop-popup" id="stop-popup" style="display:none"></div>
 
 <!-- Modal: Creer tournee -->
 <div class="modal-overlay" id="modal-create" style="display:none">
@@ -424,7 +292,7 @@ body{height:100vh;overflow:hidden;font-size:13px}
     <div class="modal-body">
       <div class="form-group">
         <label>Nom de la tournee *</label>
-        <input type="text" id="new-nom" placeholder="Ex: TAREK 31/03">
+        <input type="text" id="new-nom" placeholder="Ex: TAREK 01/04">
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -483,6 +351,7 @@ body{height:100vh;overflow:hidden;font-size:13px}
 <script>
 // ─── CONSTANTS ──────────────────────────────────────────────
 const TOURNEE_COLORS = ['#4f7cff','#f43f5e','#2dd4a0','#f59e0b','#a855f7','#ec4899'];
+const HOUR_START = 6, HOUR_END = 20, HOUR_PX = 60;
 
 const FALLBACK_COMMANDES = [
   { id:'F1', expediteur:'TRUFFAUT PARIS RIVE GAUCHE', dest:'Dupont Marie',    adresse:'14 Rue Bergere',      cp:'75009', ville:'Paris',             lat:48.873, lng:2.348, creneau:'09:00-12:00', option:'Piece du choix', poids:85,  tournee_id:null, statut:'en_attente', date:'2026-03-31' },
@@ -514,10 +383,10 @@ let chauffeursList = [], vehiculesList = [], entreprisesList = [];
 let filteredCommandes = [];
 let selectedCmdId = null;
 let selectedColor = '#4f7cff';
-let multiSelectMode = false;
-let selectedCmds = new Set();
 let allDatesMode = false;
 let map = null, markers = {};
+let mapInitialized = false;
+let selectedEditorTournee = null;
 
 // ─── DATE HELPERS ───────────────────────────────────────────
 function getTomorrow() { const d = new Date(); d.setDate(d.getDate()+1); return d.toISOString().split('T')[0]; }
@@ -532,7 +401,6 @@ function initDatePicker() {
   if (savedAll) {
     allDatesMode = true;
     inp.value = getToday();
-    document.getElementById('btn-all-dates').classList.add('active');
   } else {
     inp.value = saved || getTomorrow();
   }
@@ -543,7 +411,6 @@ function setDate(dateStr) {
   sessionStorage.setItem('namy_dispatch_all','false');
   sessionStorage.setItem('namy_dispatch_date', dateStr);
   document.getElementById('dispatch-date').value = dateStr;
-  document.getElementById('btn-all-dates').classList.remove('active');
   loadDayData();
 }
 
@@ -553,15 +420,6 @@ function shiftDate(delta) {
   setDate(d.toISOString().split('T')[0]);
 }
 function goToday() { setDate(getToday()); }
-function goTomorrow() { setDate(getTomorrow()); }
-
-function toggleAllDates() {
-  allDatesMode = !allDatesMode;
-  const btn = document.getElementById('btn-all-dates');
-  btn.classList.toggle('active', allDatesMode);
-  sessionStorage.setItem('namy_dispatch_all', String(allDatesMode));
-  loadDayData();
-}
 
 function formatDateLabel(dateStr) {
   if (allDatesMode) return 'Toutes les dates';
@@ -619,9 +477,12 @@ async function loadData() {
 function mapExpedition(e) {
   return {
     id: e.id, expediteur: e.expediteur||'', dest: e.destinataire||'',
-    adresse: e.dest_adresse||'', cp: e.dest_cp||'', ville: e.dest_ville||'',
+    dest_nom: e.dest_nom||e.destinataire||'',
+    adresse: e.dest_adresse||'', dest_adresse: e.dest_adresse||'',
+    cp: e.dest_cp||'', dest_cp: e.dest_cp||'',
+    ville: e.dest_ville||'', dest_ville: e.dest_ville||'',
     lat: e.lat||48.85, lng: e.lng||2.35, creneau: e.creneau||'',
-    option: e.lieu||'Piece du choix', poids: e.poids||0,
+    option: e.lieu||'Piece du choix', poids: e.poids||0, poids_total: e.poids_total||e.poids||0,
     tournee_id: e.tournee_id||null, statut: e.statut||'en_attente', date: e.date,
   };
 }
@@ -634,108 +495,482 @@ function filterByDate(arr, date, allMode) {
 function populateDropdowns() {
   // Chauffeurs
   const cs = document.getElementById('new-chauffeur');
-  cs.innerHTML = '<option value="">Non assigne</option>';
-  chauffeursList.forEach(n => { const o = document.createElement('option'); o.textContent = n; cs.appendChild(o); });
+  if (cs) {
+    cs.innerHTML = '<option value="">Non assigne</option>';
+    chauffeursList.forEach(n => { const o = document.createElement('option'); o.textContent = n; cs.appendChild(o); });
+  }
 
   // Vehicules
   const vs = document.getElementById('new-vehicule');
-  vs.innerHTML = '<option value="">Non assigne</option>';
-  vehiculesList.forEach(n => { const o = document.createElement('option'); o.textContent = n; vs.appendChild(o); });
-
-  // Magasins filter
-  const ms = document.getElementById('filter-magasin');
-  ms.innerHTML = '<option value="">Tous magasins</option>';
-  entreprisesList.forEach(n => { const o = document.createElement('option'); o.textContent = n; ms.appendChild(o); });
+  if (vs) {
+    vs.innerHTML = '<option value="">Non assigne</option>';
+    vehiculesList.forEach(n => { const o = document.createElement('option'); o.textContent = n; vs.appendChild(o); });
+  }
 }
 
 // ─── INIT ───────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   initDatePicker();
   await loadData();
-  initMap();
   initDriverTracking();
+  initRealtime();
   renderAll();
   // Pre-fill modal date
-  document.getElementById('new-date').value = getSelectedDate();
+  const newDateEl = document.getElementById('new-date');
+  if (newDateEl) newDateEl.value = getSelectedDate();
 });
 
-function renderAll() {
-  renderUrgences();
-  renderCommandes();
-  renderTournees();
-  updateStats();
-  updateMarkers();
-  updateLegend();
+// ─── VIEW SWITCHING ─────────────────────────────────────────
+function switchView(view, btn) {
+  document.querySelectorAll('.view-panel').forEach(p => { p.style.display = 'none'; p.classList.remove('active'); });
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + view).style.display = 'block';
+  document.getElementById('view-' + view).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (view === 'timeline') renderTimeline();
+  if (view === 'editor') renderEditor();
+  if (view === 'map') { initMapIfNeeded(); renderMapView(); }
 }
 
-// ─── URGENCES ──────────────────────────────────────────────
-function renderUrgences() {
-  const unassigned = commandes.filter(c => !c.tournee_id);
-  const section = document.getElementById('urgences-section');
-  const list = document.getElementById('urgences-list');
-  const countEl = document.getElementById('urgences-count');
-  const badgeCommandes = document.getElementById('badge-commandes');
+// ─── RENDER ALL ─────────────────────────────────────────────
+function renderAll() {
+  const activeView = document.querySelector('.view-panel.active');
+  if (activeView) {
+    if (activeView.id === 'view-timeline') renderTimeline();
+    else if (activeView.id === 'view-editor') renderEditor();
+    else if (activeView.id === 'view-map') { initMapIfNeeded(); renderMapView(); }
+  }
+  updateStats();
+}
 
-  if (!unassigned.length) {
-    if (section) section.style.display = 'none';
-    return;
+function updateStats() {
+  const label = document.getElementById('date-label');
+  if (label) label.textContent = formatDateLabel(getSelectedDate());
+}
+
+// ─── TIMELINE ───────────────────────────────────────────────
+function renderTimeline() {
+  // Build hour headers
+  let hoursHtml = '';
+  for (let h = HOUR_START; h <= HOUR_END; h++) {
+    hoursHtml += '<div style="display:inline-block;width:' + HOUR_PX + 'px;text-align:center;font-size:10px;color:var(--text-muted)">' + h + 'h</div>';
+  }
+  const th = document.getElementById('tl-time-header');
+  if (th) {
+    th.style.minWidth = ((HOUR_END - HOUR_START + 1) * HOUR_PX) + 'px';
+    th.innerHTML = hoursHtml;
   }
 
-  // Trier par créneau (heure la plus proche d'abord)
-  const sorted = [...unassigned].sort((a, b) => {
-    const ha = (a.creneau || '99:99').split('-')[0] || '99:99';
-    const hb = (b.creneau || '99:99').split('-')[0] || '99:99';
-    return ha.localeCompare(hb);
+  const tbody = document.getElementById('timeline-tbody');
+  const STATUT_COLORS = {
+    livre: '#10B981', en_cours: '#3B82F6', en_attente: '#9CA3AF',
+    planifie: '#9CA3AF', echec: '#EF4444', litige: '#EF4444'
+  };
+
+  // Build rows from tournees
+  let rowsHtml = '';
+
+  // Also show unassigned as a special row
+  const unassigned = commandes.filter(c => !c.tournee_id);
+
+  tournees.forEach(t => {
+    const stops = commandes.filter(c => c.tournee_id == t.id);
+    const livres = stops.filter(s => s.statut === 'livre').length;
+    const heureDepart = t.heure_depart || t.heure || '08:00';
+
+    // Status badge
+    let statutBadge = '<span class="tl-badge" style="background:var(--bg-hover);color:var(--text-muted)">' + (t.statut || 'brouillon') + '</span>';
+    if (t.statut === 'publie' || t.statut === 'en_cours') statutBadge = '<span class="tl-badge" style="background:rgba(59,130,246,.12);color:#3B82F6">' + t.statut + '</span>';
+    if (t.statut === 'termine') statutBadge = '<span class="tl-badge" style="background:rgba(16,185,129,.12);color:#10B981">termine</span>';
+
+    // Calculate retard
+    let retard = '\u2014';
+    if (t.statut === 'en_cours' || t.statut === 'publie') {
+      const now = new Date();
+      const today = now.toISOString().split('T')[0];
+      if (t.date === today) {
+        const [dh, dm] = (heureDepart).split(':').map(Number);
+        const expectedEnd = dh * 60 + dm + stops.length * 35;
+        const nowMin = now.getHours() * 60 + now.getMinutes();
+        const diff = nowMin - expectedEnd;
+        if (diff > 0) retard = '<span style="color:#EF4444;font-weight:600">+' + diff + 'min</span>';
+        else retard = '<span style="color:#10B981">OK</span>';
+      }
+    }
+
+    // Build time blocks for stops
+    const timeWidth = (HOUR_END - HOUR_START + 1) * HOUR_PX;
+    let blocksHtml = '<div class="tl-time-cell" style="position:relative;height:32px;min-width:' + timeWidth + 'px">';
+
+    stops.forEach((s, i) => {
+      const eta = calcETATime(heureDepart, i);
+      const etaMinutes = parseTimeToMinutes(eta);
+      const left = (etaMinutes - HOUR_START * 60) / 60 * HOUR_PX;
+      const width = 15 / 60 * HOUR_PX; // 15 min per stop
+
+      let color = STATUT_COLORS[s.statut] || '#9CA3AF';
+      // Check retard vs creneau
+      if (s.creneau) {
+        const creneauEnd = parseTimeToMinutes(s.creneau.split('-')[1] || '18:00');
+        if (etaMinutes > creneauEnd + 60) color = '#EF4444';
+        else if (etaMinutes > creneauEnd + 15) color = '#F59E0B';
+      }
+
+      if (left >= 0) {
+        blocksHtml += '<div class="tl-block" style="left:' + left + 'px;width:' + Math.max(width, 18) + 'px;background:' + (t.couleur || color) + '" '
+          + 'onclick="showStopPopup(event,\'' + s.id + '\')" '
+          + 'title="' + (s.dest || s.dest_nom || '') + ' \u2014 ETA ' + eta + '">' + (i + 1) + '</div>';
+      }
+    });
+    blocksHtml += '</div>';
+
+    rowsHtml += '<tr>'
+      + '<td class="tl-col-fixed"><div class="tl-tournee-name" onclick="openSidePanel(\'' + t.id + '\')">'
+      + '<div class="tl-color-dot" style="background:' + (t.couleur || '#6B7280') + '"></div>'
+      + (t.nom || '\u2014')
+      + '</div></td>'
+      + '<td class="tl-col-fixed" style="left:160px;font-size:11px;color:var(--text-muted)">' + (t.chauffeur || '\u2014') + '</td>'
+      + '<td class="tl-col-fixed" style="left:280px;font-size:11px;color:var(--text-muted)">' + (t.vehicule || '\u2014') + '</td>'
+      + '<td class="tl-col-fixed" style="left:380px;font-family:\'DM Mono\',monospace;font-size:11px">' + retard + '</td>'
+      + '<td class="tl-col-fixed" style="left:440px">' + statutBadge + '</td>'
+      + '<td>' + blocksHtml + '</td>'
+      + '</tr>';
   });
 
-  if (section) section.style.display = 'block';
-  if (countEl) countEl.textContent = sorted.length;
-
-  // Badge rouge sur le tab commandes
-  if (badgeCommandes) {
-    badgeCommandes.textContent = sorted.length;
-    badgeCommandes.style.background = sorted.length > 0 ? 'var(--danger)' : '';
-    badgeCommandes.style.color = sorted.length > 0 ? '#fff' : '';
+  // Unassigned row
+  if (unassigned.length > 0) {
+    rowsHtml += '<tr>'
+      + '<td class="tl-col-fixed"><div class="tl-tournee-name" style="color:var(--danger)">'
+      + '<div class="tl-color-dot" style="background:#EF4444"></div>'
+      + 'Non assignees (' + unassigned.length + ')'
+      + '</div></td>'
+      + '<td class="tl-col-fixed" style="left:160px;font-size:11px;color:var(--text-muted)">\u2014</td>'
+      + '<td class="tl-col-fixed" style="left:280px;font-size:11px;color:var(--text-muted)">\u2014</td>'
+      + '<td class="tl-col-fixed" style="left:380px">\u2014</td>'
+      + '<td class="tl-col-fixed" style="left:440px"><span class="tl-badge" style="background:rgba(239,68,68,.12);color:#EF4444">urgent</span></td>'
+      + '<td></td>'
+      + '</tr>';
   }
 
-  if (list) {
-    list.innerHTML = sorted.slice(0, 10).map(c => `
-      <div class="sidebar-item" style="padding:8px 12px;font-size:12px;border-bottom:1px solid var(--border);cursor:pointer" onclick="selectCommande('${c.id}')">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <strong style="color:var(--text-primary)">${c.dest || c.destinataire || ''}</strong>
-          <span class="badge badge-warning" style="font-size:10px">${c.creneau || ''}</span>
-        </div>
-        <div style="color:var(--text-muted);font-size:11px;margin-top:2px">${c.adresse || c.dest_adresse || ''} ${c.cp || c.dest_cp || ''} ${c.ville || c.dest_ville || ''}</div>
-      </div>
-    `).join('');
-    if (sorted.length > 10) {
-      list.innerHTML += '<div style="padding:6px 12px;font-size:11px;color:var(--text-hint);text-align:center">+' + (sorted.length - 10) + ' autres</div>';
+  if (tbody) tbody.innerHTML = rowsHtml;
+
+  updateNowLine();
+}
+
+function parseTimeToMinutes(t) {
+  if (!t) return 480;
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + (m || 0);
+}
+
+function calcETATime(heureDepart, stopIndex) {
+  const startMin = parseTimeToMinutes(heureDepart);
+  const etaMin = startMin + stopIndex * 35; // 35 min per stop
+  const h = Math.floor(etaMin / 60);
+  const m = etaMin % 60;
+  return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+}
+
+function calcETA(heureDepart, stopIndex) {
+  return calcETATime(heureDepart, stopIndex);
+}
+
+function updateNowLine() {
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const left = (nowMin - HOUR_START * 60) / 60 * HOUR_PX;
+  const line = document.getElementById('tl-now-line');
+  if (!line) return;
+  if (left > 0 && left < (HOUR_END - HOUR_START + 1) * HOUR_PX) {
+    line.style.display = 'block';
+    line.style.left = (520 + left) + 'px'; // 520px = sum of fixed columns
+  } else {
+    line.style.display = 'none';
+  }
+}
+setInterval(updateNowLine, 60000);
+
+// ─── SIDE PANEL ─────────────────────────────────────────────
+function openSidePanel(tourneeId) {
+  const t = tournees.find(x => String(x.id) === String(tourneeId));
+  if (!t) return;
+  const stops = commandes.filter(c => c.tournee_id == t.id);
+  const livres = stops.filter(s => s.statut === 'livre').length;
+  const restants = stops.length - livres;
+  const heureDepart = t.heure_depart || t.heure || '08:00';
+
+  // Next stop
+  const nextStop = stops.find(s => s.statut !== 'livre' && s.statut !== 'echec');
+  const nextIdx = nextStop ? stops.indexOf(nextStop) : -1;
+  const nextETA = nextIdx >= 0 ? calcETATime(heureDepart, nextIdx) : '\u2014';
+
+  document.getElementById('sp-title').innerHTML = '<div style="display:flex;align-items:center;gap:8px">'
+    + '<div style="width:12px;height:12px;border-radius:50%;background:' + (t.couleur || '#6B7280') + '"></div>'
+    + (t.nom || '\u2014')
+    + '</div>';
+
+  let html = '<div style="padding:12px 20px;font-size:12px;color:var(--text-muted)">'
+    + '<div>Livreur : <strong>' + (t.chauffeur || '\u2014') + '</strong></div>'
+    + '<div>Vehicule : ' + (t.vehicule || '\u2014') + '</div>'
+    + '<div>Depart : ' + heureDepart + '</div>'
+    + '</div>'
+    + '<div class="sp-kpi-row">'
+    + '<div class="sp-kpi"><div class="sp-kpi-val">' + stops.length + '</div><div class="sp-kpi-label">Stops</div></div>'
+    + '<div class="sp-kpi"><div class="sp-kpi-val" style="color:var(--accent-dark)">' + livres + '</div><div class="sp-kpi-label">Livres</div></div>'
+    + '<div class="sp-kpi"><div class="sp-kpi-val" style="color:var(--warning)">' + restants + '</div><div class="sp-kpi-label">Restants</div></div>'
+    + '<div class="sp-kpi"><div class="sp-kpi-val">\u2014</div><div class="sp-kpi-label">Retard moy</div></div>'
+    + '</div>';
+
+  if (nextStop) {
+    html += '<div style="padding:10px 20px;background:var(--primary-dim);border-top:1px solid var(--border);border-bottom:1px solid var(--border);font-size:12px">'
+      + 'Prochain : <strong>' + (nextStop.dest || nextStop.dest_nom || '\u2014') + '</strong> \u2014 ETA ' + nextETA
+      + '</div>';
+  }
+
+  // Stops list
+  const SC = { livre:'#10B981', en_cours:'#3B82F6', en_attente:'#9CA3AF', planifie:'#9CA3AF', echec:'#EF4444', litige:'#EF4444' };
+  html += stops.map(function(s, i) {
+    return '<div class="sp-stop-item">'
+      + '<div style="width:22px;height:22px;border-radius:50%;background:' + (SC[s.statut] || '#9CA3AF') + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">' + (i+1) + '</div>'
+      + '<div style="flex:1">'
+      + '<div style="font-weight:600">' + (s.dest || s.dest_nom || '\u2014') + '</div>'
+      + '<div style="color:var(--text-muted);font-size:11px">' + (s.adresse || s.dest_adresse || '') + ' ' + (s.ville || s.dest_ville || '') + '</div>'
+      + '</div>'
+      + '<div style="text-align:right;font-size:11px">'
+      + '<div style="font-family:\'DM Mono\',monospace">' + calcETATime(heureDepart, i) + '</div>'
+      + '<div style="color:var(--text-muted)">' + (s.creneau || '') + '</div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+
+  html += '<div style="padding:16px 20px;display:flex;gap:8px">'
+    + '<button onclick="focusTourneeOnMap(\'' + t.id + '\')" class="btn btn-ghost btn-sm" style="flex:1">Voir sur la carte</button>'
+    + '</div>';
+
+  document.getElementById('sp-content').innerHTML = html;
+  document.getElementById('side-panel').style.display = 'block';
+}
+
+function closeSidePanel() {
+  document.getElementById('side-panel').style.display = 'none';
+}
+
+// ─── STOP POPUP ─────────────────────────────────────────────
+function showStopPopup(event, stopId) {
+  event.stopPropagation();
+  const s = commandes.find(c => String(c.id) === String(stopId));
+  if (!s) return;
+  const popup = document.getElementById('stop-popup');
+  popup.innerHTML = '<div style="display:flex;flex-direction:column;gap:6px">'
+    + '<div style="font-weight:700">' + (s.dest || s.dest_nom || '\u2014') + '</div>'
+    + '<div style="color:var(--text-muted)">' + (s.adresse || s.dest_adresse || '') + ' ' + (s.cp || s.dest_cp || '') + ' ' + (s.ville || s.dest_ville || '') + '</div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    + '<span style="padding:2px 6px;border-radius:4px;font-size:10px;background:rgba(59,130,246,.1);color:#3B82F6">' + (s.creneau || '') + '</span>'
+    + '<span style="padding:2px 6px;border-radius:4px;font-size:10px;background:rgba(16,185,129,.1);color:#10B981">' + (s.statut || '') + '</span>'
+    + (s.poids ? '<span style="padding:2px 6px;border-radius:4px;font-size:10px;background:var(--bg-hover)">' + s.poids + 'kg</span>' : '')
+    + '</div>'
+    + '</div>';
+  popup.style.display = 'block';
+  popup.style.left = Math.min(event.clientX + 10, window.innerWidth - 340) + 'px';
+  popup.style.top = Math.min(event.clientY + 10, window.innerHeight - 200) + 'px';
+  setTimeout(function() { popup.style.display = 'none'; }, 5000);
+}
+
+// Close stop popup on click outside
+document.addEventListener('click', function(e) {
+  const popup = document.getElementById('stop-popup');
+  if (popup && !popup.contains(e.target) && !e.target.classList.contains('tl-block')) {
+    popup.style.display = 'none';
+  }
+});
+
+// ─── EDITOR VIEW ────────────────────────────────────────────
+function renderEditor() {
+  renderEditorUnassigned();
+  renderEditorTournees();
+}
+
+function renderEditorUnassigned() {
+  const unassigned = commandes.filter(c => !c.tournee_id && (c.statut === 'en_attente' || !c.statut));
+  const el = document.getElementById('editor-unassigned');
+  if (!el) return;
+  if (!unassigned.length) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = '<div style="font-size:12px;font-weight:700;color:var(--danger);margin-bottom:6px">Non assignees (' + unassigned.length + ')</div>'
+    + '<div id="editor-unassigned-list" style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto">'
+    + unassigned.slice(0, 20).map(function(c) {
+      return '<label style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--bg-surface);border:1px solid var(--border);border-radius:4px;font-size:11px;cursor:pointer">'
+        + '<input type="checkbox" value="' + c.id + '" class="ua-check">'
+        + '<span style="font-weight:600">' + (c.dest || c.dest_nom || '\u2014') + '</span>'
+        + '<span style="color:var(--text-muted);margin-left:auto">' + (c.creneau || '') + '</span>'
+        + '</label>';
+    }).join('')
+    + '</div>'
+    + '<div style="display:flex;gap:6px;margin-top:8px">'
+    + '<select id="ua-assign-tournee" style="flex:1;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:11px">'
+    + tournees.map(function(t) { return '<option value="' + t.id + '">' + (t.nom || '\u2014') + '</option>'; }).join('')
+    + '</select>'
+    + '<button onclick="massAssignFromEditor()" style="padding:4px 12px;background:var(--accent);color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer">Assigner</button>'
+    + '</div>';
+}
+
+function renderEditorTournees() {
+  const el = document.getElementById('editor-tournees-list');
+  if (!el) return;
+  el.innerHTML = tournees.map(function(t) {
+    const stops = commandes.filter(c => c.tournee_id == t.id);
+    const sel = selectedEditorTournee === String(t.id) ? 'selected' : '';
+    return '<div class="editor-tournee-item ' + sel + '" onclick="selectEditorTournee(\'' + t.id + '\')">'
+      + '<div style="display:flex;align-items:center;gap:6px">'
+      + '<div style="width:8px;height:8px;border-radius:50%;background:' + (t.couleur || '#6B7280') + '"></div>'
+      + '<span style="font-weight:600;font-size:12px">' + (t.nom || '\u2014') + '</span>'
+      + '<span style="margin-left:auto;font-size:11px;color:var(--text-muted)">' + stops.length + ' stops</span>'
+      + '</div>'
+      + '<div style="font-size:11px;color:var(--text-muted);margin-top:4px">' + (t.chauffeur || 'Pas de livreur') + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function selectEditorTournee(id) {
+  selectedEditorTournee = String(id);
+  renderEditorTournees();
+  renderEditorDetail(id);
+}
+
+function renderEditorDetail(tourneeId) {
+  const t = tournees.find(x => String(x.id) === String(tourneeId));
+  if (!t) return;
+  const stops = commandes.filter(c => c.tournee_id == t.id);
+  const heureDepart = t.heure_depart || t.heure || '08:00';
+  const el = document.getElementById('editor-detail');
+  if (!el) return;
+
+  const totalPoids = stops.reduce(function(s, c) { return s + (c.poids || c.poids_total || 0); }, 0);
+
+  el.innerHTML = '<div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px">'
+    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
+    + '<div style="width:14px;height:14px;border-radius:50%;background:' + (t.couleur || '#6B7280') + '"></div>'
+    + '<div style="font-size:16px;font-weight:700">' + (t.nom || '\u2014') + '</div>'
+    + '<span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:var(--bg-hover);color:var(--text-muted)">' + (t.statut || 'brouillon') + '</span>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:12px">'
+    + '<div><span style="color:var(--text-muted)">Livreur :</span> <strong>' + (t.chauffeur || '\u2014') + '</strong></div>'
+    + '<div><span style="color:var(--text-muted)">Vehicule :</span> ' + (t.vehicule || '\u2014') + '</div>'
+    + '<div><span style="color:var(--text-muted)">Depart :</span> ' + heureDepart + '</div>'
+    + '</div>'
+    + '<div style="display:flex;gap:6px;margin-top:12px">'
+    + '<button onclick="optimiserTournee(\'' + t.id + '\')" class="btn btn-ghost btn-sm">Optimiser</button>'
+    + '<button onclick="publierTournee(\'' + t.id + '\')" class="btn btn-primary btn-sm">' + (t.statut === 'publie' ? 'Publiee' : 'Publier') + '</button>'
+    + '<button onclick="supprimerTournee(\'' + t.id + '\')" class="btn btn-danger btn-sm" style="margin-left:auto">Supprimer</button>'
+    + '</div>'
+    + '</div>'
+
+    + '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-hint);margin-bottom:8px">'
+    + 'Stops (' + stops.length + ') \u2014 ' + totalPoids + ' kg'
+    + '</div>'
+    + '<div id="editor-stops-list">'
+    + stops.map(function(s, i) {
+      return '<div class="editor-stop-item" data-id="' + s.id + '">'
+        + '<div class="editor-stop-num" style="background:' + (t.couleur || '#6B7280') + '">' + (i+1) + '</div>'
+        + '<div style="flex:1;min-width:0">'
+        + '<div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (s.dest || s.dest_nom || '\u2014') + '</div>'
+        + '<div style="font-size:11px;color:var(--text-muted)">' + (s.adresse || s.dest_adresse || '') + ' ' + (s.cp || s.dest_cp || '') + '</div>'
+        + '</div>'
+        + '<div style="text-align:right;flex-shrink:0">'
+        + '<div style="font-family:\'DM Mono\',monospace;font-size:11px">' + calcETATime(heureDepart, i) + '</div>'
+        + '<div style="font-size:10px;color:var(--text-muted)">' + (s.creneau || '') + '</div>'
+        + '</div>'
+        + '<button onclick="event.stopPropagation();removeFromTournee(\'' + s.id + '\',\'' + t.id + '\')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;flex-shrink:0">&times;</button>'
+        + '</div>';
+    }).join('')
+    + '</div>';
+
+  // Init SortableJS on stops list
+  if (typeof Sortable !== 'undefined') {
+    const listEl = document.getElementById('editor-stops-list');
+    if (listEl) {
+      new Sortable(listEl, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onEnd: function(evt) {
+          const items = Array.from(document.getElementById('editor-stops-list').children);
+          const newOrder = items.map(function(el) { return el.dataset.id; });
+          newOrder.forEach(function(id, i) {
+            try { db.from('expeditions').update({ ordre: i + 1 }).eq('id', id); } catch(e) {}
+          });
+          showToast('Ordre mis a jour');
+          setTimeout(function() { renderEditorDetail(tourneeId); }, 500);
+        }
+      });
     }
   }
 }
 
-// ─── MAP ────────────────────────────────────────────────────
+async function massAssignFromEditor() {
+  const checks = document.querySelectorAll('.ua-check:checked');
+  const selEl = document.getElementById('ua-assign-tournee');
+  const tourneeId = selEl ? selEl.value : '';
+  if (!checks.length || !tourneeId) return;
+
+  for (const cb of checks) {
+    await assignToTournee(cb.value, tourneeId);
+  }
+  showToast(checks.length + ' expedition(s) assignee(s)');
+  renderEditor();
+}
+
+// ─── MAP VIEW ───────────────────────────────────────────────
+function initMapIfNeeded() {
+  if (mapInitialized) return;
+  if (!map) initMap();
+  mapInitialized = true;
+}
+
 function initMap() {
-  map = L.map('map',{zoomControl:true}).setView([48.82,2.30],11);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+  map = L.map('map', {zoomControl:true}).setView([48.82, 2.30], 11);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution:'OpenStreetMap | CartoDB', maxZoom:19
   }).addTo(map);
 }
+
+function renderMapView() {
+  if (!map) return;
+  updateMarkers();
+  updateLegend();
+
+  // Render filters
+  const filtersEl = document.getElementById('map-filters');
+  if (filtersEl) {
+    filtersEl.innerHTML = '<label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">'
+      + '<input type="checkbox" checked onchange="toggleMapLayer(\'drivers\')"> Livreurs'
+      + '</label>'
+      + tournees.map(function(t) {
+        return '<label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">'
+          + '<input type="checkbox" checked onchange="toggleMapTournee(\'' + t.id + '\')">'
+          + '<div style="width:8px;height:8px;border-radius:50%;background:' + (t.couleur || '#6B7280') + '"></div>'
+          + (t.nom || '\u2014') + ' (' + commandes.filter(function(c) { return c.tournee_id == t.id; }).length + ')'
+          + '</label>';
+      }).join('');
+  }
+
+  setTimeout(function() { if (map) map.invalidateSize(); }, 100);
+}
+
+function toggleMapLayer(layer) { /* TODO */ }
+function toggleMapTournee(id) { /* TODO */ }
 
 // ─── DRIVER TRACKING ────────────────────────────────────────
 let driverMarkers = {};
 
 async function initDriverTracking() {
-  // Charger les positions initiales
   try {
     const { data } = await db.from('positions_chauffeurs').select('*');
     if (data) data.forEach(updateDriverMarker);
   } catch (e) { console.warn('Driver positions load failed:', e); }
 
-  // Supabase Realtime
   try {
     db.channel('driver-positions')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'positions_chauffeurs' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'positions_chauffeurs' }, function(payload) {
         if (payload.new) updateDriverMarker(payload.new);
       })
       .subscribe();
@@ -744,7 +979,7 @@ async function initDriverTracking() {
 
 function updateDriverMarker(pos) {
   if (!map || !pos.lat || !pos.lng) return;
-  const age = (Date.now() - new Date(pos.updated_at).getTime()) / 60000; // minutes
+  const age = (Date.now() - new Date(pos.updated_at).getTime()) / 60000;
   const color = age < 30 ? '#00C9A7' : age < 60 ? '#F59E0B' : '#991B1B';
   const label = pos.chauffeur_nom || 'Chauffeur';
   const stopsLeft = pos.stops_restants || 0;
@@ -756,20 +991,21 @@ function updateDriverMarker(pos) {
 
   const icon = L.divIcon({
     className: '',
-    html: `<div style="width:28px;height:28px;background:${color};border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700">\ud83d\ude9a</div>`,
+    html: '<div style="width:28px;height:28px;background:' + color + ';border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700">\ud83d\ude9a</div>',
     iconSize: [28, 28], iconAnchor: [14, 14]
   });
 
-  driverMarkers[pos.chauffeur_id] = L.marker([pos.lat, pos.lng], { icon, zIndexOffset: 1000 })
+  driverMarkers[pos.chauffeur_id] = L.marker([pos.lat, pos.lng], { icon: icon, zIndexOffset: 1000 })
     .addTo(map)
-    .bindPopup(`<div style="font-family:'DM Sans',sans-serif;min-width:140px">
-      <div style="font-weight:700;font-size:13px;margin-bottom:4px">${label}</div>
-      <div style="font-size:12px;color:#666">Derni\u00e8re MAJ : ${ageText}</div>
-      <div style="font-size:12px;color:#666">${stopsLeft} stop(s) restant(s)</div>
-      <div style="margin-top:6px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:4px"></span>${age < 30 ? 'Actif' : age < 60 ? 'Inactif' : 'Hors ligne'}</div>
-    </div>`);
+    .bindPopup('<div style="font-family:\'DM Sans\',sans-serif;min-width:140px">'
+      + '<div style="font-weight:700;font-size:13px;margin-bottom:4px">' + label + '</div>'
+      + '<div style="font-size:12px;color:#666">Derniere MAJ : ' + ageText + '</div>'
+      + '<div style="font-size:12px;color:#666">' + stopsLeft + ' stop(s) restant(s)</div>'
+      + '<div style="margin-top:6px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + ';margin-right:4px"></span>' + (age < 30 ? 'Actif' : age < 60 ? 'Inactif' : 'Hors ligne') + '</div>'
+      + '</div>');
 }
 
+// ─── MAP MARKERS ────────────────────────────────────────────
 function getMarkerColor(cmd) {
   const s = cmd.statut || 'en_attente';
   if (s === 'livre') return '#2dd4a0';
@@ -778,27 +1014,27 @@ function getMarkerColor(cmd) {
     const t = tournees.find(x => x.id == cmd.tournee_id);
     return t ? t.couleur : '#4f7cff';
   }
-  return '#f59e0b'; // en_attente / default = orange
+  return '#f59e0b';
 }
 
 function updateMarkers() {
-  Object.values(markers).forEach(m => map.removeLayer(m));
+  if (!map) return;
+  Object.values(markers).forEach(function(m) { map.removeLayer(m); });
   markers = {};
 
-  filteredCommandes.forEach(cmd => {
+  const list = filteredCommandes.length ? filteredCommandes : commandes;
+  list.forEach(function(cmd) {
     const color = getMarkerColor(cmd);
-    const sel = String(cmd.id) === String(selectedCmdId);
-    const sz = sel ? 20 : 14;
-    const bw = sel ? 3 : 2;
+    const sz = 14;
+    const bw = 2;
 
     const icon = L.divIcon({
       className:'',
-      html:`<div style="width:${sz}px;height:${sz}px;background:${color};border:${bw}px solid ${sel?'#fff':'rgba(255,255,255,.5)'};border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer"></div>`,
+      html:'<div style="width:' + sz + 'px;height:' + sz + 'px;background:' + color + ';border:' + bw + 'px solid rgba(255,255,255,.5);border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer"></div>',
       iconSize:[sz,sz], iconAnchor:[sz/2,sz/2],
     });
 
-    const m = L.marker([cmd.lat, cmd.lng],{icon}).addTo(map).bindPopup(buildPopup(cmd));
-    m.on('click', () => selectCommande(cmd.id));
+    const m = L.marker([cmd.lat, cmd.lng], {icon:icon}).addTo(map).bindPopup(buildPopup(cmd));
     markers[cmd.id] = m;
   });
 }
@@ -812,228 +1048,88 @@ function buildPopup(cmd) {
     echec:'background:#f43f5e33;color:#f43f5e',
   }[cmd.statut] || 'background:#33394d;color:#6b7599';
 
-  return `<div style="font-family:'DM Sans',sans-serif;min-width:190px">
-    <div style="font-size:10.5px;color:#999;margin-bottom:3px">#${cmd.id}</div>
-    <div style="font-size:13.5px;font-weight:700;margin-bottom:3px">${cmd.dest}</div>
-    <div style="font-size:11.5px;color:#ccc;margin-bottom:5px">${cmd.adresse}, ${cmd.cp} ${cmd.ville}</div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px">
-      <span style="${statusBadge};padding:2px 6px;border-radius:4px;font-size:10.5px;font-weight:600">${cmd.statut}</span>
-      <span style="background:#4f7cff22;color:#4f7cff;padding:2px 6px;border-radius:4px;font-size:10.5px">${cmd.creneau}</span>
-      <span style="background:#f59e0b22;color:#f59e0b;padding:2px 6px;border-radius:4px;font-size:10.5px">${cmd.poids}kg</span>
-    </div>
-    ${t ? `<div style="background:${t.couleur}20;border:1px solid ${t.couleur}40;border-radius:4px;padding:3px 7px;font-size:10.5px;color:${t.couleur};font-weight:600">${t.nom}</div>` : ''}
-  </div>`;
+  return '<div style="font-family:\'DM Sans\',sans-serif;min-width:190px">'
+    + '<div style="font-size:10.5px;color:#999;margin-bottom:3px">#' + cmd.id + '</div>'
+    + '<div style="font-size:13.5px;font-weight:700;margin-bottom:3px">' + (cmd.dest || cmd.dest_nom || '') + '</div>'
+    + '<div style="font-size:11.5px;color:#ccc;margin-bottom:5px">' + (cmd.adresse || '') + ', ' + (cmd.cp || '') + ' ' + (cmd.ville || '') + '</div>'
+    + '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px">'
+    + '<span style="' + statusBadge + ';padding:2px 6px;border-radius:4px;font-size:10.5px;font-weight:600">' + (cmd.statut || '') + '</span>'
+    + '<span style="background:#4f7cff22;color:#4f7cff;padding:2px 6px;border-radius:4px;font-size:10.5px">' + (cmd.creneau || '') + '</span>'
+    + '<span style="background:#f59e0b22;color:#f59e0b;padding:2px 6px;border-radius:4px;font-size:10.5px">' + (cmd.poids || 0) + 'kg</span>'
+    + '</div>'
+    + (t ? '<div style="background:' + t.couleur + '20;border:1px solid ' + t.couleur + '40;border-radius:4px;padding:3px 7px;font-size:10.5px;color:' + t.couleur + ';font-weight:600">' + t.nom + '</div>' : '')
+    + '</div>';
 }
 
 function updateLegend() {
   const legend = document.getElementById('map-legend');
-  // Add dynamic tournee colors
+  if (!legend) return;
   let extra = '';
-  tournees.forEach(t => {
-    extra += `<div class="legend-item"><div class="legend-dot" style="background:${t.couleur}"></div>${t.nom}</div>`;
+  tournees.forEach(function(t) {
+    extra += '<div class="legend-item"><div class="legend-dot" style="background:' + t.couleur + '"></div>' + t.nom + '</div>';
   });
-  legend.innerHTML = `<div class="legend-title">Legende</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--warning)"></div>En attente</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--success)"></div>Livre</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--danger)"></div>Echec</div>
-    ${extra}`;
+  legend.innerHTML = '<div class="legend-title">Legende</div>'
+    + '<div class="legend-item"><div class="legend-dot" style="background:var(--warning)"></div>En attente</div>'
+    + '<div class="legend-item"><div class="legend-dot" style="background:var(--success)"></div>Livre</div>'
+    + '<div class="legend-item"><div class="legend-dot" style="background:var(--danger)"></div>Echec</div>'
+    + extra;
 }
 
-// ─── COMMANDES ──────────────────────────────────────────────
-function renderCommandes() {
-  const list = document.getElementById('commandes-list');
-  const unassigned = filteredCommandes.filter(c => !c.tournee_id);
-  document.getElementById('badge-commandes').textContent = unassigned.length;
-
-  if (filteredCommandes.length === 0) {
-    list.innerHTML = '<div style="text-align:center;padding:28px;color:var(--text-hint);font-size:12px">Aucune commande pour ces filtres</div>';
-    return;
+// ─── FOCUS TOURNEE ON MAP ───────────────────────────────────
+function focusTourneeOnMap(tourneeId) {
+  // Switch to map view if not already
+  const mapView = document.getElementById('view-map');
+  if (!mapView.classList.contains('active')) {
+    switchView('map', document.querySelectorAll('.view-btn')[2]);
   }
+  initMapIfNeeded();
 
-  list.innerHTML = filteredCommandes.map(cmd => {
-    const t = cmd.tournee_id ? tournees.find(x => x.id == cmd.tournee_id) : null;
-    const sel = String(cmd.id) === String(selectedCmdId);
-    const inSet = selectedCmds.has(cmd.id);
-
-    return `<div class="cmd-card ${sel||inSet?'selected':''} ${cmd.tournee_id?'assigned':''}"
-         onclick="selectCommande('${cmd.id}')" id="cmd-${cmd.id}">
-      ${t ? `<div class="cmd-tournee-badge" style="background:${t.couleur}"></div>` : ''}
-      <div class="cmd-header">
-        <span class="cmd-id">#${cmd.id}</span>
-        <span class="cmd-date">${cmd.date||''}</span>
-      </div>
-      <div class="cmd-dest">${cmd.dest}</div>
-      <div class="cmd-addr">${cmd.adresse}, ${cmd.cp} ${cmd.ville}</div>
-      <div class="cmd-tags">
-        <span class="tag tag-creneau">${cmd.creneau}</span>
-        <span class="tag tag-poids">${cmd.poids}kg</span>
-        <span class="tag tag-option">${cmd.option}</span>
-        <span class="tag tag-magasin">${(cmd.expediteur||'').replace('TRUFFAUT ','')}</span>
-        ${t ? `<span class="tag tag-assigned" style="background:${t.couleur}22;color:${t.couleur}">${t.nom}</span>` : ''}
-      </div>
-      ${!cmd.tournee_id ? `<button class="cmd-assign-btn" onclick="event.stopPropagation();openAssign('${cmd.id}')">+ Assigner a une tournee</button>` : ''}
-    </div>`;
-  }).join('');
-}
-
-function selectCommande(id) {
-  if (multiSelectMode) {
-    if (selectedCmds.has(id)) selectedCmds.delete(id); else selectedCmds.add(id);
-    renderCommandes();
-    updateMarkers();
-    return;
-  }
-  selectedCmdId = String(selectedCmdId) === String(id) ? null : id;
-  renderCommandes();
-  updateMarkers();
-  const cmd = commandes.find(c => c.id == id);
-  if (cmd && selectedCmdId) {
-    map.setView([cmd.lat, cmd.lng], 14, {animate:true});
-    if (markers[id]) markers[id].openPopup();
-  }
-}
-
-function searchCommandes(val) {
-  const v = val.toLowerCase();
-  filteredCommandes = commandes.filter(c =>
-    !v || c.dest.toLowerCase().includes(v) || c.ville.toLowerCase().includes(v) ||
-    c.adresse.toLowerCase().includes(v) || String(c.id).toLowerCase().includes(v)
-  );
-  applyFilters(true);
-}
-
-function applyFilters(fromSearch = false) {
-  const creneau = document.getElementById('filter-creneau').value;
-  const magasin = document.getElementById('filter-magasin').value;
-  const option  = document.getElementById('filter-option').value;
-  const statut  = document.getElementById('filter-statut').value;
-
-  let base = fromSearch ? filteredCommandes : [...commandes];
-
-  filteredCommandes = base.filter(c => {
-    if (creneau && c.creneau !== creneau) return false;
-    if (magasin && c.expediteur !== magasin) return false;
-    if (option && c.option !== option) return false;
-    if (statut === 'non_assigne' && c.tournee_id) return false;
-    if (statut === 'assigne' && !c.tournee_id) return false;
-    return true;
-  });
-
-  // Highlight active chips
-  ['creneau','magasin','option','statut'].forEach(n => {
-    const el = document.getElementById('chip-'+n);
-    const val = document.getElementById('filter-'+n).value;
-    if (el) el.classList.toggle('active', !!val);
-  });
-
-  renderCommandes();
-  updateMarkers();
-}
-
-function selectAll() {
-  if (multiSelectMode) {
-    multiSelectMode = false;
-    selectedCmds.clear();
-    showToast('Selection annulee');
-  } else {
-    multiSelectMode = true;
-    filteredCommandes.filter(c => !c.tournee_id).forEach(c => selectedCmds.add(c.id));
-    showToast(selectedCmds.size + ' commandes selectionnees');
-  }
-  updateMassAssignBar();
-  renderCommandes();
-}
-
-function updateMassAssignBar() {
-  const bar = document.getElementById('mass-assign-bar');
-  const count = document.getElementById('mass-assign-count');
-  const sel = document.getElementById('mass-assign-tournee');
-
-  if (selectedCmds.size > 0) {
-    bar.style.display = 'flex';
-    count.textContent = selectedCmds.size + ' selectionne(s)';
-    // Populate tournée dropdown
-    sel.innerHTML = '<option value="">Tournee...</option>';
-    tournees.forEach(t => {
-      const opt = document.createElement('option');
-      opt.value = t.id;
-      opt.textContent = t.nom + ' (' + (t.chauffeur || 'non assigne') + ')';
-      sel.appendChild(opt);
-    });
-  } else {
-    bar.style.display = 'none';
-  }
-}
-
-async function massAssign() {
-  const tourneeId = document.getElementById('mass-assign-tournee').value;
-  if (!tourneeId) { showToast('Selectionnez une tournee', 'warning'); return; }
-  const t = tournees.find(x => x.id == tourneeId);
+  const t = tournees.find(x => String(x.id) === String(tourneeId));
   if (!t) return;
 
-  let assigned = 0;
-  for (const cmdId of selectedCmds) {
-    const cmd = commandes.find(c => c.id == cmdId);
-    if (!cmd || cmd.tournee_id) continue;
+  const stops = commandes.filter(c => c.tournee_id == t.id);
+  if (stops.length === 0) return;
 
-    cmd.tournee_id = tourneeId;
-    if (!t.stops) t.stops = [];
-    t.stops.push(cmdId);
-    assigned++;
+  const bounds = L.latLngBounds(stops.map(function(p) { return [p.lat, p.lng]; }));
+  if (map) map.fitBounds(bounds, {padding:[40,40]});
 
-    try {
-      await db.from('expeditions').update({ tournee_id: tourneeId, statut: 'planifie' }).eq('id', cmdId);
-    } catch (e) { console.warn('Mass assign failed for', cmdId, e); }
-  }
-
-  multiSelectMode = false;
-  selectedCmds.clear();
-  updateMassAssignBar();
-  renderAll();
-  showToast(assigned + ' commande(s) assignee(s) a ' + t.nom);
-}
-
-function cancelMassSelect() {
-  multiSelectMode = false;
-  selectedCmds.clear();
-  updateMassAssignBar();
-  renderCommandes();
+  closeSidePanel();
 }
 
 // ─── ASSIGN ─────────────────────────────────────────────────
 function openAssign(cmdId) {
   selectedCmdId = cmdId;
   const cmd = commandes.find(c => c.id == cmdId);
-  document.getElementById('assign-cmd-info').textContent = `Assigner #${cmdId} - ${cmd?.dest} (${cmd?.ville})`;
+  document.getElementById('assign-cmd-info').textContent = 'Assigner #' + cmdId + ' - ' + (cmd ? cmd.dest : '') + ' (' + (cmd ? cmd.ville : '') + ')';
 
   const list = document.getElementById('assign-tournee-list');
   if (tournees.length === 0) {
     list.innerHTML = '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:14px">Aucune tournee creee. Creez-en une d\'abord.</div>';
   } else {
-    list.innerHTML = tournees.map(t => {
-      const stopCount = t.stops ? t.stops.length : 0;
-      return `<div class="assign-option" onclick="assignToTournee('${cmdId}','${t.id}')">
-        <div class="assign-color" style="background:${t.couleur}"></div>
-        <div>
-          <div class="assign-name">${t.nom}</div>
-          <div class="assign-meta">${t.chauffeur||'Non assigne'} - ${t.heure}</div>
-        </div>
-        <div class="assign-count">${stopCount} stop${stopCount>1?'s':''}</div>
-      </div>`;
+    list.innerHTML = tournees.map(function(t) {
+      const stopCount = commandes.filter(c => c.tournee_id == t.id).length;
+      return '<div class="assign-option" onclick="assignToTournee(\'' + cmdId + '\',\'' + t.id + '\')">'
+        + '<div class="assign-color" style="background:' + t.couleur + '"></div>'
+        + '<div>'
+        + '<div class="assign-name">' + t.nom + '</div>'
+        + '<div class="assign-meta">' + (t.chauffeur || 'Non assigne') + ' - ' + (t.heure || '') + '</div>'
+        + '</div>'
+        + '<div class="assign-count">' + stopCount + ' stop' + (stopCount > 1 ? 's' : '') + '</div>'
+        + '</div>';
     }).join('');
   }
   document.getElementById('modal-assign').style.display = 'flex';
 }
 
 async function assignToTournee(cmdId, tourneeId) {
-  const cmd = commandes.find(c => c.id == cmdId);
-  const tournee = tournees.find(t => t.id == tourneeId);
+  const cmd = commandes.find(c => String(c.id) === String(cmdId));
+  const tournee = tournees.find(t => String(t.id) === String(tourneeId));
   if (!cmd || !tournee) return;
 
   // Remove from old tournee if any
   if (cmd.tournee_id) {
     const old = tournees.find(t => t.id == cmd.tournee_id);
-    if (old) old.stops = (old.stops||[]).filter(s => s != cmdId);
+    if (old && old.stops) old.stops = old.stops.filter(s => s != cmdId);
   }
 
   cmd.tournee_id = tourneeId;
@@ -1047,141 +1143,47 @@ async function assignToTournee(cmdId, tourneeId) {
 
   closeModal('modal-assign');
   renderAll();
-  showToast('#'+cmdId+' assignee a '+tournee.nom);
+  showToast('#' + cmdId + ' assignee a ' + tournee.nom);
 }
 
 async function removeFromTournee(cmdId, tourneeId) {
-  const cmd = commandes.find(c => c.id == cmdId);
-  const tournee = tournees.find(t => t.id == tourneeId);
+  const cmd = commandes.find(c => String(c.id) === String(cmdId));
+  const tournee = tournees.find(t => String(t.id) === String(tourneeId));
   if (cmd) { cmd.tournee_id = null; cmd.statut = 'en_attente'; }
-  if (tournee) tournee.stops = (tournee.stops||[]).filter(s => s != cmdId);
+  if (tournee && tournee.stops) tournee.stops = tournee.stops.filter(s => s != cmdId);
 
   try {
     await db.from('expeditions').update({tournee_id:null, statut:'en_attente'}).eq('id', cmdId);
   } catch(e) { console.warn('Remove failed:', e); }
 
   renderAll();
-  showToast('#'+cmdId+' retiree de '+(tournee?.nom||'tournee'));
+  if (selectedEditorTournee) renderEditorDetail(selectedEditorTournee);
+  showToast('#' + cmdId + ' retiree de ' + (tournee ? tournee.nom : 'tournee'));
 }
 
-// ─── TOURNEES ───────────────────────────────────────────────
-function renderTournees() {
-  document.getElementById('badge-tournees').textContent = tournees.length;
-  const list = document.getElementById('tournees-list');
-  const dateLabel = formatDateLabel(getSelectedDate());
-
-  if (tournees.length === 0) {
-    list.innerHTML = `<div style="text-align:center;padding:28px;color:var(--text-hint);font-size:12px">
-      <div style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px">${dateLabel}</div>
-      Aucune tournee creee<br>Cliquez sur "+ Creer tournee"
-    </div>`;
-    return;
-  }
-
-  list.innerHTML = `<div style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);padding:8px 12px 4px">${dateLabel}</div>`
-    + tournees.map(t => {
-    const stops = t.stops || [];
-    const totalPoids = stops.reduce((s,id) => {
-      const c = commandes.find(x => x.id == id);
-      return s + (c ? (c.poids||0) : 0);
-    }, 0);
-
-    const stopsHtml = stops.length > 0
-      ? `<div class="tournee-stops">${stops.map((id,i) => {
-          const c = commandes.find(x => x.id == id);
-          if (!c) return '';
-          const eta = calcETA(t.heure, i);
-          return `<div class="stop-item">
-            <div class="stop-num">${i+1}</div>
-            <div class="stop-info">
-              <div class="stop-dest">${c.dest}</div>
-              <div class="stop-addr">${c.adresse}, ${c.ville}</div>
-            </div>
-            <div style="text-align:right">
-              <div class="stop-eta">${eta}</div>
-              <div style="font-size:9.5px;color:var(--text-muted)">${c.creneau}</div>
-            </div>
-            <button class="stop-remove" onclick="removeFromTournee('${id}','${t.id}')" title="Retirer">&#10005;</button>
-          </div>`;
-        }).join('')}</div>`
-      : '<div style="padding:7px 12px;font-size:11.5px;color:var(--text-hint)">Aucun stop - assignez des commandes</div>';
-
-    return `<div class="tournee-card" id="tournee-${t.id}">
-      <div class="tournee-header" onclick="focusTourneeOnMap('${t.id}')">
-        <div class="tournee-color-bar" style="background:${t.couleur}"></div>
-        <div class="tournee-info">
-          <div class="tournee-name">${t.nom}</div>
-          <div class="tournee-meta">${t.chauffeur||'Non assigne'} - ${t.heure}${t.vehicule?' - '+t.vehicule:''}</div>
-          ${isLateForSlot(t) ? '<div style="font-size:10px;color:var(--warning);font-weight:600;margin-top:2px">&#9888; Retard sur cr\u00e9neau</div>' : ''}
-        </div>
-        <div class="tournee-stats">
-          <div class="t-stat">
-            <div class="t-stat-val" style="color:${t.couleur}">${stops.length}</div>
-            <div class="t-stat-label">Stops</div>
-          </div>
-          <div class="t-stat">
-            <div class="t-stat-val" style="color:var(--text-muted);font-size:12px">${totalPoids}kg</div>
-            <div class="t-stat-label">Poids</div>
-          </div>
-        </div>
-        <span class="tournee-status status-${t.statut}">${t.statut}</span>
-      </div>
-      ${stopsHtml}
-      <div class="tournee-actions">
-        <button class="btn btn-ghost btn-sm" onclick="optimiserTournee('${t.id}')">Optimiser</button>
-        ${t.statut!=='publie'
-          ? `<button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="publierTournee('${t.id}')">Publier</button>`
-          : `<span style="color:var(--success);font-size:11px;margin-left:auto;display:flex;align-items:center">Publiee</span>`}
-        <button class="btn btn-ghost btn-sm" onclick="voirFeuille('${t.id}')">Feuille route</button>
-        <button class="btn btn-danger btn-sm" onclick="supprimerTournee('${t.id}')">Supprimer</button>
-      </div>
-    </div>`;
-  }).join('');
+// ─── HAVERSINE ──────────────────────────────────────────────
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function isLateForSlot(tournee) {
-  if (tournee.statut != 'publie' && tournee.statut != 'en_cours') return false;
-  const now = new Date();
-  const today = now.toISOString().split('T')[0];
-  if (tournee.date != today) return false;
-  // Vérifier si l'heure actuelle dépasse l'heure de départ + nb stops * 35min
-  const [h, m] = (tournee.heure || '08:00').split(':').map(Number);
-  const etaEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m + (tournee.stops || []).length * 35);
-  return now > etaEnd;
-}
-
-function calcETA(heureDepart, stopIndex) {
-  const [h,m] = (heureDepart||'08:00').split(':').map(Number);
-  const totalMin = h*60 + m + stopIndex*35;
-  return String(Math.floor(totalMin/60)).padStart(2,'0') + ':' + String(totalMin%60).padStart(2,'0');
-}
-
-function focusTourneeOnMap(tourneeId) {
-  const t = tournees.find(x => x.id == tourneeId);
-  if (!t || !t.stops || t.stops.length === 0) return;
-  const pts = t.stops.map(id => commandes.find(c => c.id == id)).filter(Boolean);
-  if (pts.length === 0) return;
-  const bounds = L.latLngBounds(pts.map(p => [p.lat, p.lng]));
-  map.fitBounds(bounds, {padding:[40,40]});
-
-  // Highlight this tournee card
-  document.querySelectorAll('.tournee-card').forEach(el => el.classList.remove('active-tournee'));
-  const card = document.getElementById('tournee-'+tourneeId);
-  if (card) card.classList.add('active-tournee');
-}
-
+// ─── OPTIMISER TOURNEE ──────────────────────────────────────
 async function optimiserTournee(tourneeId) {
-  const t = tournees.find(x => x.id == tourneeId);
-  if (!t || !t.stops || t.stops.length < 2) { showToast('Besoin d\'au moins 2 stops'); return; }
+  const t = tournees.find(x => String(x.id) === String(tourneeId));
+  if (!t) return;
+
+  const stops = commandes.filter(c => c.tournee_id == t.id);
+  if (stops.length < 2) { showToast('Besoin d\'au moins 2 stops'); return; }
   showToast('Optimisation de ' + t.nom + '...');
 
-  // Nearest neighbor algorithm
-  const stopData = t.stops.map(id => {
-    const c = commandes.find(x => x.id == id);
-    return { id, lat: c?.lat || 48.85, lng: c?.lng || 2.35, creneau: c?.creneau || '99:99' };
+  const stopData = stops.map(function(c) {
+    return { id: c.id, lat: c.lat || 48.85, lng: c.lng || 2.35, creneau: c.creneau || '99:99' };
   });
 
-  // Grouper par créneau d'abord, puis nearest neighbor dans chaque groupe
+  // Grouper par creneau, puis nearest neighbor dans chaque groupe
   const creneaux = [...new Set(stopData.map(s => s.creneau))].sort();
   const optimized = [];
 
@@ -1189,9 +1191,8 @@ async function optimiserTournee(tourneeId) {
     const group = stopData.filter(s => s.creneau === creneau);
     if (group.length <= 1) { optimized.push(...group); continue; }
 
-    // Nearest neighbor dans ce groupe
     const remaining = [...group];
-    let current = remaining.shift(); // premier stop = point de départ
+    let current = remaining.shift();
     const ordered = [current];
 
     while (remaining.length > 0) {
@@ -1207,9 +1208,10 @@ async function optimiserTournee(tourneeId) {
     optimized.push(...ordered);
   }
 
+  // Update stops array on tournee
+  if (!t.stops) t.stops = [];
   t.stops = optimized.map(s => s.id);
 
-  // Persister l'ordre
   try {
     for (let i = 0; i < t.stops.length; i++) {
       await db.from('expeditions').update({ ordre: i + 1 }).eq('id', t.stops[i]);
@@ -1217,59 +1219,57 @@ async function optimiserTournee(tourneeId) {
   } catch (e) { console.warn('Optimize order persist failed:', e); }
 
   renderAll();
-  showToast(t.nom + ' optimisee (' + t.stops.length + ' stops)');
+  if (selectedEditorTournee === String(tourneeId)) renderEditorDetail(tourneeId);
+  showToast(t.nom + ' optimisee (' + stops.length + ' stops)');
 }
 
-// Haversine distance en km
-function haversine(lat1, lng1, lat2, lng2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
+// ─── PUBLIER TOURNEE ────────────────────────────────────────
 async function publierTournee(tourneeId) {
-  const t = tournees.find(x => x.id == tourneeId);
+  const t = tournees.find(x => String(x.id) === String(tourneeId));
   if (!t) return;
-  if (!t.stops || t.stops.length === 0) { showToast('Ajoutez des stops avant de publier'); return; }
+  const stops = commandes.filter(c => c.tournee_id == t.id);
+  if (stops.length === 0) { showToast('Ajoutez des stops avant de publier'); return; }
   t.statut = 'publie';
 
   try {
     await db.from('tournees').update({statut:'publie'}).eq('id', tourneeId);
-    for (const s of t.stops) {
-      await db.from('expeditions').update({statut:'planifie'}).eq('id', s);
+    for (const s of stops) {
+      await db.from('expeditions').update({statut:'planifie'}).eq('id', s.id);
     }
   } catch(e) { console.warn('Publish failed:', e); }
 
-  renderTournees();
-  showToast(t.nom + ' publiee - ' + (t.chauffeur||'chauffeur') + ' notifie');
+  renderAll();
+  if (selectedEditorTournee === String(tourneeId)) renderEditorDetail(tourneeId);
+  showToast(t.nom + ' publiee - ' + (t.chauffeur || 'chauffeur') + ' notifie');
 }
 
+// ─── SUPPRIMER TOURNEE ──────────────────────────────────────
 async function supprimerTournee(tourneeId) {
-  const t = tournees.find(x => x.id == tourneeId);
-  if (!confirm('Supprimer la tournee "' + (t?.nom||'') + '" ?')) return;
+  const t = tournees.find(x => String(x.id) === String(tourneeId));
+  if (!confirm('Supprimer la tournee "' + (t ? t.nom : '') + '" ?')) return;
 
-  commandes.forEach(c => { if (c.tournee_id == tourneeId) { c.tournee_id = null; c.statut = 'en_attente'; } });
-  tournees = tournees.filter(x => x.id != tourneeId);
+  commandes.forEach(function(c) { if (c.tournee_id == tourneeId) { c.tournee_id = null; c.statut = 'en_attente'; } });
+  tournees = tournees.filter(x => String(x.id) !== String(tourneeId));
 
   try {
     await db.from('expeditions').update({tournee_id:null, statut:'en_attente'}).match({tournee_id:tourneeId});
     await db.from('tournees').delete().eq('id', tourneeId);
   } catch(e) { console.warn('Delete failed:', e); }
 
+  if (selectedEditorTournee === String(tourneeId)) {
+    selectedEditorTournee = null;
+    const det = document.getElementById('editor-detail');
+    if (det) det.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:14px">Selectionnez une tournee</div>';
+  }
+
   renderAll();
   showToast('Tournee supprimee');
 }
 
-function voirFeuille(tourneeId) {
-  const t = tournees.find(x => x.id == tourneeId);
-  showToast('Feuille de route ' + (t?.nom||'') + ' - PDF a venir');
-}
-
 // ─── CREATE TOURNEE ─────────────────────────────────────────
 function openCreateTournee() {
-  document.getElementById('new-date').value = getSelectedDate();
+  const newDateEl = document.getElementById('new-date');
+  if (newDateEl) newDateEl.value = getSelectedDate();
   document.getElementById('modal-create').style.display = 'flex';
 }
 
@@ -1283,25 +1283,24 @@ async function createTournee() {
   if (!nom) { showToast('Donnez un nom a la tournee'); return; }
 
   const newId = 'local_' + Date.now();
-  const t = { id:newId, nom, couleur:selectedColor, date, heure, chauffeur, vehicule, statut:'brouillon', stops:[] };
+  const t = { id:newId, nom:nom, couleur:selectedColor, date:date, heure:heure, chauffeur:chauffeur, vehicule:vehicule, statut:'brouillon', stops:[] };
   tournees.push(t);
 
   try {
     const { data, error } = await db.from('tournees').insert({
-      nom, date, heure, chauffeur, vehicule, couleur:selectedColor, statut:'brouillon'
+      nom:nom, date:date, heure:heure, chauffeur:chauffeur, vehicule:vehicule, couleur:selectedColor, statut:'brouillon'
     }).select().single();
     if (!error && data) t.id = data.id;
   } catch(e) { console.warn('Insert tournee failed:', e); }
 
   closeModal('modal-create');
   document.getElementById('new-nom').value = '';
-  switchTab('tournees');
   renderAll();
   showToast('Tournee "' + nom + '" creee');
 }
 
 function selectColor(el) {
-  document.querySelectorAll('.color-opt').forEach(e => e.classList.remove('selected'));
+  document.querySelectorAll('.color-opt').forEach(function(e) { e.classList.remove('selected'); });
   el.classList.add('selected');
   selectedColor = el.dataset.color;
 }
@@ -1311,20 +1310,14 @@ async function autoDispatchIA() {
   const nonAssignees = commandes.filter(c => !c.tournee_id);
   if (nonAssignees.length === 0) { showToast('Toutes les commandes sont deja assignees'); return; }
 
-  switchTab('tournees');
-  const progress = document.getElementById('ai-progress');
-  const result = document.getElementById('ai-result');
-  progress.style.display = 'block';
-  result.style.display = 'none';
-
   showToast('IA en cours - analyse des zones et creneaux...');
   await new Promise(r => setTimeout(r, 2000));
 
   // Group by creneau + geographic zone
   const groupes = {};
-  nonAssignees.forEach(c => {
+  nonAssignees.forEach(function(c) {
     const zone = c.lng > 2.3 ? 'EST' : 'OUEST';
-    const key = (c.creneau||'00') + '_' + zone;
+    const key = (c.creneau || '00') + '_' + zone;
     if (!groupes[key]) groupes[key] = [];
     groupes[key].push(c);
   });
@@ -1333,17 +1326,18 @@ async function autoDispatchIA() {
   const chauffeurs = chauffeursList.length ? chauffeursList.slice(0,4) : FALLBACK_CHAUFFEURS.slice(0,4);
   const selectedDate = getSelectedDate();
 
-  for (const [key, cmds] of Object.entries(groupes)) {
+  for (const key of Object.keys(groupes)) {
+    const cmds = groupes[key];
     if (cmds.length === 0) continue;
 
     let t;
-    if (tourneeIdx < tournees.length && tournees[tourneeIdx].stops.length === 0) {
+    if (tourneeIdx < tournees.length && commandes.filter(c => c.tournee_id == tournees[tourneeIdx].id).length === 0) {
       t = tournees[tourneeIdx];
     } else {
       const newId = 'ia_' + Date.now() + '_' + tourneeIdx;
       const cIdx = tourneeIdx % chauffeurs.length;
       const color = TOURNEE_COLORS[tourneeIdx % TOURNEE_COLORS.length];
-      t = { id:newId, nom:'IA_'+key.replace(/:/g,''), couleur:color, date:selectedDate, heure:'08:00', chauffeur:chauffeurs[cIdx], vehicule:'Fourgon 12m3', statut:'brouillon', stops:[] };
+      t = { id:newId, nom:'IA_' + key.replace(/:/g,''), couleur:color, date:selectedDate, heure:'08:00', chauffeur:chauffeurs[cIdx], vehicule:'Fourgon 12m3', statut:'brouillon', stops:[] };
       tournees.push(t);
 
       try {
@@ -1358,6 +1352,7 @@ async function autoDispatchIA() {
     for (const c of cmds) {
       c.tournee_id = t.id;
       c.statut = 'planifie';
+      if (!t.stops) t.stops = [];
       if (!t.stops.some(s => s == c.id)) t.stops.push(c.id);
 
       try {
@@ -1367,33 +1362,28 @@ async function autoDispatchIA() {
     tourneeIdx++;
   }
 
-  progress.style.display = 'none';
-  result.style.display = 'block';
   renderAll();
   showToast(nonAssignees.length + ' commandes reparties en ' + tourneeIdx + ' tournees par l\'IA');
 }
 
-// ─── STATS ──────────────────────────────────────────────────
-function updateStats() {
-  const pending  = commandes.filter(c => !c.tournee_id).length;
-  const assigned = commandes.filter(c => c.tournee_id).length;
-  document.getElementById('stat-pending').textContent  = pending;
-  document.getElementById('stat-assigned').textContent = assigned;
-  document.getElementById('stat-tours').textContent    = tournees.length;
+// ─── REALTIME ───────────────────────────────────────────────
+function initRealtime() {
+  try {
+    db.channel('dispatch-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournee_stops' }, function() {
+        loadDayData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournees' }, function() {
+        loadDayData();
+      })
+      .subscribe();
+  } catch(e) { console.warn('Realtime init failed:', e); }
 }
 
-// ─── UI HELPERS ─────────────────────────────────────────────
-function switchTab(tab) {
-  ['commandes','tournees'].forEach(t => {
-    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
-    document.getElementById('content-'+t).classList.toggle('active', t===tab);
-  });
-}
-
+// ─── LOAD DAY DATA ──────────────────────────────────────────
 async function loadDayData() {
   const date = getSelectedDate();
   sessionStorage.setItem('namy_dispatch_date', date);
-  showToast(allDatesMode ? 'Chargement de toutes les commandes...' : 'Chargement du ' + date + '...');
 
   try {
     let expQ = db.from('expeditions').select('*').order('id',{ascending:false});
@@ -1413,7 +1403,8 @@ async function loadDayData() {
   }
 
   filteredCommandes = [...commandes];
-  document.getElementById('new-date').value = date;
+  const newDateEl = document.getElementById('new-date');
+  if (newDateEl) newDateEl.value = date;
   renderAll();
 }
 </script>
