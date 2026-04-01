@@ -1014,10 +1014,10 @@ async function loadExpeditionsTab() {
   document.getElementById('exp-tab-title').textContent = titles[expTabMode];
 
   let query = db.from('expeditions').select('*').eq('entreprise_id', entrepriseId);
-  if (expTabMode === 'today') query = query.eq('date_livraison', today);
-  else if (expTabMode === 'upcoming') query = query.gt('date_livraison', today);
-  else query = query.lt('date_livraison', today);
-  query = query.order('date_livraison', { ascending: expTabMode !== 'history' });
+  if (expTabMode === 'today') query = query.eq('date', today);
+  else if (expTabMode === 'upcoming') query = query.gt('date', today);
+  else query = query.lt('date', today);
+  query = query.order('date', { ascending: expTabMode !== 'history' });
 
   const vendeur = document.getElementById('exp-f-vendeur').value;
   const statut = document.getElementById('exp-f-statut').value;
@@ -1047,8 +1047,8 @@ function renderExpTable(data) {
   empty.style.display = 'none';
   tbody.innerHTML = data.map(e => `<tr style="border-bottom:1px solid var(--border)">
     <td style="padding:8px 12px;font-family:var(--font-mono);font-size:11px">#${e.id}</td>
-    <td style="padding:8px 12px">${e.date_livraison || ''}</td>
-    <td style="padding:8px 12px;font-weight:600">${e.dest_nom || ''}</td>
+    <td style="padding:8px 12px">${e.date || ''}</td>
+    <td style="padding:8px 12px;font-weight:600">${e.destinataire || ''}</td>
     <td style="padding:8px 12px;color:var(--text-muted)">${e.dest_ville || ''}</td>
     <td style="padding:8px 12px;font-size:11px">${e.creneau || ''}</td>
     <td style="padding:8px 12px"><span style="padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${STATUT_COLORS[e.statut] || '#6B7280'}22;color:${STATUT_COLORS[e.statut] || '#6B7280'}">${e.statut || ''}</span></td>
@@ -1133,18 +1133,30 @@ async function createVendeur() {
   btn.textContent = 'Création...';
 
   try {
-    const resp = await db.functions.invoke('create-user', {
-      body: {
-        email, password, role: 'vendeur', prenom, nom,
-        entreprise_id: entrepriseId
+    // S'assurer que entreprise_id est défini
+    let entId = entrepriseId;
+    if (!entId) {
+      console.warn('entrepriseId manquant, récupération depuis Supabase...');
+      const { data: { session } } = await db.auth.getSession();
+      if (session?.user?.id) {
+        const { data: profil } = await db.from('utilisateurs').select('entreprise_id').eq('auth_id', session.user.id).single();
+        if (profil?.entreprise_id) { entId = profil.entreprise_id; entrepriseId = entId; }
       }
-    });
+      if (!entId) throw new Error('Impossible de déterminer votre entreprise. Reconnectez-vous.');
+    }
+
+    const body = { email, password, role: 'vendeur', prenom, nom, entreprise_id: entId };
+    console.log('[createVendeur] Body envoyé:', JSON.stringify(body));
+
+    const resp = await db.functions.invoke('create-user', { body });
+
+    console.log('[createVendeur] Réponse complète:', JSON.stringify(resp));
 
     // La Edge Function peut retourner l'erreur dans data ou dans error
-    const result = resp.data;
-    if (resp.error) throw new Error(resp.error.message || 'Erreur réseau');
+    const result = typeof resp.data === 'string' ? JSON.parse(resp.data) : resp.data;
+    if (resp.error) throw new Error(resp.error.message || JSON.stringify(resp.error));
     if (result?.error) throw new Error(result.error);
-    if (!result?.user) throw new Error('Réponse inattendue du serveur');
+    if (!result?.user) throw new Error('Réponse inattendue : ' + JSON.stringify(result));
 
     // Permissions vendeur
     const perms = {
