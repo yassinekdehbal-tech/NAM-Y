@@ -309,15 +309,15 @@
       </div>
 
       <div class="section-label">Jours de service</div>
-      <div class="perms-grid">
-        <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="lundi" checked> Lundi</label>
-        <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="mardi" checked> Mardi</label>
-        <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="mercredi" checked> Mercredi</label>
-        <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="jeudi" checked> Jeudi</label>
-        <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="vendredi" checked> Vendredi</label>
-        <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="samedi" checked> Samedi</label>
-        <label class="perm-item" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="dimanche"> Dimanche</label>
-        <label class="perm-item" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="feries"> Jours f&eacute;ri&eacute;s</label>
+      <div class="perms-grid" id="jours-grid">
+        <div class="perm-item on" onclick="toggleJour(this)" data-jour="lundi">Lundi</div>
+        <div class="perm-item on" onclick="toggleJour(this)" data-jour="mardi">Mardi</div>
+        <div class="perm-item on" onclick="toggleJour(this)" data-jour="mercredi">Mercredi</div>
+        <div class="perm-item on" onclick="toggleJour(this)" data-jour="jeudi">Jeudi</div>
+        <div class="perm-item on" onclick="toggleJour(this)" data-jour="vendredi">Vendredi</div>
+        <div class="perm-item on" onclick="toggleJour(this)" data-jour="samedi">Samedi</div>
+        <div class="perm-item" onclick="toggleJour(this)" data-jour="dimanche">Dimanche</div>
+        <div class="perm-item" onclick="toggleJour(this)" data-jour="feries">Jours f&eacute;ri&eacute;s</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -395,6 +395,10 @@ function renderAll() {
 }
 
 // ─── SECTION SWITCH ─────────────────────────────────────────
+function toggleJour(el) {
+  el.classList.toggle('on');
+}
+
 function switchSection(name) {
   document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
@@ -520,12 +524,12 @@ function onRoleChange() {
   if (role === 'vendeur') {
     permsSection.style.display = 'block';
     permsGrid.innerHTML = PERMS_VENDEUR.map(p =>
-      `<label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-perm="${p.key}" checked> ${p.label}</label>`
+      `<div class="perm-item on" onclick="this.classList.toggle('on')" data-perm="${p.key}">${p.label}</div>`
     ).join('');
   } else if (role === 'livreur') {
     permsSection.style.display = 'block';
     permsGrid.innerHTML = PERMS_LIVREUR.map(p =>
-      `<label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-perm="${p.key}" checked> ${p.label}</label>`
+      `<div class="perm-item on" onclick="this.classList.toggle('on')" data-perm="${p.key}">${p.label}</div>`
     ).join('');
   } else {
     permsSection.style.display = 'none';
@@ -622,8 +626,8 @@ async function createUser() {
 
   // Permissions
   const permissions = {};
-  document.querySelectorAll('#cu-perms-grid .perm-item.on input').forEach(cb => {
-    permissions[cb.dataset.perm] = true;
+  document.querySelectorAll('#cu-perms-grid .perm-item.on[data-perm]').forEach(el => {
+    permissions[el.dataset.perm] = true;
   });
 
   // Appel Edge Function
@@ -790,10 +794,9 @@ async function editEntreprise(id) {
 
   // Jours de service
   const jours = params.jours_service || ['lundi','mardi','mercredi','jeudi','vendredi','samedi'];
-  document.querySelectorAll('#modal-edit-ent [data-jour]').forEach(cb => {
-    const on = jours.includes(cb.dataset.jour) || (cb.dataset.jour === 'feries' && params.ouvert_feries);
-    cb.closest('.perm-item').classList.toggle('on', on);
-    cb.checked = on;
+  document.querySelectorAll('#jours-grid [data-jour]').forEach(el => {
+    const on = jours.includes(el.dataset.jour) || (el.dataset.jour === 'feries' && params.ouvert_feries);
+    el.classList.toggle('on', on);
   });
 
   openModal('modal-edit-ent');
@@ -804,10 +807,10 @@ async function saveEntrepriseParams() {
 
   const jours = [];
   let ouvertFeries = false;
-  document.querySelectorAll('#modal-edit-ent [data-jour]').forEach(cb => {
-    if (cb.closest('.perm-item').classList.contains('on')) {
-      if (cb.dataset.jour === 'feries') ouvertFeries = true;
-      else jours.push(cb.dataset.jour);
+  document.querySelectorAll('#jours-grid [data-jour]').forEach(el => {
+    if (el.classList.contains('on')) {
+      if (el.dataset.jour === 'feries') ouvertFeries = true;
+      else jours.push(el.dataset.jour);
     }
   });
 
