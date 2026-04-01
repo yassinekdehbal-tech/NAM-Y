@@ -716,7 +716,7 @@ async function createEntreprise() {
       adresse: document.getElementById('ne-adresse').value.trim(),
       cp: document.getElementById('ne-cp').value.trim(),
       ville: document.getElementById('ne-ville').value.trim(),
-      tel: document.getElementById('ne-tel').value.trim(),
+      telephone: document.getElementById('ne-tel').value.trim(),
     }).select().single();
     if (error) throw error;
     entreprises.push(data);
