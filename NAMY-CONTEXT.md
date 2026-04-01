@@ -48,7 +48,8 @@
 | `dashboard-client.html` | Dashboard Client/Enseigne (7 KPIs + 5 graphiques, filtré RLS) | ✅ Branché |
 | `dashboard-transporteur.html` | Dashboard Transporteur (8 KPIs + 6 graphiques + avis, filtré RLS) | ✅ Branché |
 | `admin.html` | Administration : Fiche entreprise (point d'entrée), calendrier NAMY, grilles, comptes internes | ✅ Branché |
-| `dispatch.html` | Dispatch : carte Leaflet + tournées + assignation + nav dates | ✅ Branché |
+| `dispatch.html` | Dispatch 3 vues : Timeline (axe temps) + Éditeur tournées (drag&drop) + Carte temps réel | ✅ Branché |
+| `nav.js` | Navigation universelle partagée (topbar dynamique par rôle) | — |
 | `formulaire-vendeur.html` | Saisie expédition vendeur (3 étapes) | ✅ Branché |
 | `grilles-tarifaires.html` | 3 types de grilles (poids/zone/colis) | ✅ Branché |
 | `chauffeur.html` | App mobile PWA livreur | ✅ Branché |
@@ -260,11 +261,17 @@ const { data } = await db.functions.invoke('create-entreprise', {
 - [x] Login : tous rôles → index.html (sauf livreur → chauffeur.html)
 - [x] index.html : filtrage expéditions par rôle (entreprise_id / livreurs)
 - [x] index.html : nav dynamique masquée selon le rôle
+- [x] nav.js : navigation universelle partagée sur 8 pages (liens dynamiques par rôle)
+- [x] RLS entreprises corrigé (policies SELECT/INSERT/UPDATE/DELETE ajoutées)
+- [x] Dispatch refonte 3 vues : Timeline (axe 6h-20h), Éditeur (drag&drop SortableJS), Carte temps réel
+- [x] Timeline : blocs stops colorés (vert/bleu/orange/rouge/gris), ligne heure actuelle
+- [x] Panneau latéral tournée (KPIs, ETA, stops, contact livreur)
+- [x] Éditeur : colonne gauche tournées + non-assignées, droite détail avec drag&drop
+- [x] Carte : filtres par tournée, positions livreurs Realtime
+- [x] ETA calculé automatiquement (35 min/stop, haversine × 1.3)
+- [x] Supabase Realtime sur tournees + tournee_stops
 
 ### À faire
-- [ ] Appliquer migration 20260401140000_calendrier_parametres.sql via SQL Editor
-- [ ] Déployer Edge Function create-entreprise
-- [ ] Corriger CHECK constraint utilisateurs (accepter nouveaux rôles)
 - [ ] SMS automatique client (Twilio/Vonage)
 - [ ] Import historique ancien NAMY
 - [ ] Nom de domaine nam-y.com
@@ -323,4 +330,4 @@ Toutes les migrations sont **appliquées** sur le projet Supabase gwbvfohizdxwhm
 
 ---
 
-*Dernière mise à jour : 01 avril 2026 — session après-midi (refonte admin + architecture rôles)*
+*Dernière mise à jour : 01 avril 2026 — session soir (refonte dispatch 3 vues + nav universelle)*
