@@ -12,6 +12,7 @@
   const NAV_LINKS = {
     admin:       [
       { href:'index.html',               label:'Expéditions' },
+      { href:'formulaire-vendeur.html',  label:'+ Expédition' },
       { href:'dispatch.html',            label:'Dispatch' },
       { href:'grilles-tarifaires.html',  label:'Grilles' },
       { href:'admin.html',               label:'Admin' },
@@ -19,6 +20,7 @@
     ],
     dispatcher:  [
       { href:'index.html',               label:'Expéditions' },
+      { href:'formulaire-vendeur.html',  label:'+ Expédition' },
       { href:'dispatch.html',            label:'Dispatch' },
       { href:'grilles-tarifaires.html',  label:'Grilles' },
       { href:'admin.html',               label:'Admin' },
@@ -26,15 +28,17 @@
     ],
     client:      [
       { href:'index.html',               label:'Expéditions' },
+      { href:'formulaire-vendeur.html',  label:'+ Expédition' },
       { href:'dashboard-client.html',    label:'Mon espace' },
     ],
     dirigeant:   [
       { href:'index.html',               label:'Expéditions' },
+      { href:'formulaire-vendeur.html',  label:'+ Expédition' },
       { href:'dashboard-client.html',    label:'Mon espace' },
     ],
     vendeur:     [
       { href:'index.html',               label:'Expéditions' },
-      { href:'formulaire-vendeur.html',  label:'Nouvelle expédition' },
+      { href:'formulaire-vendeur.html',  label:'+ Expédition' },
     ],
     fournisseur: [
       { href:'index.html',                    label:'Expéditions' },
