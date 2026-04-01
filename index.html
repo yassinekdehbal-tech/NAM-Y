@@ -312,11 +312,15 @@
   <header class="exp-header">
     <div class="exp-header-left">
       <a href="index.html" class="exp-logo">N A M Y</a>
-      <nav class="exp-nav">
-        <a href="index.html" class="active">Expeditions</a>
-        <a href="dispatch.html">Dispatch</a>
-        <a href="grilles-tarifaires.html">Grilles</a>
-        <a href="admin.html">Admin</a>
+      <nav class="exp-nav" id="main-nav">
+        <a href="index.html" class="active">Expéditions</a>
+        <a href="dispatch.html" data-roles="admin,dispatcher">Dispatch</a>
+        <a href="grilles-tarifaires.html" data-roles="admin">Grilles</a>
+        <a href="admin.html" data-roles="admin">Admin</a>
+        <a href="dashboard.html" data-roles="admin,dispatcher">Dashboard</a>
+        <a href="dashboard-client.html" data-roles="client,dirigeant">Mon espace</a>
+        <a href="dashboard-transporteur.html" data-roles="fournisseur,exploitant">Mon espace</a>
+        <a href="formulaire-vendeur.html" data-roles="vendeur">Nouvelle expédition</a>
       </nav>
     </div>
     <div class="exp-header-right">

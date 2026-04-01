@@ -26,11 +26,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 function loadSession() {
   const user = getSessionUser();
   const role = getSessionRole();
-  if (user) {
-    const nameEl = document.getElementById('user-name');
-    const roleEl = document.getElementById('user-role');
-    if (nameEl) nameEl.textContent = user.prenom ? (user.prenom + ' ' + (user.nom || '')) : (user.email || '—');
-    if (roleEl) roleEl.textContent = role || 'user';
+
+  // Redirect si pas de session
+  if (!user) {
+    window.location.href = 'login.html';
+    return;
+  }
+
+  // Afficher nom + rôle
+  const nameEl = document.getElementById('user-name');
+  const roleEl = document.getElementById('user-role');
+  if (nameEl) nameEl.textContent = user.prenom ? (user.prenom + ' ' + (user.nom || '')) : (user.email || '—');
+  if (roleEl) roleEl.textContent = role || 'user';
+
+  // Masquer les liens de nav non autorisés selon le rôle
+  const nav = document.getElementById('main-nav');
+  if (nav) {
+    nav.querySelectorAll('a[data-roles]').forEach(a => {
+      const allowed = a.dataset.roles.split(',');
+      if (!allowed.includes(role)) a.style.display = 'none';
+    });
   }
 }
 
@@ -47,6 +62,26 @@ async function loadData() {
   chauffeurs = CHAUFFEURS || [];
   entreprises = ENTREPRISES || [];
   tournees = TOURNEES || [];
+
+  // Filtrage par rôle
+  const user = getSessionUser();
+  if (user && user.entreprise_id) {
+    const role = user.role;
+    if (role === 'client' || role === 'vendeur' || role === 'dirigeant') {
+      // Voit uniquement les expéditions de son entreprise
+      expeditions = expeditions.filter(e => e.entreprise_id === user.entreprise_id);
+    } else if (role === 'fournisseur' || role === 'exploitant') {
+      // Voit les expéditions/tournées assignées à ses livreurs
+      // Ses livreurs = chauffeurs de son entreprise
+      const mesLivreurs = chauffeurs.filter(c => c.entreprise_id === user.entreprise_id);
+      const mesLivreurIds = new Set(mesLivreurs.map(c => c.id));
+      const mesTourneeIds = new Set(
+        tournees.filter(t => mesLivreurIds.has(t.chauffeur_id)).map(t => t.id)
+      );
+      expeditions = expeditions.filter(e => e.tournee_id && mesTourneeIds.has(e.tournee_id));
+    }
+    // admin / dispatcher → pas de filtre, voit tout
+  }
 }
 
 // ─── POPULATE FILTER DROPDOWNS ──────────────────────────────
