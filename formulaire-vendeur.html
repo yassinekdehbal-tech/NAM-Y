@@ -913,6 +913,8 @@ select {
             <input type="text" id="client-adresse" placeholder="Tapez l'adresse..." oninput="handleAdresseInput(this)" autocomplete="off">
             <span class="input-icon">🔍</span>
             <div class="autocomplete-list" id="adresse-suggestions" style="display:none"></div>
+            <input type="hidden" id="client-lat">
+            <input type="hidden" id="client-lng">
           </div>
           <span class="error-msg" id="err-adresse">Adresse obligatoire</span>
         </div>
@@ -1393,17 +1395,6 @@ async function loadVendeurData() {
 }
 
 // Adresses fictives pour l'autocomplétion demo
-const ADRESSES_DEMO = [
-  { adresse: '14 Rue Bergère', cp: '75009', ville: 'Paris' },
-  { adresse: '33 Rue Louis Siou', cp: '78890', ville: 'Garancières' },
-  { adresse: '36 Rue de Lozère', cp: '91400', ville: 'Orsay' },
-  { adresse: '8 Impasse des Lilas', cp: '94120', ville: 'Fontenay-sous-Bois' },
-  { adresse: '22 Rue Volta', cp: '75003', ville: 'Paris' },
-  { adresse: '5 Allée des Roses', cp: '78160', ville: 'Marly-le-Roi' },
-  { adresse: '15 Avenue du Général de Gaulle', cp: '92160', ville: 'Antony' },
-  { adresse: '3 Avenue Foch', cp: '75116', ville: 'Paris' },
-];
-
 // ─── STATE ──────────────────────────────────────────────────
 let currentStep = 1;
 let selectedCreneau = null;
@@ -1723,34 +1714,47 @@ function selectLieu(btn, val) {
 }
 
 // ─── AUTOCOMPLETE ADRESSE ───────────────────────────────────
+// ─── AUTOCOMPLÉTION ADRESSE (api-adresse.data.gouv.fr) ──────
+let adresseSearchTimeout = null;
+
 function handleAdresseInput(input) {
-  const val = input.value.trim().toLowerCase();
+  const val = input.value.trim();
   const list = document.getElementById('adresse-suggestions');
 
   if (val.length < 3) { list.style.display = 'none'; return; }
 
-  const matches = ADRESSES_DEMO.filter(a =>
-    a.adresse.toLowerCase().includes(val) ||
-    a.ville.toLowerCase().includes(val) ||
-    a.cp.includes(val)
-  );
+  clearTimeout(adresseSearchTimeout);
+  adresseSearchTimeout = setTimeout(async () => {
+    try {
+      const resp = await fetch('https://api-adresse.data.gouv.fr/search/?q=' + encodeURIComponent(val) + '&limit=6');
+      const json = await resp.json();
 
-  if (matches.length === 0) { list.style.display = 'none'; return; }
+      if (!json.features || !json.features.length) { list.style.display = 'none'; return; }
 
-  list.innerHTML = matches.map(a => `
-    <div class="autocomplete-item" onclick="selectAdresse('${a.adresse}','${a.cp}','${a.ville}')">
-      <strong>${a.adresse}</strong>
-      <span>${a.cp} ${a.ville}</span>
-    </div>
-  `).join('');
-  list.style.display = 'block';
-  updateSidebar();
+      list.innerHTML = json.features.map(f => {
+        const p = f.properties;
+        const coords = f.geometry.coordinates; // [lng, lat]
+        const data = JSON.stringify({ label: p.name, cp: p.postcode, ville: p.city, lat: coords[1], lng: coords[0] }).replace(/"/g, '&quot;');
+        return `<div class="autocomplete-item" onclick="selectAdresseGouv(this)" data-addr="${data}">
+          <strong>${p.name}</strong>
+          <span>${p.postcode} ${p.city}</span>
+        </div>`;
+      }).join('');
+      list.style.display = 'block';
+    } catch (e) {
+      console.warn('API adresse failed:', e);
+      list.style.display = 'none';
+    }
+  }, 250);
 }
 
-function selectAdresse(adresse, cp, ville) {
-  document.getElementById('client-adresse').value = adresse;
-  document.getElementById('client-cp').value = cp;
-  document.getElementById('client-ville').value = ville;
+function selectAdresseGouv(el) {
+  const d = JSON.parse(el.dataset.addr);
+  document.getElementById('client-adresse').value = d.label;
+  document.getElementById('client-cp').value = d.cp;
+  document.getElementById('client-ville').value = d.ville;
+  document.getElementById('client-lat').value = d.lat;
+  document.getElementById('client-lng').value = d.lng;
   document.getElementById('adresse-suggestions').style.display = 'none';
   hideError('err-adresse', 'client-adresse');
   updateSidebar();
@@ -1758,7 +1762,7 @@ function selectAdresse(adresse, cp, ville) {
 }
 
 document.addEventListener('click', e => {
-  if (!e.target.closest('.input-wrap')) {
+  if (!e.target.closest('.input-wrap') && !e.target.closest('#dest-suggestions')) {
     document.getElementById('adresse-suggestions').style.display = 'none';
   }
 });
