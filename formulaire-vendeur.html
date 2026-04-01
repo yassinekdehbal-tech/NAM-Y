@@ -778,6 +778,10 @@ select {
     <span>🏪</span>
     <span>Connecté en tant que : <strong id="magasin-name">TRUFFAUT PARIS RIVE GAUCHE</strong></span>
   </div>
+  <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+    <button class="btn btn-ghost btn-sm" id="btn-form" onclick="showVendeurView('form')" style="font-size:12px">+ Nouvelle exp&eacute;dition</button>
+    <button class="btn btn-secondary btn-sm" id="btn-suivi" onclick="showVendeurView('suivi')" style="font-size:12px">&#128230; Mes livraisons</button>
+  </div>
   <div class="header-user">
     <div class="avatar">ML</div>
     <span>Marie L.</span>
@@ -1163,6 +1167,26 @@ select {
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- SUIVI LIVRAISONS -->
+<div id="view-suivi" style="display:none;max-width:960px;margin:0 auto;padding:20px">
+  <h2 style="font-size:18px;font-weight:600;margin-bottom:16px">Mes livraisons</h2>
+
+  <div style="margin-bottom:20px">
+    <h3 style="font-size:14px;font-weight:600;color:var(--text-secondary);margin-bottom:10px">Aujourd'hui</h3>
+    <div id="suivi-today" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+
+  <div>
+    <h3 style="font-size:14px;font-weight:600;color:var(--text-secondary);margin-bottom:10px">Cette semaine</h3>
+    <div class="table-wrapper" style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Date</th><th>Destinataire</th><th>Adresse</th><th>Statut</th><th>Prix</th></tr></thead>
+        <tbody id="suivi-week-tbody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -1967,6 +1991,95 @@ function resetForm() {
   updateStepUI();
   updateSidebar();
   updatePrix();
+}
+
+// ─── VUE SUIVI LIVRAISONS ───────────────────────────────────
+function showVendeurView(view) {
+  const formView = document.querySelector('.main-grid') || document.querySelector('.form-content')?.closest('div');
+  const suiviView = document.getElementById('view-suivi');
+  const btnForm = document.getElementById('btn-form');
+  const btnSuivi = document.getElementById('btn-suivi');
+
+  if (view === 'suivi') {
+    if (formView) formView.style.display = 'none';
+    if (suiviView) suiviView.style.display = 'block';
+    if (btnForm) { btnForm.classList.remove('btn-ghost'); btnForm.classList.add('btn-secondary'); }
+    if (btnSuivi) { btnSuivi.classList.remove('btn-secondary'); btnSuivi.classList.add('btn-accent'); }
+    loadSuiviData();
+  } else {
+    if (formView) formView.style.display = '';
+    if (suiviView) suiviView.style.display = 'none';
+    if (btnForm) { btnForm.classList.remove('btn-secondary'); btnForm.classList.add('btn-accent'); }
+    if (btnSuivi) { btnSuivi.classList.remove('btn-accent'); btnSuivi.classList.add('btn-secondary'); }
+  }
+}
+
+async function loadSuiviData() {
+  const sessionUser = getSessionUser();
+  if (!sessionUser?.entreprise_id) return;
+
+  const today = new Date().toISOString().split('T')[0];
+  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekStr = weekAgo.toISOString().split('T')[0];
+
+  const STATUT_BADGE = {
+    en_attente: '<span class="badge badge-neutral">En attente</span>',
+    planifie: '<span class="badge badge-info">Planifi\u00e9</span>',
+    en_cours: '<span class="badge badge-warning">En route</span>',
+    livre: '<span class="badge badge-success">Livr\u00e9</span>',
+    echec: '<span class="badge badge-danger">\u00c9chec</span>',
+    litige: '<span class="badge badge-danger">Litige</span>',
+  };
+
+  try {
+    // Aujourd'hui
+    const { data: todayData } = await db.from('expeditions').select('*')
+      .eq('entreprise_id', sessionUser.entreprise_id).eq('date', today)
+      .order('created_at', { ascending: false });
+
+    const todayEl = document.getElementById('suivi-today');
+    if (todayData && todayData.length) {
+      todayEl.innerHTML = todayData.map(e => `
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-md)">
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:13px">${e.destinataire || ''}</div>
+            <div style="font-size:12px;color:var(--text-muted)">${e.dest_adresse || ''} ${e.dest_cp || ''} ${e.dest_ville || ''}</div>
+          </div>
+          ${STATUT_BADGE[e.statut] || STATUT_BADGE.en_attente}
+        </div>
+      `).join('');
+    } else {
+      todayEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-hint);font-size:13px">Aucune exp\u00e9dition aujourd\'hui</div>';
+    }
+
+    // Cette semaine
+    const { data: weekData } = await db.from('expeditions').select('*')
+      .eq('entreprise_id', sessionUser.entreprise_id).gte('date', weekStr).lte('date', today)
+      .order('date', { ascending: false }).limit(50);
+
+    const weekTbody = document.getElementById('suivi-week-tbody');
+    if (weekData && weekData.length) {
+      weekTbody.innerHTML = weekData.map(e => `<tr>
+        <td class="mono" style="font-size:12px">${formatDate(e.date)}</td>
+        <td><strong>${e.destinataire || ''}</strong></td>
+        <td style="font-size:12px;color:var(--text-muted)">${e.dest_cp || ''} ${e.dest_ville || ''}</td>
+        <td>${STATUT_BADGE[e.statut] || ''}</td>
+        <td class="mono" style="font-size:12px">${e.prix_ttc ? e.prix_ttc.toFixed(2) + ' \u20ac' : '\u2014'}</td>
+      </tr>`).join('');
+    } else {
+      weekTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-hint)">Aucune donn\u00e9e</td></tr>';
+    }
+
+    // Realtime updates
+    try {
+      db.channel('vendeur-suivi')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'expeditions',
+          filter: 'entreprise_id=eq.' + sessionUser.entreprise_id }, () => loadSuiviData())
+        .subscribe();
+    } catch (e) {}
+  } catch (e) {
+    console.warn('Suivi load failed:', e);
+  }
 }
 
 // ─── INIT ───────────────────────────────────────────────────
