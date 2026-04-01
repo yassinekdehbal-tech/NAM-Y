@@ -846,7 +846,39 @@ async function startDay() {
   renderPlanning();
   renderProfil();
   initStopMap();
+  startGPSTracking();
   showToast(`✅ Bonne journée, ${CHAUFFEUR.nom.split(' ')[0]} !`);
+}
+
+// ─── GPS TRACKING ────────────────────────────────────────────
+let gpsInterval = null;
+
+function startGPSTracking() {
+  if (gpsInterval) clearInterval(gpsInterval);
+  sendPosition(); // envoyer immédiatement
+  gpsInterval = setInterval(sendPosition, 30000); // puis toutes les 30s
+}
+
+function stopGPSTracking() {
+  if (gpsInterval) { clearInterval(gpsInterval); gpsInterval = null; }
+}
+
+async function sendPosition() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    const stopsRestants = STOPS.filter(s => !s.done).length;
+    try {
+      await db.from('positions_chauffeurs').upsert({
+        chauffeur_id: CHAUFFEUR.id || 0,
+        chauffeur_nom: CHAUFFEUR.nom,
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        tournee_id: checkinData.tournee_id || null,
+        stops_restants: stopsRestants,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'chauffeur_id' });
+    } catch (e) { /* silencieux */ }
+  }, () => { /* erreur GPS silencieuse */ }, { enableHighAccuracy: true, timeout: 10000 });
 }
 
 // ─── STOPS ────────────────────────────────────────────────────
@@ -1204,6 +1236,7 @@ function editCheckin() {
 
 async function endDay() {
   if (!confirm('Terminer votre journée ?')) return;
+  stopGPSTracking();
 
   try {
     if (checkinData.supabase_id) {
