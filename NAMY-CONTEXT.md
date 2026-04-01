@@ -47,7 +47,7 @@
 | `dashboard.html` | Dashboard Admin NAMY (8 KPIs + 5 graphiques Chart.js) | ✅ Branché |
 | `dashboard-client.html` | Dashboard Client/Enseigne (7 KPIs + 5 graphiques, filtré RLS) | ✅ Branché |
 | `dashboard-transporteur.html` | Dashboard Transporteur (8 KPIs + 6 graphiques + avis, filtré RLS) | ✅ Branché |
-| `admin.html` | Gestion comptes + entreprises + paramètres contractuels | ✅ Branché |
+| `admin.html` | Administration : Fiche entreprise (point d'entrée), calendrier NAMY, grilles, comptes internes | ✅ Branché |
 | `dispatch.html` | Dispatch : carte Leaflet + tournées + assignation + nav dates | ✅ Branché |
 | `formulaire-vendeur.html` | Saisie expédition vendeur (3 étapes) | ✅ Branché |
 | `grilles-tarifaires.html` | 3 types de grilles (poids/zone/colis) | ✅ Branché |
@@ -253,6 +253,13 @@ const { data } = await db.functions.invoke('create-entreprise', {
 - [x] Formulaire vendeur : créneaux dynamiques (chargés depuis creneaux_livraison, limites en temps réel)
 - [x] Dashboard admin : KPI "Magasins proches limite" (≥80% limite journalière)
 - [x] Migration SQL : tables creneaux_livraison, fermetures_namy + colonnes suspension
+- [x] Refonte admin.html : entreprise = point d'entrée unique (fiche complète avec onglets)
+- [x] Admin : fiche entreprise avec sections Infos / Comptes / Grille / Planning
+- [x] Admin : comptes internes NAMY (admin + dispatcher uniquement)
+- [x] Admin : onglet Grilles tarifaires (lien vers gestionnaire)
+- [x] Login : tous rôles → index.html (sauf livreur → chauffeur.html)
+- [x] index.html : filtrage expéditions par rôle (entreprise_id / livreurs)
+- [x] index.html : nav dynamique masquée selon le rôle
 
 ### À faire
 - [ ] Appliquer migration 20260401140000_calendrier_parametres.sql via SQL Editor
@@ -316,4 +323,4 @@ Toutes les migrations sont **appliquées** sur le projet Supabase gwbvfohizdxwhm
 
 ---
 
-*Dernière mise à jour : 01 avril 2026 — session après-midi (calendrier + paramètres opérationnels)*
+*Dernière mise à jour : 01 avril 2026 — session après-midi (refonte admin + architecture rôles)*

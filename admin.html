@@ -71,6 +71,11 @@
 .stat-card{flex:1;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;box-shadow:var(--shadow-sm)}
 .stat-val{font-family:var(--font-mono);font-size:28px;font-weight:700}
 .stat-label{font-size:12px;color:var(--text-muted);margin-top:2px}
+/* ── FICHE TABS ── */
+.fiche-tab{padding:10px 18px;border:none;background:none;font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent}
+.fiche-tab:hover{color:var(--text-primary)}
+.fiche-tab.active{color:var(--accent-dark);border-bottom-color:var(--accent)}
+.fiche-panel{display:none}.fiche-panel.active{display:block}
 </style>
 </head>
 <body>
@@ -79,71 +84,32 @@
   <div class="logo">N A M Y</div>
   <span class="hdr-sub">/ Administration</span>
   <div class="hdr-right">
-    <a href="dashboard.html" class="btn btn-ghost btn-sm">← Dashboard</a>
+    <a href="dashboard.html" class="btn btn-ghost btn-sm">&larr; Dashboard</a>
   </div>
 </header>
 
 <div class="layout">
   <div class="sidebar">
-    <div class="nav-link active" onclick="switchSection('comptes')">
-      <span>👤</span> Comptes <span class="nav-count" id="count-comptes">0</span>
+    <div class="nav-link active" onclick="switchSection('entreprises')">
+      <span>&#127970;</span> Entreprises <span class="nav-count" id="count-entreprises">0</span>
     </div>
-    <div class="nav-link" onclick="switchSection('entreprises')">
-      <span>🏢</span> Entreprises <span class="nav-count" id="count-entreprises">0</span>
+    <div class="nav-link" onclick="switchSection('grilles')">
+      <span>&#128182;</span> Grilles tarifaires
     </div>
     <div class="nav-link" onclick="switchSection('calendrier')">
-      📅 Calendrier
+      <span>&#128197;</span> Calendrier NAMY
+    </div>
+    <div class="nav-link" onclick="switchSection('comptes-internes')">
+      <span>&#128100;</span> Comptes internes <span class="nav-count" id="count-internes">0</span>
     </div>
   </div>
 
   <div class="main">
-    <!-- SECTION COMPTES -->
-    <div class="tab-section active" id="section-comptes">
-      <div class="page-header">
-        <div>
-          <div class="page-title">Gestion des comptes</div>
-          <div class="page-sub">Cr&eacute;ez et g&eacute;rez les acc&egrave;s &agrave; la plateforme NAMY</div>
-        </div>
-        <button class="btn btn-primary" onclick="openModal('modal-create-user')">+ Cr&eacute;er un compte</button>
-      </div>
 
-      <div class="stat-row">
-        <div class="stat-card"><div class="stat-val" id="stat-total" style="color:var(--accent)">0</div><div class="stat-label">Total comptes</div></div>
-        <div class="stat-card"><div class="stat-val" id="stat-actifs" style="color:var(--success)">0</div><div class="stat-label">Actifs</div></div>
-        <div class="stat-card"><div class="stat-val" id="stat-suspendus" style="color:var(--danger)">0</div><div class="stat-label">Suspendus</div></div>
-      </div>
-
-      <div class="filters">
-        <input type="text" class="filter-input" id="filter-search" placeholder="&#128269; Rechercher nom, email..." oninput="filterUsers()">
-        <select class="filter-select" id="filter-role" onchange="filterUsers()">
-          <option value="">Tous les r&ocirc;les</option>
-          <option value="admin">Admin</option>
-          <option value="client">Client</option>
-          <option value="fournisseur">Fournisseur</option>
-          <option value="dispatcher">Dispatcher</option>
-          <option value="vendeur">Vendeur</option>
-          <option value="livreur">Livreur</option>
-        </select>
-        <select class="filter-select" id="filter-entreprise" onchange="filterUsers()">
-          <option value="">Toutes les entreprises</option>
-        </select>
-        <select class="filter-select" id="filter-statut" onchange="filterUsers()">
-          <option value="">Tous les statuts</option>
-          <option value="actif">Actif</option>
-          <option value="suspendu">Suspendu</option>
-        </select>
-      </div>
-
-      <div class="card">
-        <table>
-          <thead><tr><th>Utilisateur</th><th>R&ocirc;le</th><th>Entreprise</th><th>Statut</th><th>Cr&eacute;&eacute; le</th><th>Actions</th></tr></thead>
-          <tbody id="users-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- SECTION ENTREPRISES -->
-    <div class="tab-section" id="section-entreprises">
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- SECTION: ENTREPRISES (default active)                   -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <div class="section" id="section-entreprises">
       <div class="page-header">
         <div>
           <div class="page-title">Entreprises</div>
@@ -156,137 +122,241 @@
         <input type="text" class="filter-input" id="filter-ent-search" placeholder="&#128269; Rechercher..." oninput="filterEntreprises()">
         <select class="filter-select" id="filter-ent-type" onchange="filterEntreprises()">
           <option value="">Tous les types</option>
-          <option value="plateforme">Plateforme</option>
           <option value="client">Client</option>
           <option value="fournisseur">Fournisseur</option>
+          <option value="plateforme">Plateforme</option>
         </select>
       </div>
 
       <div class="card">
-        <table>
-          <thead><tr><th>Entreprise</th><th>Type</th><th>Adresse</th><th>Utilisateurs</th><th>Actions</th></tr></thead>
+        <table class="data-table" style="width:100%;font-size:12.5px">
+          <thead><tr><th style="padding:10px 12px">Entreprise</th><th style="padding:10px 12px">Type</th><th style="padding:10px 12px">Adresse</th><th style="padding:10px 12px">Comptes</th><th style="padding:10px 12px">Actions</th></tr></thead>
           <tbody id="ent-tbody"></tbody>
         </table>
       </div>
     </div>
 
-  <!-- CALENDRIER NAMY -->
-  <div class="section" id="section-calendrier" style="display:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <div class="page-title">Calendrier NAMY — Fermetures globales</div>
-      <button class="btn-add" onclick="openAddFermeture()">+ Fermeture</button>
-    </div>
-
-    <!-- Calendar -->
-    <div class="card" style="padding:20px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <button onclick="calPrev()" style="background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;cursor:pointer;font-size:14px">&laquo;</button>
-        <div id="cal-title" style="font-size:15px;font-weight:700"></div>
-        <button onclick="calNext()" style="background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;cursor:pointer;font-size:14px">&raquo;</button>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center">
-        <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Lun</div>
-        <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Mar</div>
-        <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Mer</div>
-        <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Jeu</div>
-        <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Ven</div>
-        <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Sam</div>
-        <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Dim</div>
-      </div>
-      <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
-    </div>
-
-    <!-- Liste fermetures -->
-    <div class="card" style="margin-top:16px">
-      <div class="ch"><span class="ct">Fermetures enregistrées</span></div>
-      <div style="padding:12px">
-        <table style="width:100%;border-collapse:collapse;font-size:12.5px">
-          <thead><tr style="border-bottom:1px solid var(--border)">
-            <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--text-muted);font-weight:600">Date</th>
-            <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--text-muted);font-weight:600">Raison</th>
-            <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text-muted);font-weight:600">Action</th>
-          </tr></thead>
-          <tbody id="fermetures-tbody"></tbody>
-        </table>
-        <div id="fermetures-empty" style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;display:none">Aucune fermeture programmée</div>
-      </div>
-    </div>
-  </div>
-
-  </div>
-</div>
-
-<!-- MODAL CRÉATION COMPTE -->
-<div class="modal-overlay" id="modal-create-user" style="display:none">
-  <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">Cr&eacute;er un compte</span>
-      <button class="modal-close" onclick="closeModal('modal-create-user')">&#10005;</button>
-    </div>
-    <div class="modal-body">
-      <div class="fr">
-        <div class="fg"><label class="fl">Pr&eacute;nom *</label><input type="text" class="fi" id="cu-prenom" placeholder="Pr&eacute;nom"></div>
-        <div class="fg"><label class="fl">Nom *</label><input type="text" class="fi" id="cu-nom" placeholder="Nom"></div>
-      </div>
-      <div class="fg"><label class="fl">Email *</label><input type="email" class="fi" id="cu-email" placeholder="email@exemple.fr"></div>
-      <div class="fg"><label class="fl">Mot de passe temporaire *</label><input type="text" class="fi" id="cu-password" placeholder="Min. 8 caract&egrave;res" value=""></div>
-
-      <div class="section-label">R&ocirc;le &amp; rattachement</div>
-
-      <div class="fg">
-        <label class="fl">R&ocirc;le *</label>
-        <select class="fi" id="cu-role" onchange="onRoleChange()">
-          <option value="">S&eacute;lectionner...</option>
-          <option value="admin">Admin (NAMY)</option>
-          <option value="client">Client (enseigne)</option>
-          <option value="fournisseur">Fournisseur (transporteur)</option>
-          <option value="dispatcher">Dispatcher</option>
-          <option value="vendeur">Vendeur</option>
-          <option value="livreur">Livreur</option>
-        </select>
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- SECTION: FICHE ENTREPRISE                               -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <div class="section" id="section-fiche" style="display:none">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <button onclick="switchSection('entreprises')" class="btn btn-ghost btn-sm">&larr; Retour</button>
+        <div class="page-title" id="fiche-title">Fiche entreprise</div>
+        <span class="badge" id="fiche-type-badge"></span>
+        <span id="fiche-suspend-badge"></span>
       </div>
 
-      <!-- Entreprise (conditionnel) -->
-      <div class="fg" id="cu-ent-group" style="display:none">
-        <label class="fl">Entreprise *</label>
-        <select class="fi" id="cu-entreprise" onchange="onEntrepriseChange()">
-          <option value="">S&eacute;lectionner...</option>
-          <option value="__new__">+ Cr&eacute;er une nouvelle entreprise</option>
-        </select>
+      <!-- TABS inside fiche -->
+      <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px">
+        <button class="fiche-tab active" onclick="switchFicheTab('infos',this)">Informations</button>
+        <button class="fiche-tab" onclick="switchFicheTab('comptes',this)">Comptes rattach&eacute;s</button>
+        <button class="fiche-tab" onclick="switchFicheTab('grille',this)" id="fiche-tab-grille">Grille tarifaire</button>
+        <button class="fiche-tab" onclick="switchFicheTab('planning',this)">Planning</button>
       </div>
 
-      <!-- Nouvelle entreprise (conditionnel) -->
-      <div id="cu-new-ent" style="display:none">
-        <div class="info-box">&#9432; Une nouvelle entreprise sera cr&eacute;&eacute;e automatiquement.</div>
-        <div class="fr" style="margin-top:8px">
-          <div class="fg"><label class="fl">Nom entreprise *</label><input type="text" class="fi" id="cu-ent-nom" placeholder="Ex: Castorama Boulogne"></div>
-          <div class="fg"><label class="fl">Type</label>
-            <div class="ent-type" id="cu-ent-type">
-              <div class="ent-type-btn" data-val="client" onclick="selectEntType(this)">Client</div>
-              <div class="ent-type-btn" data-val="fournisseur" onclick="selectEntType(this)">Fournisseur</div>
-            </div>
+      <!-- TAB: Informations -->
+      <div class="fiche-panel active" id="fiche-infos">
+        <div class="card" style="padding:20px;max-width:600px">
+          <div class="fr">
+            <div class="fg"><label class="fl">Nom</label><input type="text" class="fi" id="fe-nom"></div>
+            <div class="fg"><label class="fl">Type</label><select class="fi" id="fe-type"><option value="client">Client</option><option value="fournisseur">Fournisseur</option><option value="plateforme">Plateforme</option></select></div>
+          </div>
+          <div class="fr" style="margin-top:12px">
+            <div class="fg"><label class="fl">Adresse</label><input type="text" class="fi" id="fe-adresse"></div>
+            <div class="fg"><label class="fl">CP</label><input type="text" class="fi" id="fe-cp" maxlength="5"></div>
+          </div>
+          <div class="fr" style="margin-top:12px">
+            <div class="fg"><label class="fl">Ville</label><input type="text" class="fi" id="fe-ville"></div>
+            <div class="fg"><label class="fl">T&eacute;l&eacute;phone</label><input type="tel" class="fi" id="fe-tel"></div>
+          </div>
+          <div class="fg" style="margin-top:12px"><label class="fl">Email</label><input type="email" class="fi" id="fe-email"></div>
+          <button onclick="saveFicheInfos()" class="btn btn-primary" style="margin-top:16px">Enregistrer les informations</button>
+        </div>
+
+        <!-- Suspension -->
+        <div class="card" style="padding:20px;max-width:600px;margin-top:16px">
+          <div class="fl" style="margin-bottom:8px">Statut du compte</div>
+          <div id="fiche-suspension-status"></div>
+          <div id="fiche-suspension-history" style="margin-top:8px;font-size:12px;color:var(--text-muted)"></div>
+        </div>
+      </div>
+
+      <!-- TAB: Comptes rattaches -->
+      <div class="fiche-panel" id="fiche-comptes" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="fl">Utilisateurs de cette entreprise</div>
+          <button class="btn btn-primary btn-sm" onclick="openAddCompte()">+ Ajouter un compte</button>
+        </div>
+        <div class="card">
+          <table class="data-table" style="width:100%;font-size:12.5px">
+            <thead><tr>
+              <th style="padding:10px 12px">Nom</th>
+              <th style="padding:10px 12px">Email</th>
+              <th style="padding:10px 12px">R&ocirc;le</th>
+              <th style="padding:10px 12px">Statut</th>
+              <th style="padding:10px 12px">Actions</th>
+            </tr></thead>
+            <tbody id="fiche-users-tbody"></tbody>
+          </table>
+          <div id="fiche-users-empty" class="empty" style="display:none">Aucun compte rattach&eacute;</div>
+        </div>
+      </div>
+
+      <!-- TAB: Grille tarifaire (Client only) -->
+      <div class="fiche-panel" id="fiche-grille" style="display:none">
+        <div class="card" style="padding:20px;max-width:600px">
+          <div class="fl" style="margin-bottom:8px">Grille tarifaire assign&eacute;e</div>
+          <select class="fi" id="fe-grille" onchange="saveFicheGrille()">
+            <option value="">Aucune grille assign&eacute;e</option>
+          </select>
+          <div id="fe-grille-warning" style="display:none;margin-top:8px;padding:10px;background:var(--warning-bg);color:var(--warning);border-radius:var(--radius-md);font-size:12px">
+            &#9888; Aucune grille assign&eacute;e &mdash; les vendeurs ne pourront pas calculer de prix
+          </div>
+          <a href="grilles-tarifaires.html" style="display:inline-block;margin-top:10px;font-size:12px;color:var(--accent)">&rarr; G&eacute;rer les grilles tarifaires</a>
+        </div>
+      </div>
+
+      <!-- TAB: Planning -->
+      <div class="fiche-panel" id="fiche-planning" style="display:none">
+        <!-- Jours de service -->
+        <div class="card" style="padding:20px;max-width:700px">
+          <div class="fl" style="margin-bottom:10px">Jours de livraison autoris&eacute;s</div>
+          <div class="perms-grid" id="fiche-jours-grid">
+            <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="lundi" checked> Lundi</label>
+            <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="mardi" checked> Mardi</label>
+            <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="mercredi" checked> Mercredi</label>
+            <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="jeudi" checked> Jeudi</label>
+            <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="vendredi" checked> Vendredi</label>
+            <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="samedi" checked> Samedi</label>
+            <label class="perm-item" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="dimanche"> Dimanche</label>
+            <label class="perm-item" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="feries"> Jours f&eacute;ri&eacute;s</label>
           </div>
         </div>
-        <div class="fr" style="margin-top:8px">
-          <div class="fg"><label class="fl">Adresse</label><input type="text" class="fi" id="cu-ent-adresse"></div>
-          <div class="fg"><label class="fl">Ville</label><input type="text" class="fi" id="cu-ent-ville"></div>
+
+        <!-- Creneaux -->
+        <div class="card" style="padding:20px;max-width:700px;margin-top:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div class="fl">Cr&eacute;neaux livraison</div>
+            <button onclick="addCreneau()" class="btn btn-primary btn-sm">+ Cr&eacute;neau</button>
+          </div>
+          <div id="fiche-creneaux-list" style="display:flex;flex-direction:column;gap:6px"></div>
+          <div id="fiche-creneaux-empty" style="font-size:12px;color:var(--text-muted);text-align:center;padding:12px">Aucun cr&eacute;neau d&eacute;fini (cr&eacute;neaux par d&eacute;faut utilis&eacute;s)</div>
+        </div>
+
+        <!-- Limite jour -->
+        <div class="card" style="padding:20px;max-width:700px;margin-top:16px">
+          <div class="fr">
+            <div class="fg"><label class="fl">Limite livraisons/jour</label><input type="number" class="fi" id="fe-limite" min="0" value="0"><div style="font-size:11px;color:var(--text-muted);margin-top:4px">0 = illimit&eacute;</div></div>
+            <div class="fg"><label class="fl">Majoration dim/f&eacute;ri&eacute;s (%)</label><input type="number" class="fi" id="fe-maj" value="20"></div>
+          </div>
+        </div>
+
+        <!-- Fermetures exceptionnelles -->
+        <div class="card" style="padding:20px;max-width:700px;margin-top:16px">
+          <div class="fl" style="margin-bottom:8px">Fermetures exceptionnelles</div>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <input type="date" class="fi" id="fe-fermeture-date" style="flex:1">
+            <button onclick="addFermetureExc()" class="btn btn-primary btn-sm">Ajouter</button>
+          </div>
+          <div id="fiche-fermetures-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        </div>
+
+        <button onclick="saveFichePlanning()" class="btn btn-primary" style="margin-top:16px">Enregistrer le planning</button>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- SECTION: GRILLES TARIFAIRES                             -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <div class="section" id="section-grilles" style="display:none">
+      <div class="page-title">Grilles tarifaires</div>
+      <div class="page-sub" style="margin-bottom:16px">Gestion des grilles de prix</div>
+      <div class="card" style="padding:20px">
+        <div id="grilles-list"></div>
+        <div style="margin-top:12px">
+          <a href="grilles-tarifaires.html" class="btn btn-primary btn-sm">Ouvrir le gestionnaire de grilles &rarr;</a>
         </div>
       </div>
+    </div>
 
-      <!-- Permissions (conditionnel) -->
-      <div id="cu-perms-section" style="display:none">
-        <div class="section-label">Permissions</div>
-        <div class="perms-grid" id="cu-perms-grid"></div>
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- SECTION: CALENDRIER NAMY                                -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <div class="section" id="section-calendrier" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div class="page-title">Calendrier NAMY &mdash; Fermetures globales</div>
+        <button class="btn-add" onclick="openAddFermeture()">+ Fermeture</button>
+      </div>
+
+      <!-- Calendar -->
+      <div class="card" style="padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <button onclick="calPrev()" style="background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;cursor:pointer;font-size:14px">&laquo;</button>
+          <div id="cal-title" style="font-size:15px;font-weight:700"></div>
+          <button onclick="calNext()" style="background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;cursor:pointer;font-size:14px">&raquo;</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center">
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Lun</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Mar</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Mer</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Jeu</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Ven</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Sam</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);padding:6px">Dim</div>
+        </div>
+        <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
+      </div>
+
+      <!-- Liste fermetures -->
+      <div class="card" style="margin-top:16px">
+        <div class="ch"><span class="ct">Fermetures enregistr&eacute;es</span></div>
+        <div style="padding:12px">
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+            <thead><tr style="border-bottom:1px solid var(--border)">
+              <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--text-muted);font-weight:600">Date</th>
+              <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--text-muted);font-weight:600">Raison</th>
+              <th style="padding:8px 12px;text-align:right;font-size:11px;color:var(--text-muted);font-weight:600">Action</th>
+            </tr></thead>
+            <tbody id="fermetures-tbody"></tbody>
+          </table>
+          <div id="fermetures-empty" style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;display:none">Aucune fermeture programm&eacute;e</div>
+        </div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-create-user')">Annuler</button>
-      <button class="btn btn-primary" id="cu-btn" onclick="createUser()">Cr&eacute;er le compte</button>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- SECTION: COMPTES INTERNES                               -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <div class="section" id="section-comptes-internes" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div>
+          <div class="page-title">Comptes internes NAMY</div>
+          <div class="page-sub">Dispatchers et administrateurs</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-internal')">+ Nouveau compte</button>
+      </div>
+      <div class="card">
+        <table class="data-table" style="width:100%;font-size:12.5px">
+          <thead><tr>
+            <th style="padding:10px 12px">Nom</th>
+            <th style="padding:10px 12px">Email</th>
+            <th style="padding:10px 12px">R&ocirc;le</th>
+            <th style="padding:10px 12px">Statut</th>
+            <th style="padding:10px 12px">Actions</th>
+          </tr></thead>
+          <tbody id="internes-tbody"></tbody>
+        </table>
+        <div id="internes-empty" class="empty" style="display:none">Aucun compte interne</div>
+      </div>
     </div>
+
   </div>
 </div>
 
-<!-- MODAL CRÉATION ENTREPRISE -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- MODAL: CREATION ENTREPRISE                                  -->
+<!-- ════════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="modal-create-ent" style="display:none">
   <div class="modal">
     <div class="modal-header">
@@ -318,90 +388,70 @@
   </div>
 </div>
 
-<!-- MODAL PARAMÈTRES CONTRACTUELS -->
-<div class="modal-overlay" id="modal-edit-ent" style="display:none">
-  <div class="modal">
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- MODAL: CREATION COMPTE INTERNE                              -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-create-internal" style="display:none">
+  <div class="modal" style="max-width:440px">
     <div class="modal-header">
-      <span class="modal-title" id="edit-ent-title">Param&egrave;tres entreprise</span>
-      <button class="modal-close" onclick="closeModal('modal-edit-ent')">&#10005;</button>
+      <span class="modal-title">Nouveau compte interne</span>
+      <button class="modal-close" onclick="closeModal('modal-create-internal')">&#10005;</button>
     </div>
     <div class="modal-body">
-      <div class="info-box">&#9432; Ces param&egrave;tres s'appliquent &agrave; toutes les commandes de ce client.</div>
-
-      <div class="section-label">Conditions contractuelles</div>
-
       <div class="fr">
-        <div class="fg">
-          <label class="fl">Majoration dim/f&eacute;ri&eacute;s (%)</label>
-          <input type="number" class="fi" id="ee-maj" value="20" min="0" step="1">
-        </div>
-        <div class="fg">
-          <label class="fl">Co&ucirc;t &eacute;chec retrait (% course)</label>
-          <input type="number" class="fi" id="ee-echec-retrait" value="50" min="0" step="1">
-        </div>
+        <div class="fg"><label class="fl">Pr&eacute;nom *</label><input type="text" class="fi" id="ci-prenom"></div>
+        <div class="fg"><label class="fl">Nom *</label><input type="text" class="fi" id="ci-nom"></div>
       </div>
-      <div class="fr">
-        <div class="fg">
-          <label class="fl">Co&ucirc;t &eacute;chec livraison (&euro; fixe)</label>
-          <input type="number" class="fi" id="ee-echec-livraison" value="0" min="0" step="0.01">
-        </div>
-        <div class="fg">
-          <label class="fl">Limite commandes/jour (0 = illimit&eacute;)</label>
-          <input type="number" class="fi" id="ee-limite" value="0" min="0">
-        </div>
-      </div>
-      <div class="fg">
-        <label class="fl">D&eacute;lai d'annulation (heures)</label>
-        <input type="number" class="fi" id="ee-delai" value="24" min="0">
-      </div>
-
-      <div class="section-label">Jours de service</div>
-      <div class="perms-grid">
-        <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="lundi" checked> Lundi</label>
-        <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="mardi" checked> Mardi</label>
-        <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="mercredi" checked> Mercredi</label>
-        <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="jeudi" checked> Jeudi</label>
-        <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="vendredi" checked> Vendredi</label>
-        <label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="samedi" checked> Samedi</label>
-        <label class="perm-item" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="dimanche"> Dimanche</label>
-        <label class="perm-item" onclick="this.classList.toggle('on')"><input type="checkbox" data-jour="feries"> Jours f&eacute;ri&eacute;s</label>
-      </div>
-
-      <!-- CRÉNEAUX LIVRAISON -->
-      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div class="fl" style="margin:0">Créneaux livraison</div>
-          <button onclick="addCreneau()" style="background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:4px 10px;font-size:11px;cursor:pointer;font-family:var(--font-body);font-weight:600">+ Créneau</button>
-        </div>
-        <div id="ee-creneaux-list" style="display:flex;flex-direction:column;gap:6px"></div>
-        <div id="ee-creneaux-empty" style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px">Aucun créneau défini</div>
-      </div>
-
-      <!-- FERMETURES EXCEPTIONNELLES -->
-      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-        <div class="fl">Fermetures exceptionnelles</div>
-        <div style="display:flex;gap:8px;margin-top:6px">
-          <input type="date" class="fi" id="ee-fermeture-date" style="flex:1">
-          <button onclick="addFermetureExc()" style="background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 14px;font-size:12px;cursor:pointer;font-family:var(--font-body);font-weight:600">Ajouter</button>
-        </div>
-        <div id="ee-fermetures-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
-      </div>
-
-      <!-- SUSPENSION -->
-      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-        <div class="fl">Statut du compte</div>
-        <div id="ee-suspension-status" style="margin-top:6px"></div>
-        <div id="ee-suspension-history" style="margin-top:8px;font-size:12px;color:var(--text-muted)"></div>
+      <div class="fg"><label class="fl">Email *</label><input type="email" class="fi" id="ci-email"></div>
+      <div class="fg"><label class="fl">Mot de passe *</label><input type="text" class="fi" id="ci-password" value="Namy2024!"></div>
+      <div class="fg"><label class="fl">R&ocirc;le</label>
+        <select class="fi" id="ci-role">
+          <option value="admin">Administrateur</option>
+          <option value="dispatcher">Dispatcher</option>
+        </select>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-edit-ent')">Annuler</button>
-      <button class="btn btn-primary" onclick="saveEntrepriseParams()">Enregistrer</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-create-internal')">Annuler</button>
+      <button class="btn btn-primary" id="ci-btn" onclick="createInternalUser()">Cr&eacute;er</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL: Ajouter fermeture -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- MODAL: AJOUTER COMPTE A ENTREPRISE (fiche)                  -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-add-compte" style="display:none">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <span class="modal-title">Ajouter un compte</span>
+      <button class="modal-close" onclick="closeModal('modal-add-compte')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="fr">
+        <div class="fg"><label class="fl">Pr&eacute;nom *</label><input type="text" class="fi" id="ac-prenom"></div>
+        <div class="fg"><label class="fl">Nom *</label><input type="text" class="fi" id="ac-nom"></div>
+      </div>
+      <div class="fg"><label class="fl">Email *</label><input type="email" class="fi" id="ac-email"></div>
+      <div class="fg"><label class="fl">Mot de passe *</label><input type="text" class="fi" id="ac-password" value="Namy2024!"></div>
+      <div class="fg"><label class="fl">R&ocirc;le</label>
+        <select class="fi" id="ac-role"></select>
+      </div>
+      <div id="ac-perms-section" style="display:none;margin-top:8px">
+        <div class="fl" style="margin-bottom:6px">Permissions</div>
+        <div class="perms-grid" id="ac-perms-grid"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-compte')">Annuler</button>
+      <button class="btn btn-primary" id="ac-btn" onclick="createFicheUser()">Cr&eacute;er le compte</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- MODAL: AJOUTER FERMETURE NAMY                               -->
+<!-- ════════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="modal-add-fermeture" style="display:none">
   <div class="modal" style="max-width:400px">
     <div class="modal-header">
@@ -410,7 +460,7 @@
     </div>
     <div class="modal-body">
       <div class="fg"><label class="fl">Date</label><input type="date" class="fi" id="nf-date"></div>
-      <div class="fg"><label class="fl">Raison</label><input type="text" class="fi" id="nf-raison" placeholder="Ex: Jour férié, maintenance..."></div>
+      <div class="fg"><label class="fl">Raison</label><input type="text" class="fi" id="nf-raison" placeholder="Ex: Jour f&eacute;ri&eacute;, maintenance..."></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-add-fermeture')">Annuler</button>
@@ -427,6 +477,11 @@ let users = [];
 let entreprises = [];
 let filteredUsers = [];
 let filteredEnts = [];
+
+// Fiche entreprise state
+let ficheEntId = null;
+let ficheEntData = null;
+let ficheParams = {};
 
 const COLORS = ['#4f7cff','#f43f5e','#2dd4a0','#f59e0b','#a855f7','#ec4899','#06b6d4','#84cc16'];
 
@@ -469,96 +524,34 @@ async function loadData() {
   }
   filteredUsers = [...users];
   filteredEnts = [...entreprises];
-
-  // Populate filter dropdown
-  const sel = document.getElementById('filter-entreprise');
-  entreprises.forEach(e => {
-    const opt = document.createElement('option');
-    opt.value = e.id;
-    opt.textContent = e.nom;
-    sel.appendChild(opt);
-  });
 }
 
 function renderAll() {
-  renderUsers();
   renderEntreprises();
   updateStats();
 }
 
+function updateStats() {
+  document.getElementById('count-entreprises').textContent = entreprises.length;
+  document.getElementById('count-internes').textContent = users.filter(u => ['admin','dispatcher'].includes(u.role)).length;
+}
+
 // ─── SECTION SWITCH ─────────────────────────────────────────
 function switchSection(name) {
-  document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+  document.getElementById('section-' + name).style.display = 'block';
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-  const el = document.getElementById('section-' + name);
-  if (el.classList.contains('section')) { el.style.display = 'block'; } else { el.classList.add('active'); }
-  event.currentTarget.classList.add('active');
+  if (event && event.currentTarget) event.currentTarget.classList.add('active');
   if (name === 'calendrier') initCalendar();
+  if (name === 'grilles') loadGrillesList();
+  if (name === 'comptes-internes') renderInternes();
 }
 
-// ─── STATS ──────────────────────────────────────────────────
-function updateStats() {
-  document.getElementById('stat-total').textContent = users.length;
-  document.getElementById('stat-actifs').textContent = users.filter(u => u.statut !== 'suspendu').length;
-  document.getElementById('stat-suspendus').textContent = users.filter(u => u.statut === 'suspendu').length;
-  document.getElementById('count-comptes').textContent = users.length;
-  document.getElementById('count-entreprises').textContent = entreprises.length;
-}
-
-// ─── RENDER USERS ───────────────────────────────────────────
-function renderUsers() {
-  const tbody = document.getElementById('users-tbody');
-  if (!filteredUsers.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty">Aucun compte trouv\u00e9</td></tr>';
-    return;
-  }
-  tbody.innerHTML = filteredUsers.map(u => {
-    const ent = entreprises.find(e => e.id == u.entreprise_id);
-    const color = COLORS[Math.abs(hashStr(u.prenom + u.nom)) % COLORS.length];
-    const initials = ((u.prenom || '')[0] || '') + ((u.nom || '')[0] || '');
-    const roleCls = 'b-' + (u.role || 'vendeur');
-    const statutCls = u.statut === 'suspendu' ? 'b-suspendu' : 'b-actif';
-    const date = u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '\u2014';
-    return `<tr>
-      <td><div class="user-cell">
-        <div class="user-avatar" style="background:${color}">${initials.toUpperCase()}</div>
-        <div class="user-info"><div class="user-name">${u.prenom || ''} ${u.nom || ''}</div><div class="user-email">${u.email || ''}</div></div>
-      </div></td>
-      <td><span class="badge ${roleCls}">${ROLE_LABELS[u.role] || u.role}</span></td>
-      <td>${ent ? ent.nom : '<span style="color:var(--text-hint)">\u2014</span>'}</td>
-      <td><span class="badge ${statutCls}">${u.statut === 'suspendu' ? 'Suspendu' : 'Actif'}</span></td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted)">${date}</td>
-      <td><div class="actions">
-        <button class="btn btn-ghost btn-xs" onclick="toggleSuspend('${u.id}','${u.auth_id}')">${u.statut === 'suspendu' ? '\u25b6 R\u00e9activer' : '\u23f8 Suspendre'}</button>
-        <button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}','${u.auth_id}')">&#128465;</button>
-      </div></td>
-    </tr>`;
-  }).join('');
-}
-
+// ─── HASH UTIL ──────────────────────────────────────────────
 function hashStr(s) {
   let h = 0;
   for (let i = 0; i < (s || '').length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
   return h;
-}
-
-// ─── FILTER USERS ───────────────────────────────────────────
-function filterUsers() {
-  const search = document.getElementById('filter-search').value.toLowerCase();
-  const role = document.getElementById('filter-role').value;
-  const entId = document.getElementById('filter-entreprise').value;
-  const statut = document.getElementById('filter-statut').value;
-
-  filteredUsers = users.filter(u => {
-    if (search && !(u.prenom + ' ' + u.nom + ' ' + u.email).toLowerCase().includes(search)) return false;
-    if (role && u.role !== role) return false;
-    if (entId && u.entreprise_id != entId) return false;
-    if (statut === 'actif' && u.statut === 'suspendu') return false;
-    if (statut === 'suspendu' && u.statut !== 'suspendu') return false;
-    return true;
-  });
-  renderUsers();
 }
 
 // ─── RENDER ENTREPRISES ─────────────────────────────────────
@@ -571,13 +564,13 @@ function renderEntreprises() {
   tbody.innerHTML = filteredEnts.map(e => {
     const typeCls = e.type === 'plateforme' ? 'b-plateforme' : e.type === 'fournisseur' ? 'b-fournisseur' : 'b-client';
     const usersCount = users.filter(u => u.entreprise_id == e.id).length;
-    return `<tr>
-      <td style="font-weight:600">${e.nom}</td>
-      <td><span class="badge ${typeCls}">${e.type || 'client'}</span></td>
-      <td style="font-size:12px;color:var(--text-muted)">${e.adresse || ''} ${e.cp || ''} ${e.ville || ''}</td>
-      <td style="font-family:'DM Mono',monospace">${usersCount}</td>
-      <td><div class="actions">
-        ${e.type === 'client' ? `<button class="btn btn-ghost btn-xs" onclick="editEntreprise('${e.id}')">&#9881; Param.</button>` : ''}
+    return `<tr style="cursor:pointer" onclick="openFicheEntreprise('${e.id}')">
+      <td style="padding:8px 12px;font-weight:600">${e.nom}</td>
+      <td style="padding:8px 12px"><span class="badge ${typeCls}">${e.type || 'client'}</span></td>
+      <td style="padding:8px 12px;font-size:12px;color:var(--text-muted)">${e.adresse || ''} ${e.cp || ''} ${e.ville || ''}</td>
+      <td style="padding:8px 12px;font-family:'DM Mono',monospace">${usersCount}</td>
+      <td style="padding:8px 12px"><div class="actions" onclick="event.stopPropagation()">
+        <button class="btn btn-ghost btn-xs" onclick="openFicheEntreprise('${e.id}')">Ouvrir</button>
         <button class="btn btn-danger btn-xs" onclick="deleteEntreprise('${e.id}')">&#128465;</button>
       </div></td>
     </tr>`;
@@ -593,211 +586,6 @@ function filterEntreprises() {
     return true;
   });
   renderEntreprises();
-}
-
-// ─── ROLE CHANGE (modal) ────────────────────────────────────
-function onRoleChange() {
-  const role = document.getElementById('cu-role').value;
-  const entGroup = document.getElementById('cu-ent-group');
-  const permsSection = document.getElementById('cu-perms-section');
-  const permsGrid = document.getElementById('cu-perms-grid');
-
-  // Entreprise field
-  if (['client', 'fournisseur', 'vendeur', 'livreur', 'dispatcher'].includes(role)) {
-    entGroup.style.display = 'block';
-    populateEntrepriseDropdown(role);
-  } else {
-    entGroup.style.display = 'none';
-  }
-  document.getElementById('cu-new-ent').style.display = 'none';
-
-  // Permissions
-  if (role === 'vendeur') {
-    permsSection.style.display = 'block';
-    permsGrid.innerHTML = PERMS_VENDEUR.map(p =>
-      `<label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-perm="${p.key}" checked> ${p.label}</label>`
-    ).join('');
-  } else if (role === 'livreur') {
-    permsSection.style.display = 'block';
-    permsGrid.innerHTML = PERMS_LIVREUR.map(p =>
-      `<label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-perm="${p.key}" checked> ${p.label}</label>`
-    ).join('');
-  } else {
-    permsSection.style.display = 'none';
-  }
-}
-
-function populateEntrepriseDropdown(role) {
-  const sel = document.getElementById('cu-entreprise');
-  sel.innerHTML = '<option value="">S\u00e9lectionner...</option><option value="__new__">+ Cr\u00e9er une nouvelle entreprise</option>';
-
-  let filtered;
-  if (role === 'vendeur' || role === 'client') {
-    filtered = entreprises.filter(e => e.type === 'client' || !e.type);
-  } else if (role === 'livreur' || role === 'fournisseur') {
-    filtered = entreprises.filter(e => e.type === 'fournisseur');
-  } else {
-    filtered = entreprises;
-  }
-
-  filtered.forEach(e => {
-    const opt = document.createElement('option');
-    opt.value = e.id;
-    opt.textContent = e.nom + (e.type ? ' (' + e.type + ')' : '');
-    sel.appendChild(opt);
-  });
-}
-
-function onEntrepriseChange() {
-  const val = document.getElementById('cu-entreprise').value;
-  const newEntDiv = document.getElementById('cu-new-ent');
-  if (val === '__new__') {
-    newEntDiv.style.display = 'block';
-    // Auto-set type based on role
-    const role = document.getElementById('cu-role').value;
-    const typeToSelect = (role === 'livreur' || role === 'fournisseur') ? 'fournisseur' : 'client';
-    document.querySelectorAll('#cu-ent-type .ent-type-btn').forEach(b => {
-      b.classList.toggle('on', b.dataset.val === typeToSelect);
-    });
-  } else {
-    newEntDiv.style.display = 'none';
-  }
-}
-
-function selectEntType(btn) {
-  document.querySelectorAll('#cu-ent-type .ent-type-btn').forEach(b => b.classList.remove('on'));
-  btn.classList.add('on');
-}
-
-// ─── CREATE USER ────────────────────────────────────────────
-async function createUser() {
-  const prenom = document.getElementById('cu-prenom').value.trim();
-  const nom = document.getElementById('cu-nom').value.trim();
-  const email = document.getElementById('cu-email').value.trim();
-  const password = document.getElementById('cu-password').value;
-  const role = document.getElementById('cu-role').value;
-  let entreprise_id = document.getElementById('cu-entreprise').value;
-
-  if (!prenom || !nom || !email || !password || !role) {
-    showToast('Remplissez tous les champs obligatoires', 'warning');
-    return;
-  }
-  if (password.length < 8) {
-    showToast('Mot de passe : 8 caract\u00e8res minimum', 'warning');
-    return;
-  }
-
-  const btn = document.getElementById('cu-btn');
-  btn.disabled = true;
-  btn.textContent = 'Cr\u00e9ation...';
-
-  // Créer nouvelle entreprise si demandé
-  if (entreprise_id === '__new__') {
-    const entNom = document.getElementById('cu-ent-nom').value.trim();
-    if (!entNom) { showToast('Donnez un nom \u00e0 l\'entreprise', 'warning'); btn.disabled = false; btn.textContent = 'Cr\u00e9er le compte'; return; }
-    const entType = document.querySelector('#cu-ent-type .ent-type-btn.on')?.dataset.val || 'client';
-    const entAdresse = document.getElementById('cu-ent-adresse').value.trim();
-    const entVille = document.getElementById('cu-ent-ville').value.trim();
-
-    try {
-      const { data: resp, error } = await db.functions.invoke('create-entreprise', {
-        body: { nom: entNom, type: entType, adresse: entAdresse, ville: entVille }
-      });
-      if (error) throw error;
-      if (resp?.error) throw new Error(resp.error);
-      entreprise_id = resp.entreprise.id;
-      entreprises.push(resp.entreprise);
-    } catch (e) {
-      showToast('Erreur cr\u00e9ation entreprise: ' + e.message, 'danger');
-      btn.disabled = false; btn.textContent = 'Cr\u00e9er le compte';
-      return;
-    }
-  }
-
-  if (entreprise_id === '' || entreprise_id === '__new__') entreprise_id = null;
-
-  // Permissions
-  const permissions = {};
-  document.querySelectorAll('#cu-perms-grid .perm-item.on input').forEach(cb => {
-    permissions[cb.dataset.perm] = true;
-  });
-
-  // Appel Edge Function
-  try {
-    const { data, error } = await db.functions.invoke('create-user', {
-      body: { email, password, role, prenom, nom, entreprise_id: entreprise_id || null }
-    });
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
-
-    // Mettre à jour les permissions si nécessaire
-    if (Object.keys(permissions).length && data?.user?.auth_id) {
-      await db.from('utilisateurs').update({ permissions }).eq('auth_id', data.user.auth_id);
-    }
-
-    // Reload
-    const { data: newUsers } = await db.from('utilisateurs').select('*').order('created_at', { ascending: false });
-    if (newUsers) { users = newUsers; filteredUsers = [...users]; }
-
-    closeModal('modal-create-user');
-    resetCreateForm();
-    renderAll();
-    showToast(`Compte ${prenom} ${nom} (${ROLE_LABELS[role]}) cr\u00e9\u00e9`);
-  } catch (e) {
-    showToast('Erreur: ' + (e.message || 'Cr\u00e9ation impossible'), 'warning');
-  }
-
-  btn.disabled = false;
-  btn.textContent = 'Cr\u00e9er le compte';
-}
-
-function resetCreateForm() {
-  ['cu-prenom','cu-nom','cu-email','cu-password','cu-ent-nom','cu-ent-adresse','cu-ent-ville'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  document.getElementById('cu-role').value = '';
-  document.getElementById('cu-ent-group').style.display = 'none';
-  document.getElementById('cu-new-ent').style.display = 'none';
-  document.getElementById('cu-perms-section').style.display = 'none';
-}
-
-// ─── SUSPEND / REACTIVATE ───────────────────────────────────
-async function toggleSuspend(userId, authId) {
-  const user = users.find(u => u.id == userId);
-  if (!user) return;
-  const newStatut = user.statut === 'suspendu' ? 'actif' : 'suspendu';
-  const label = newStatut === 'suspendu' ? 'Suspendre' : 'R\u00e9activer';
-  if (!confirm(`${label} ${user.prenom} ${user.nom} ?`)) return;
-
-  try {
-    await db.from('utilisateurs').update({ statut: newStatut }).eq('id', userId);
-    user.statut = newStatut;
-  } catch (e) {
-    showToast('Erreur: ' + e.message, 'warning');
-    return;
-  }
-  filterUsers();
-  updateStats();
-  showToast(`${user.prenom} ${user.nom} — ${newStatut === 'suspendu' ? 'suspendu' : 'r\u00e9activ\u00e9'}`);
-}
-
-// ─── DELETE USER ────────────────────────────────────────────
-async function deleteUser(userId, authId) {
-  const user = users.find(u => u.id == userId);
-  if (!user) return;
-  if (!confirm(`Supprimer d\u00e9finitivement ${user.prenom} ${user.nom} ?\nCette action est irr\u00e9versible.`)) return;
-
-  try {
-    await db.from('utilisateurs').delete().eq('id', userId);
-    users = users.filter(u => u.id != userId);
-    filteredUsers = filteredUsers.filter(u => u.id != userId);
-  } catch (e) {
-    showToast('Erreur suppression: ' + e.message, 'warning');
-    return;
-  }
-  renderAll();
-  showToast(`Compte ${user.prenom} ${user.nom} supprim\u00e9`);
 }
 
 // ─── CREATE ENTREPRISE ──────────────────────────────────────
@@ -855,57 +643,294 @@ async function deleteEntreprise(id) {
   showToast(`${ent.nom} supprim\u00e9e`);
 }
 
-// ─── EDIT ENTREPRISE PARAMS ─────────────────────────────────
-let editingEntId = null;
+// ═══════════════════════════════════════════════════════════════
+// FICHE ENTREPRISE
+// ═══════════════════════════════════════════════════════════════
 
-async function editEntreprise(id) {
-  editingEntId = id;
-  const ent = entreprises.find(e => e.id == id);
-  if (!ent) return;
+async function openFicheEntreprise(id) {
+  ficheEntId = id;
+  ficheEntData = entreprises.find(e => e.id == id);
+  if (!ficheEntData) return;
 
-  document.getElementById('edit-ent-title').textContent = 'Param\u00e8tres \u2014 ' + ent.nom;
+  // Show fiche section
+  document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+  document.getElementById('section-fiche').style.display = 'block';
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
 
-  // Charger les paramètres existants
-  let params = {};
+  // Title + badges
+  document.getElementById('fiche-title').textContent = ficheEntData.nom;
+  const typeBadge = document.getElementById('fiche-type-badge');
+  typeBadge.className = 'badge b-' + (ficheEntData.type || 'client');
+  typeBadge.textContent = ficheEntData.type || 'client';
+
+  // Show/hide grille tab (client only)
+  document.getElementById('fiche-tab-grille').style.display =
+    ficheEntData.type === 'client' ? '' : 'none';
+
+  // Populate info fields
+  document.getElementById('fe-nom').value = ficheEntData.nom || '';
+  document.getElementById('fe-type').value = ficheEntData.type || 'client';
+  document.getElementById('fe-adresse').value = ficheEntData.adresse || '';
+  document.getElementById('fe-cp').value = ficheEntData.cp || '';
+  document.getElementById('fe-ville').value = ficheEntData.ville || '';
+  document.getElementById('fe-tel').value = ficheEntData.telephone || '';
+  document.getElementById('fe-email').value = ficheEntData.email || '';
+
+  // Load params
+  ficheParams = {};
   try {
     const { data } = await db.from('parametres_entreprise').select('*').eq('entreprise_id', id).single();
-    if (data) params = data;
-  } catch (e) {}
+    if (data) ficheParams = data;
+  } catch(e) {}
 
-  document.getElementById('ee-maj').value = params.majoration_dimanche_ferie ?? 20;
-  document.getElementById('ee-echec-retrait').value = params.cout_echec_retrait ?? 50;
-  document.getElementById('ee-echec-livraison').value = params.cout_echec_livraison ?? 0;
-  document.getElementById('ee-limite').value = params.limite_commandes_jour ?? 0;
-  document.getElementById('ee-delai').value = params.delai_annulation_heures ?? 24;
+  // Suspension
+  editSuspensionData = ficheParams;
+  renderFicheSuspension();
 
-  // Jours de service
-  const jours = params.jours_service || ['lundi','mardi','mercredi','jeudi','vendredi','samedi'];
-  document.querySelectorAll('#modal-edit-ent [data-jour]').forEach(cb => {
-    const on = jours.includes(cb.dataset.jour) || (cb.dataset.jour === 'feries' && params.ouvert_feries);
-    cb.closest('.perm-item').classList.toggle('on', on);
-    cb.checked = on;
-  });
+  // Show first tab
+  switchFicheTab('infos', document.querySelector('.fiche-tab'));
+
+  // Load accounts
+  loadFicheUsers();
 
   // Load creneaux
   await loadCreneaux(id);
+  renderFicheCreneaux();
 
-  // Load fermetures exceptionnelles
-  editFermetures = (params && params.fermetures_exceptionnelles) ? [...params.fermetures_exceptionnelles] : [];
-  renderFermeturesExc();
+  // Load planning data
+  loadFichePlanning();
 
-  // Load suspension status
-  editSuspensionData = params || {};
-  renderSuspensionStatus();
-
-  openModal('modal-edit-ent');
+  // Load grille assignment
+  if (ficheEntData.type === 'client') loadFicheGrille();
 }
 
-async function saveEntrepriseParams() {
-  if (!editingEntId) return;
+function switchFicheTab(tab, btn) {
+  document.querySelectorAll('.fiche-panel').forEach(p => { p.style.display = 'none'; p.classList.remove('active'); });
+  document.querySelectorAll('.fiche-tab').forEach(b => b.classList.remove('active'));
+  const panel = document.getElementById('fiche-' + tab);
+  if (panel) { panel.style.display = 'block'; panel.classList.add('active'); }
+  if (btn) btn.classList.add('active');
+}
 
+// ─── FICHE: SAVE INFOS ──────────────────────────────────────
+async function saveFicheInfos() {
+  try {
+    const updates = {
+      nom: document.getElementById('fe-nom').value.trim(),
+      type: document.getElementById('fe-type').value,
+      adresse: document.getElementById('fe-adresse').value.trim(),
+      cp: document.getElementById('fe-cp').value.trim(),
+      ville: document.getElementById('fe-ville').value.trim(),
+      telephone: document.getElementById('fe-tel').value.trim(),
+      email: document.getElementById('fe-email').value.trim(),
+    };
+    await db.from('entreprises').update(updates).eq('id', ficheEntId);
+    Object.assign(ficheEntData, updates);
+    document.getElementById('fiche-title').textContent = updates.nom;
+    showToast('Informations enregistr\u00e9es');
+    // Refresh list
+    const idx = entreprises.findIndex(e => e.id == ficheEntId);
+    if (idx >= 0) entreprises[idx] = { ...entreprises[idx], ...updates };
+    filteredEnts = [...entreprises];
+  } catch(e) { showToast('Erreur: ' + e.message, 'warning'); }
+}
+
+// ─── FICHE: USERS ────────────────────────────────────────────
+async function loadFicheUsers() {
+  try {
+    const { data } = await db.from('utilisateurs').select('*')
+      .eq('entreprise_id', ficheEntId).order('created_at');
+    renderFicheUsers(data || []);
+  } catch(e) { renderFicheUsers([]); }
+}
+
+function renderFicheUsers(list) {
+  const tbody = document.getElementById('fiche-users-tbody');
+  const empty = document.getElementById('fiche-users-empty');
+  if (!list.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = list.map(u => {
+    const roleCls = 'b-' + (u.role || 'vendeur');
+    const statutCls = u.statut === 'suspendu' ? 'b-suspendu' : 'b-actif';
+    return `<tr>
+      <td style="padding:8px 12px;font-weight:600">${u.prenom || ''} ${u.nom || ''}</td>
+      <td style="padding:8px 12px;font-size:12px;color:var(--text-muted);font-family:var(--font-mono)">${u.email}</td>
+      <td style="padding:8px 12px"><span class="badge ${roleCls}">${ROLE_LABELS[u.role] || u.role}</span></td>
+      <td style="padding:8px 12px"><span class="badge ${statutCls}">${u.statut === 'suspendu' ? 'Suspendu' : 'Actif'}</span></td>
+      <td style="padding:8px 12px"><div class="actions">
+        <button class="btn btn-ghost btn-xs" onclick="toggleSuspend('${u.id}','${u.auth_id}')">${u.statut === 'suspendu' ? '\u25b6' : '\u23f8'}</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}','${u.auth_id}')">&#128465;</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function openAddCompte() {
+  const roleSel = document.getElementById('ac-role');
+  roleSel.innerHTML = '';
+  if (ficheEntData.type === 'client') {
+    roleSel.innerHTML = '<option value="client">Directeur (client)</option><option value="vendeur">Vendeur</option>';
+  } else if (ficheEntData.type === 'fournisseur') {
+    roleSel.innerHTML = '<option value="fournisseur">G\u00e9rant (fournisseur)</option><option value="livreur">Livreur</option>';
+  } else {
+    roleSel.innerHTML = '<option value="admin">Admin</option><option value="dispatcher">Dispatcher</option>';
+  }
+  // Show perms based on role
+  const role = roleSel.value;
+  updateAddComptePerms(role);
+  roleSel.onchange = () => updateAddComptePerms(roleSel.value);
+  openModal('modal-add-compte');
+}
+
+function updateAddComptePerms(role) {
+  const section = document.getElementById('ac-perms-section');
+  const grid = document.getElementById('ac-perms-grid');
+  if (role === 'vendeur') {
+    section.style.display = 'block';
+    grid.innerHTML = PERMS_VENDEUR.map(p =>
+      `<label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-perm="${p.key}" checked> ${p.label}</label>`
+    ).join('');
+  } else if (role === 'livreur') {
+    section.style.display = 'block';
+    grid.innerHTML = PERMS_LIVREUR.map(p =>
+      `<label class="perm-item on" onclick="this.classList.toggle('on')"><input type="checkbox" data-perm="${p.key}" checked> ${p.label}</label>`
+    ).join('');
+  } else {
+    section.style.display = 'none';
+  }
+}
+
+async function createFicheUser() {
+  const prenom = document.getElementById('ac-prenom').value.trim();
+  const nom = document.getElementById('ac-nom').value.trim();
+  const email = document.getElementById('ac-email').value.trim();
+  const password = document.getElementById('ac-password').value;
+  const role = document.getElementById('ac-role').value;
+  if (!prenom || !nom || !email || !password) { showToast('Remplissez tous les champs', 'warning'); return; }
+
+  const btn = document.getElementById('ac-btn');
+  btn.disabled = true; btn.textContent = 'Cr\u00e9ation...';
+
+  try {
+    const { data, error } = await db.functions.invoke('create-user', {
+      body: { email, password, role, prenom, nom, entreprise_id: ficheEntId }
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    // Permissions
+    const permissions = {};
+    document.querySelectorAll('#ac-perms-grid .perm-item.on input').forEach(cb => {
+      permissions[cb.dataset.perm] = true;
+    });
+    if (Object.keys(permissions).length && data?.user?.auth_id) {
+      await db.from('utilisateurs').update({ permissions }).eq('auth_id', data.user.auth_id);
+    }
+
+    closeModal('modal-add-compte');
+    ['ac-prenom','ac-nom','ac-email'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('ac-password').value = 'Namy2024!';
+    loadFicheUsers();
+    // Also refresh global users list
+    const { data: newUsers } = await db.from('utilisateurs').select('*').order('created_at', { ascending: false });
+    if (newUsers) { users = newUsers; filteredUsers = [...users]; }
+    updateStats();
+    showToast(`${prenom} ${nom} (${ROLE_LABELS[role]}) cr\u00e9\u00e9`);
+  } catch(e) { showToast('Erreur: ' + (e.message || e), 'warning'); }
+  finally { btn.disabled = false; btn.textContent = 'Cr\u00e9er le compte'; }
+}
+
+// ─── FICHE: GRILLE ───────────────────────────────────────────
+async function loadFicheGrille() {
+  const sel = document.getElementById('fe-grille');
+  sel.innerHTML = '<option value="">Aucune grille assign\u00e9e</option>';
+  try {
+    const { data: grilles } = await db.from('grilles_tarifaires').select('id,nom,type').order('nom');
+    (grilles || []).forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g.id;
+      opt.textContent = g.nom + ' (' + g.type + ')';
+      sel.appendChild(opt);
+    });
+    // Current assignment
+    const { data: cg } = await db.from('clients_grilles').select('grille_id')
+      .eq('client_id', ficheEntId).limit(1);
+    if (cg && cg.length) sel.value = cg[0].grille_id;
+  } catch(e) {}
+  updateGrilleWarning();
+}
+
+function updateGrilleWarning() {
+  const val = document.getElementById('fe-grille').value;
+  document.getElementById('fe-grille-warning').style.display = val ? 'none' : 'block';
+}
+
+async function saveFicheGrille() {
+  const grilleId = document.getElementById('fe-grille').value;
+  updateGrilleWarning();
+  try {
+    // Delete existing
+    await db.from('clients_grilles').delete().eq('client_id', ficheEntId);
+    if (grilleId) {
+      await db.from('clients_grilles').insert({ client_id: ficheEntId, grille_id: grilleId });
+    }
+    showToast('Grille assign\u00e9e');
+  } catch(e) { showToast('Erreur: ' + e.message, 'warning'); }
+}
+
+// ─── FICHE: PLANNING ─────────────────────────────────────────
+function loadFichePlanning() {
+  const jours = ficheParams.jours_service || ['lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+  document.querySelectorAll('#fiche-jours-grid [data-jour]').forEach(cb => {
+    const on = jours.includes(cb.dataset.jour) || (cb.dataset.jour === 'feries' && ficheParams.ouvert_feries);
+    cb.closest('.perm-item').classList.toggle('on', on);
+    cb.checked = on;
+  });
+  document.getElementById('fe-limite').value = ficheParams.limite_commandes_jour || 0;
+  document.getElementById('fe-maj').value = ficheParams.majoration_dimanche_ferie || 20;
+
+  editFermetures = ficheParams.fermetures_exceptionnelles ? [...ficheParams.fermetures_exceptionnelles] : [];
+  renderFicheExcFermetures();
+}
+
+function renderFicheCreneaux() {
+  const list = document.getElementById('fiche-creneaux-list');
+  const empty = document.getElementById('fiche-creneaux-empty');
+  if (!editCreneaux.length) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  list.innerHTML = editCreneaux.map((c, i) => `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-hover);border-radius:var(--radius-sm);font-size:13px">
+    <span style="font-family:var(--font-mono);font-weight:600">${(c.heure_debut||'').slice(0,5)} \u2014 ${(c.heure_fin||'').slice(0,5)}</span>
+    <span style="color:var(--text-muted);font-size:12px">Limite: ${c.limite_colis || '\u221e'} colis</span>
+    <button onclick="removeCreneau(${i})" style="margin-left:auto;background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px">&times;</button>
+  </div>`).join('');
+}
+
+function renderFicheExcFermetures() {
+  const list = document.getElementById('fiche-fermetures-list');
+  if (!editFermetures.length) { list.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">Aucune fermeture exceptionnelle</span>'; return; }
+  list.innerHTML = editFermetures.map((d, i) => `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--danger-bg);color:var(--danger);border-radius:12px;font-size:11px;font-weight:600">
+    ${d} <button onclick="removeFermetureExc(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px">&times;</button>
+  </span>`).join('');
+}
+
+function addFermetureExc() {
+  const date = document.getElementById('fe-fermeture-date').value;
+  if (!date || editFermetures.includes(date)) return;
+  editFermetures.push(date);
+  editFermetures.sort();
+  renderFicheExcFermetures();
+  document.getElementById('fe-fermeture-date').value = '';
+}
+
+function removeFermetureExc(index) {
+  editFermetures.splice(index, 1);
+  renderFicheExcFermetures();
+}
+
+async function saveFichePlanning() {
   const jours = [];
   let ouvertFeries = false;
-  document.querySelectorAll('#modal-edit-ent [data-jour]').forEach(cb => {
+  document.querySelectorAll('#fiche-jours-grid [data-jour]').forEach(cb => {
     if (cb.closest('.perm-item').classList.contains('on')) {
       if (cb.dataset.jour === 'feries') ouvertFeries = true;
       else jours.push(cb.dataset.jour);
@@ -913,34 +938,198 @@ async function saveEntrepriseParams() {
   });
 
   const params = {
-    entreprise_id: editingEntId,
-    majoration_dimanche_ferie: parseFloat(document.getElementById('ee-maj').value) || 20,
-    cout_echec_retrait: parseFloat(document.getElementById('ee-echec-retrait').value) || 50,
-    cout_echec_livraison: parseFloat(document.getElementById('ee-echec-livraison').value) || 0,
-    limite_commandes_jour: parseInt(document.getElementById('ee-limite').value) || 0,
-    delai_annulation_heures: parseInt(document.getElementById('ee-delai').value) || 24,
+    entreprise_id: ficheEntId,
     jours_service: jours,
     ouvert_dimanche: jours.includes('dimanche'),
     ouvert_feries: ouvertFeries,
+    limite_commandes_jour: parseInt(document.getElementById('fe-limite').value) || 0,
+    majoration_dimanche_ferie: parseFloat(document.getElementById('fe-maj').value) || 20,
     fermetures_exceptionnelles: editFermetures,
   };
 
   try {
-    // Upsert : insert or update
-    const { error } = await db.from('parametres_entreprise').upsert(params, { onConflict: 'entreprise_id' });
-    if (error) throw error;
-
-    // Save creneaux
-    await saveCreneaux(editingEntId);
-
-    closeModal('modal-edit-ent');
-    showToast('Param\u00e8tres enregistr\u00e9s');
-  } catch (e) {
-    showToast('Erreur: ' + e.message, 'warning');
-  }
+    await db.from('parametres_entreprise').upsert(params, { onConflict: 'entreprise_id' });
+    await saveCreneaux(ficheEntId);
+    ficheParams = { ...ficheParams, ...params };
+    showToast('Planning enregistr\u00e9');
+  } catch(e) { showToast('Erreur: ' + e.message, 'warning'); }
 }
 
-// ─── CALENDRIER NAMY ─────────────────────────────────────────
+// ─── FICHE: SUSPENSION ───────────────────────────────────────
+let editSuspensionData = {};
+
+function renderFicheSuspension() {
+  const el = document.getElementById('fiche-suspension-status');
+  const histEl = document.getElementById('fiche-suspension-history');
+  const badge = document.getElementById('fiche-suspend-badge');
+  const isSuspended = editSuspensionData.suspendu;
+
+  badge.innerHTML = isSuspended
+    ? '<span class="badge b-suspendu">SUSPENDU</span>'
+    : '';
+
+  if (isSuspended) {
+    el.innerHTML = `<div style="display:flex;align-items:center;gap:10px">
+      <span class="badge b-suspendu">SUSPENDU</span>
+      <span style="font-size:12px;color:var(--text-muted)">${editSuspensionData.raison_suspension || ''}</span>
+      <button onclick="reactivateCompte()" class="btn btn-primary btn-sm" style="margin-left:auto">R\u00e9activer</button>
+    </div>`;
+  } else {
+    el.innerHTML = `<div style="display:flex;align-items:center;gap:10px">
+      <span class="badge b-actif">ACTIF</span>
+      <button onclick="suspendCompte()" class="btn btn-danger btn-sm" style="margin-left:auto">Suspendre</button>
+    </div>`;
+  }
+
+  const hist = editSuspensionData.historique_suspensions || [];
+  if (hist.length) {
+    histEl.innerHTML = '<div style="font-weight:600;margin-bottom:4px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-hint)">Historique</div>' +
+      hist.slice(-5).reverse().map(h => `<div style="padding:3px 0;border-bottom:1px solid var(--border);font-size:12px">${(h.date||'').slice(0,10)} \u2014 <strong>${h.action}</strong>${h.raison ? ' : ' + h.raison : ''}</div>`).join('');
+  } else { histEl.innerHTML = ''; }
+}
+
+async function suspendCompte() {
+  const raison = prompt('Raison de la suspension (obligatoire) :');
+  if (!raison) { showToast('Raison obligatoire', 'warning'); return; }
+
+  const hist = editSuspensionData.historique_suspensions || [];
+  hist.push({ date: new Date().toISOString(), action: 'suspension', raison, par: 'admin' });
+
+  try {
+    await db.from('parametres_entreprise').upsert({
+      entreprise_id: ficheEntId,
+      suspendu: true,
+      raison_suspension: raison,
+      suspendu_le: new Date().toISOString(),
+      historique_suspensions: hist,
+    }, { onConflict: 'entreprise_id' });
+
+    editSuspensionData.suspendu = true;
+    editSuspensionData.raison_suspension = raison;
+    editSuspensionData.historique_suspensions = hist;
+    renderFicheSuspension();
+    showToast('Compte suspendu', 'success');
+  } catch(e) { showToast('Erreur: ' + e.message, 'danger'); }
+}
+
+async function reactivateCompte() {
+  const hist = editSuspensionData.historique_suspensions || [];
+  hist.push({ date: new Date().toISOString(), action: 'reactivation', par: 'admin' });
+
+  try {
+    await db.from('parametres_entreprise').upsert({
+      entreprise_id: ficheEntId,
+      suspendu: false,
+      raison_suspension: null,
+      suspendu_le: null,
+      historique_suspensions: hist,
+    }, { onConflict: 'entreprise_id' });
+
+    editSuspensionData.suspendu = false;
+    editSuspensionData.raison_suspension = null;
+    editSuspensionData.historique_suspensions = hist;
+    renderFicheSuspension();
+    showToast('Compte r\u00e9activ\u00e9', 'success');
+  } catch(e) { showToast('Erreur: ' + e.message, 'danger'); }
+}
+
+// ─── SUSPEND / REACTIVATE USER ──────────────────────────────
+async function toggleSuspend(userId, authId) {
+  const user = users.find(u => u.id == userId);
+  if (!user) return;
+  const newStatut = user.statut === 'suspendu' ? 'actif' : 'suspendu';
+  const label = newStatut === 'suspendu' ? 'Suspendre' : 'R\u00e9activer';
+  if (!confirm(`${label} ${user.prenom} ${user.nom} ?`)) return;
+
+  try {
+    await db.from('utilisateurs').update({ statut: newStatut }).eq('id', userId);
+    user.statut = newStatut;
+  } catch (e) {
+    showToast('Erreur: ' + e.message, 'warning');
+    return;
+  }
+  updateStats();
+  // Refresh fiche users if open
+  if (ficheEntId) loadFicheUsers();
+  renderInternes();
+  showToast(`${user.prenom} ${user.nom} \u2014 ${newStatut === 'suspendu' ? 'suspendu' : 'r\u00e9activ\u00e9'}`);
+}
+
+// ─── DELETE USER ────────────────────────────────────────────
+async function deleteUser(userId, authId) {
+  const user = users.find(u => u.id == userId);
+  if (!user) return;
+  if (!confirm(`Supprimer d\u00e9finitivement ${user.prenom} ${user.nom} ?\nCette action est irr\u00e9versible.`)) return;
+
+  try {
+    await db.from('utilisateurs').delete().eq('id', userId);
+    users = users.filter(u => u.id != userId);
+    filteredUsers = filteredUsers.filter(u => u.id != userId);
+  } catch (e) {
+    showToast('Erreur suppression: ' + e.message, 'warning');
+    return;
+  }
+  renderAll();
+  if (ficheEntId) loadFicheUsers();
+  showToast(`Compte ${user.prenom} ${user.nom} supprim\u00e9`);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CRENEAUX LIVRAISON
+// ═══════════════════════════════════════════════════════════════
+let editCreneaux = [];
+
+async function loadCreneaux(entId) {
+  try {
+    const { data } = await db.from('creneaux_livraison').select('*')
+      .eq('entreprise_id', entId).order('heure_debut');
+    editCreneaux = data || [];
+  } catch(e) { editCreneaux = []; }
+}
+
+function addCreneau() {
+  const debut = prompt('Heure d\u00e9but (HH:MM)', '09:00');
+  const fin = prompt('Heure fin (HH:MM)', '12:00');
+  if (!debut || !fin) return;
+  const limite = parseInt(prompt('Limite colis (0 = illimit\u00e9)', '0')) || 0;
+  editCreneaux.push({ heure_debut: debut, heure_fin: fin, limite_colis: limite, actif: true });
+  renderFicheCreneaux();
+}
+
+async function removeCreneau(index) {
+  const c = editCreneaux[index];
+  if (c.id) {
+    try { await db.from('creneaux_livraison').delete().eq('id', c.id); } catch(e) {}
+  }
+  editCreneaux.splice(index, 1);
+  renderFicheCreneaux();
+}
+
+async function saveCreneaux(entId) {
+  // Delete existing and re-insert
+  try {
+    await db.from('creneaux_livraison').delete().eq('entreprise_id', entId);
+    if (editCreneaux.length) {
+      const rows = editCreneaux.map(c => ({
+        entreprise_id: entId,
+        heure_debut: c.heure_debut,
+        heure_fin: c.heure_fin,
+        limite_colis: c.limite_colis || 0,
+        actif: c.actif !== false,
+      }));
+      await db.from('creneaux_livraison').insert(rows);
+    }
+  } catch(e) { console.warn('Save creneaux error:', e); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FERMETURES EXCEPTIONNELLES
+// ═══════════════════════════════════════════════════════════════
+let editFermetures = [];
+
+// ═══════════════════════════════════════════════════════════════
+// CALENDRIER NAMY
+// ═══════════════════════════════════════════════════════════════
 let calYear, calMonth, fermeturesNamy = [];
 
 function initCalendar() {
@@ -960,7 +1149,7 @@ async function loadFermetures() {
 }
 
 function renderCalendar() {
-  const months = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const months = ['Janvier','F\u00e9vrier','Mars','Avril','Mai','Juin','Juillet','Ao\u00fbt','Septembre','Octobre','Novembre','D\u00e9cembre'];
   document.getElementById('cal-title').textContent = months[calMonth] + ' ' + calYear;
   const grid = document.getElementById('cal-grid');
   grid.innerHTML = '';
@@ -988,7 +1177,7 @@ function renderCalendar() {
     if (isClosed) style += 'background:var(--danger-bg);color:var(--danger);font-weight:700;';
     else if (isToday) style += 'background:var(--accent-light);color:var(--accent-dark);font-weight:700;';
 
-    const title = fermeture ? fermeture.raison || 'Fermé' : '';
+    const title = fermeture ? fermeture.raison || 'Ferm\u00e9' : '';
     grid.innerHTML += `<div style="${style}" title="${title}">${d}</div>`;
   }
 }
@@ -1003,7 +1192,7 @@ function renderFermeturesList() {
 
   tbody.innerHTML = upcoming.map(f => `<tr style="border-bottom:1px solid var(--border)">
     <td style="padding:8px 12px;font-family:var(--font-mono)">${f.date}</td>
-    <td style="padding:8px 12px">${f.raison || '—'}</td>
+    <td style="padding:8px 12px">${f.raison || '\u2014'}</td>
     <td style="padding:8px 12px;text-align:right">
       <button onclick="deleteFermeture('${f.id}')" style="background:none;border:1px solid var(--danger);color:var(--danger);border-radius:var(--radius-sm);padding:3px 10px;font-size:11px;cursor:pointer">Supprimer</button>
     </td>
@@ -1018,12 +1207,12 @@ function openAddFermeture() { openModal('modal-add-fermeture'); }
 async function saveFermeture() {
   const date = document.getElementById('nf-date').value;
   const raison = document.getElementById('nf-raison').value.trim();
-  if (!date) { showToast('Sélectionnez une date', 'warning'); return; }
+  if (!date) { showToast('S\u00e9lectionnez une date', 'warning'); return; }
 
   try {
     const { error } = await db.from('fermetures_namy').insert({ date, raison: raison || null });
     if (error) throw error;
-    showToast('Fermeture ajoutée', 'success');
+    showToast('Fermeture ajout\u00e9e', 'success');
     closeModal('modal-add-fermeture');
     document.getElementById('nf-date').value = '';
     document.getElementById('nf-raison').value = '';
@@ -1036,169 +1225,79 @@ async function saveFermeture() {
 async function deleteFermeture(id) {
   try {
     await db.from('fermetures_namy').delete().eq('id', id);
-    showToast('Fermeture supprimée', 'success');
+    showToast('Fermeture supprim\u00e9e', 'success');
     loadFermetures();
   } catch(e) { showToast('Erreur: ' + e.message, 'danger'); }
 }
 
-// ─── CRÉNEAUX LIVRAISON ──────────────────────────────────────
-let editCreneaux = [];
-
-async function loadCreneaux(entId) {
+// ═══════════════════════════════════════════════════════════════
+// GRILLES LIST
+// ═══════════════════════════════════════════════════════════════
+async function loadGrillesList() {
   try {
-    const { data } = await db.from('creneaux_livraison').select('*')
-      .eq('entreprise_id', entId).order('heure_debut');
-    editCreneaux = data || [];
-  } catch(e) { editCreneaux = []; }
-  renderCreneaux();
+    const { data } = await db.from('grilles_tarifaires').select('*').order('nom');
+    const el = document.getElementById('grilles-list');
+    if (!data || !data.length) { el.innerHTML = '<div class="empty">Aucune grille</div>'; return; }
+    el.innerHTML = data.map(g => `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)">
+      <div style="font-weight:600;flex:1">${g.nom}</div>
+      <span class="badge b-client">${g.type}</span>
+      <span style="font-size:12px;color:var(--text-muted)">Rayon: ${g.rayon_km || 30}km</span>
+    </div>`).join('');
+  } catch(e) {}
 }
 
-function renderCreneaux() {
-  const list = document.getElementById('ee-creneaux-list');
-  const empty = document.getElementById('ee-creneaux-empty');
-  if (!editCreneaux.length) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+// ═══════════════════════════════════════════════════════════════
+// COMPTES INTERNES
+// ═══════════════════════════════════════════════════════════════
+function renderInternes() {
+  const internes = users.filter(u => ['admin','dispatcher'].includes(u.role));
+  document.getElementById('count-internes').textContent = internes.length;
+  const tbody = document.getElementById('internes-tbody');
+  const empty = document.getElementById('internes-empty');
+  if (!internes.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
-  list.innerHTML = editCreneaux.map((c, i) => `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg-hover);border-radius:var(--radius-sm);font-size:12px">
-    <span style="font-family:var(--font-mono);font-weight:600">${(c.heure_debut||'').slice(0,5)} — ${(c.heure_fin||'').slice(0,5)}</span>
-    <span style="color:var(--text-muted)">Limite: ${c.limite_colis || '∞'}</span>
-    <button onclick="removeCreneau(${i})" style="margin-left:auto;background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px">&times;</button>
-  </div>`).join('');
+  tbody.innerHTML = internes.map(u => {
+    const roleCls = 'b-' + u.role;
+    const statutCls = u.statut === 'suspendu' ? 'b-suspendu' : 'b-actif';
+    return `<tr>
+      <td style="padding:8px 12px;font-weight:600">${u.prenom || ''} ${u.nom || ''}</td>
+      <td style="padding:8px 12px;font-size:12px;color:var(--text-muted)">${u.email}</td>
+      <td style="padding:8px 12px"><span class="badge ${roleCls}">${ROLE_LABELS[u.role]}</span></td>
+      <td style="padding:8px 12px"><span class="badge ${statutCls}">${u.statut === 'suspendu' ? 'Suspendu' : 'Actif'}</span></td>
+      <td style="padding:8px 12px"><div class="actions">
+        <button class="btn btn-ghost btn-xs" onclick="toggleSuspend('${u.id}','${u.auth_id}')">${u.statut === 'suspendu' ? '\u25b6' : '\u23f8'}</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}','${u.auth_id}')">&#128465;</button>
+      </div></td>
+    </tr>`;
+  }).join('');
 }
 
-function addCreneau() {
-  const debut = prompt('Heure début (HH:MM)', '09:00');
-  const fin = prompt('Heure fin (HH:MM)', '12:00');
-  if (!debut || !fin) return;
-  const limite = parseInt(prompt('Limite colis (0 = illimité)', '0')) || 0;
-  editCreneaux.push({ heure_debut: debut, heure_fin: fin, limite_colis: limite, actif: true });
-  renderCreneaux();
-}
+async function createInternalUser() {
+  const prenom = document.getElementById('ci-prenom').value.trim();
+  const nom = document.getElementById('ci-nom').value.trim();
+  const email = document.getElementById('ci-email').value.trim();
+  const password = document.getElementById('ci-password').value;
+  const role = document.getElementById('ci-role').value;
+  if (!prenom || !nom || !email || !password) { showToast('Remplissez tous les champs', 'warning'); return; }
 
-async function removeCreneau(index) {
-  const c = editCreneaux[index];
-  if (c.id) {
-    try { await db.from('creneaux_livraison').delete().eq('id', c.id); } catch(e) {}
-  }
-  editCreneaux.splice(index, 1);
-  renderCreneaux();
-}
-
-async function saveCreneaux(entId) {
-  // Delete existing and re-insert
+  const btn = document.getElementById('ci-btn');
+  btn.disabled = true; btn.textContent = 'Cr\u00e9ation...';
   try {
-    await db.from('creneaux_livraison').delete().eq('entreprise_id', entId);
-    if (editCreneaux.length) {
-      const rows = editCreneaux.map(c => ({
-        entreprise_id: entId,
-        heure_debut: c.heure_debut,
-        heure_fin: c.heure_fin,
-        limite_colis: c.limite_colis || 0,
-        actif: c.actif !== false,
-      }));
-      await db.from('creneaux_livraison').insert(rows);
-    }
-  } catch(e) { console.warn('Save creneaux error:', e); }
-}
+    const { data, error } = await db.functions.invoke('create-user', {
+      body: { email, password, role, prenom, nom, entreprise_id: null }
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
 
-// ─── FERMETURES EXCEPTIONNELLES ──────────────────────────────
-let editFermetures = [];
-
-function renderFermeturesExc() {
-  const list = document.getElementById('ee-fermetures-list');
-  if (!editFermetures.length) { list.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">Aucune fermeture</span>'; return; }
-  list.innerHTML = editFermetures.map((d, i) => `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--danger-bg);color:var(--danger);border-radius:12px;font-size:11px;font-weight:600">
-    ${d} <button onclick="removeFermetureExc(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px">&times;</button>
-  </span>`).join('');
-}
-
-function addFermetureExc() {
-  const date = document.getElementById('ee-fermeture-date').value;
-  if (!date || editFermetures.includes(date)) return;
-  editFermetures.push(date);
-  editFermetures.sort();
-  renderFermeturesExc();
-  document.getElementById('ee-fermeture-date').value = '';
-}
-
-function removeFermetureExc(index) {
-  editFermetures.splice(index, 1);
-  renderFermeturesExc();
-}
-
-// ─── SUSPENSION ──────────────────────────────────────────────
-let editSuspensionData = {};
-
-function renderSuspensionStatus() {
-  const el = document.getElementById('ee-suspension-status');
-  const histEl = document.getElementById('ee-suspension-history');
-  const isSuspended = editSuspensionData.suspendu;
-
-  if (isSuspended) {
-    el.innerHTML = `<div style="display:flex;align-items:center;gap:10px">
-      <span style="padding:4px 12px;background:var(--danger-bg);color:var(--danger);border-radius:12px;font-size:12px;font-weight:700">SUSPENDU</span>
-      <span style="font-size:12px;color:var(--text-muted)">${editSuspensionData.raison_suspension || ''}</span>
-      <button onclick="reactivateCompte()" style="margin-left:auto;padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;font-family:var(--font-body);font-weight:600">Réactiver</button>
-    </div>`;
-  } else {
-    el.innerHTML = `<div style="display:flex;align-items:center;gap:10px">
-      <span style="padding:4px 12px;background:var(--accent-light);color:var(--accent-dark);border-radius:12px;font-size:12px;font-weight:700">ACTIF</span>
-      <button onclick="suspendCompte()" style="margin-left:auto;padding:6px 14px;background:var(--danger);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;font-family:var(--font-body);font-weight:600">Suspendre</button>
-    </div>`;
-  }
-
-  // History
-  const hist = editSuspensionData.historique_suspensions || [];
-  if (hist.length) {
-    histEl.innerHTML = '<div style="font-weight:600;margin-bottom:4px">Historique :</div>' +
-      hist.slice(-5).reverse().map(h => `<div style="padding:3px 0">${h.date?.slice(0,10) || ''} — ${h.action} ${h.raison ? ': ' + h.raison : ''}</div>`).join('');
-  } else {
-    histEl.innerHTML = '';
-  }
-}
-
-async function suspendCompte() {
-  const raison = prompt('Raison de la suspension (obligatoire) :');
-  if (!raison) { showToast('Raison obligatoire', 'warning'); return; }
-
-  const hist = editSuspensionData.historique_suspensions || [];
-  hist.push({ date: new Date().toISOString(), action: 'suspension', raison, par: 'admin' });
-
-  try {
-    await db.from('parametres_entreprise').upsert({
-      entreprise_id: editingEntId,
-      suspendu: true,
-      raison_suspension: raison,
-      suspendu_le: new Date().toISOString(),
-      historique_suspensions: hist,
-    }, { onConflict: 'entreprise_id' });
-
-    editSuspensionData.suspendu = true;
-    editSuspensionData.raison_suspension = raison;
-    editSuspensionData.historique_suspensions = hist;
-    renderSuspensionStatus();
-    showToast('Compte suspendu', 'success');
-  } catch(e) { showToast('Erreur: ' + e.message, 'danger'); }
-}
-
-async function reactivateCompte() {
-  const hist = editSuspensionData.historique_suspensions || [];
-  hist.push({ date: new Date().toISOString(), action: 'reactivation', par: 'admin' });
-
-  try {
-    await db.from('parametres_entreprise').upsert({
-      entreprise_id: editingEntId,
-      suspendu: false,
-      raison_suspension: null,
-      suspendu_le: null,
-      historique_suspensions: hist,
-    }, { onConflict: 'entreprise_id' });
-
-    editSuspensionData.suspendu = false;
-    editSuspensionData.raison_suspension = null;
-    editSuspensionData.historique_suspensions = hist;
-    renderSuspensionStatus();
-    showToast('Compte réactivé', 'success');
-  } catch(e) { showToast('Erreur: ' + e.message, 'danger'); }
+    const { data: newUsers } = await db.from('utilisateurs').select('*').order('created_at', { ascending: false });
+    if (newUsers) { users = newUsers; filteredUsers = [...users]; }
+    closeModal('modal-create-internal');
+    ['ci-prenom','ci-nom','ci-email'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('ci-password').value = 'Namy2024!';
+    renderInternes();
+    showToast(`${prenom} ${nom} (${ROLE_LABELS[role]}) cr\u00e9\u00e9`);
+  } catch(e) { showToast('Erreur: ' + (e.message || e), 'warning'); }
+  finally { btn.disabled = false; btn.textContent = 'Cr\u00e9er'; }
 }
 </script>
 </body>
