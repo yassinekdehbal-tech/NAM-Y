@@ -1123,25 +1123,61 @@ function focusTourneeOnMap(tourneeId) {
 
 async function optimiserTournee(tourneeId) {
   const t = tournees.find(x => x.id == tourneeId);
-  if (!t || !t.stops || t.stops.length < 2) { showToast('Besoin d\'au moins 2 stops pour optimiser'); return; }
+  if (!t || !t.stops || t.stops.length < 2) { showToast('Besoin d\'au moins 2 stops'); return; }
   showToast('Optimisation de ' + t.nom + '...');
-  await new Promise(r => setTimeout(r, 800));
 
-  t.stops.sort((a,b) => {
-    const ca = commandes.find(c => c.id == a);
-    const cb = commandes.find(c => c.id == b);
-    if (!ca || !cb) return 0;
-    return (ca.creneau||'').localeCompare(cb.creneau||'') || ca.lng - cb.lng;
+  // Nearest neighbor algorithm
+  const stopData = t.stops.map(id => {
+    const c = commandes.find(x => x.id == id);
+    return { id, lat: c?.lat || 48.85, lng: c?.lng || 2.35, creneau: c?.creneau || '99:99' };
   });
 
+  // Grouper par créneau d'abord, puis nearest neighbor dans chaque groupe
+  const creneaux = [...new Set(stopData.map(s => s.creneau))].sort();
+  const optimized = [];
+
+  for (const creneau of creneaux) {
+    const group = stopData.filter(s => s.creneau === creneau);
+    if (group.length <= 1) { optimized.push(...group); continue; }
+
+    // Nearest neighbor dans ce groupe
+    const remaining = [...group];
+    let current = remaining.shift(); // premier stop = point de départ
+    const ordered = [current];
+
+    while (remaining.length > 0) {
+      let nearestIdx = 0;
+      let nearestDist = Infinity;
+      for (let i = 0; i < remaining.length; i++) {
+        const d = haversine(current.lat, current.lng, remaining[i].lat, remaining[i].lng);
+        if (d < nearestDist) { nearestDist = d; nearestIdx = i; }
+      }
+      current = remaining.splice(nearestIdx, 1)[0];
+      ordered.push(current);
+    }
+    optimized.push(...ordered);
+  }
+
+  t.stops = optimized.map(s => s.id);
+
+  // Persister l'ordre
   try {
     for (let i = 0; i < t.stops.length; i++) {
-      await db.from('expeditions').update({ordre:i+1}).eq('id', t.stops[i]);
+      await db.from('expeditions').update({ ordre: i + 1 }).eq('id', t.stops[i]);
     }
-  } catch(e) { console.warn('Optimize order failed:', e); }
+  } catch (e) { console.warn('Optimize order persist failed:', e); }
 
-  renderTournees();
-  showToast(t.nom + ' optimisee');
+  renderAll();
+  showToast(t.nom + ' optimisee (' + t.stops.length + ' stops)');
+}
+
+// Haversine distance en km
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 async function publierTournee(tourneeId) {
