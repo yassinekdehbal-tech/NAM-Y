@@ -101,7 +101,7 @@
           <div class="page-title">Gestion des comptes</div>
           <div class="page-sub">Cr&eacute;ez et g&eacute;rez les acc&egrave;s &agrave; la plateforme NAMY</div>
         </div>
-        <button class="btn btn-primary" onclick="openModal('modal-create-user')">+ Cr&eacute;er un compte</button>
+        <button class="btn btn-primary" onclick="openCreateUserModal()">+ Cr&eacute;er un compte</button>
       </div>
 
       <div class="stat-row">
@@ -146,7 +146,7 @@
           <div class="page-title">Entreprises</div>
           <div class="page-sub">Clients, fournisseurs et plateforme</div>
         </div>
-        <button class="btn btn-primary" onclick="openModal('modal-create-ent')">+ Nouvelle entreprise</button>
+        <button class="btn btn-primary" onclick="openCreateEntModal()">+ Nouvelle entreprise</button>
       </div>
 
       <div class="filters">
@@ -173,7 +173,7 @@
 <div class="modal-overlay" id="modal-create-user" style="display:none">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title">Cr&eacute;er un compte</span>
+      <span class="modal-title" id="cu-modal-title">Cr&eacute;er un compte</span>
       <button class="modal-close" onclick="closeModal('modal-create-user')">&#10005;</button>
     </div>
     <div class="modal-body">
@@ -182,7 +182,7 @@
         <div class="fg"><label class="fl">Nom *</label><input type="text" class="fi" id="cu-nom" placeholder="Nom"></div>
       </div>
       <div class="fg"><label class="fl">Email *</label><input type="email" class="fi" id="cu-email" placeholder="email@exemple.fr"></div>
-      <div class="fg"><label class="fl">Mot de passe temporaire *</label><input type="text" class="fi" id="cu-password" placeholder="Min. 8 caract&egrave;res" value=""></div>
+      <div class="fg" id="cu-password-group"><label class="fl">Mot de passe temporaire *</label><input type="text" class="fi" id="cu-password" placeholder="Min. 8 caract&egrave;res" value=""></div>
 
       <div class="section-label">R&ocirc;le &amp; rattachement</div>
 
@@ -243,7 +243,7 @@
 <div class="modal-overlay" id="modal-create-ent" style="display:none">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title">Nouvelle entreprise</span>
+      <span class="modal-title" id="ne-modal-title">Nouvelle entreprise</span>
       <button class="modal-close" onclick="closeModal('modal-create-ent')">&#10005;</button>
     </div>
     <div class="modal-body">
@@ -266,7 +266,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-create-ent')">Annuler</button>
-      <button class="btn btn-primary" onclick="createEntreprise()">Cr&eacute;er</button>
+      <button class="btn btn-primary" id="ne-btn" onclick="createEntreprise()">Cr&eacute;er</button>
     </div>
   </div>
 </div>
@@ -280,6 +280,14 @@
     </div>
     <div class="modal-body">
       <div class="info-box">&#9432; Ces param&egrave;tres s'appliquent &agrave; toutes les commandes de ce client.</div>
+
+      <div class="section-label">Grille tarifaire assign&eacute;e</div>
+      <div class="fg">
+        <select class="fi" id="ee-grille">
+          <option value="">Aucune grille assign&eacute;e</option>
+        </select>
+      </div>
+      <div id="ee-grille-info" style="font-size:12px;color:var(--text-muted);margin-top:4px"></div>
 
       <div class="section-label">Conditions contractuelles</div>
 
@@ -439,6 +447,7 @@ function renderUsers() {
       <td><span class="badge ${statutCls}">${u.statut === 'suspendu' ? 'Suspendu' : 'Actif'}</span></td>
       <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted)">${date}</td>
       <td><div class="actions">
+        <button class="btn btn-secondary btn-xs" onclick="editUser('${u.id}')">&#9999;&#65039; Modifier</button>
         <button class="btn btn-ghost btn-xs" onclick="toggleSuspend('${u.id}','${u.auth_id}')">${u.statut === 'suspendu' ? '\u25b6 R\u00e9activer' : '\u23f8 Suspendre'}</button>
         <button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}','${u.auth_id}')">&#128465;</button>
       </div></td>
@@ -486,6 +495,7 @@ function renderEntreprises() {
       <td style="font-size:12px;color:var(--text-muted)">${e.adresse || ''} ${e.cp || ''} ${e.ville || ''}</td>
       <td style="font-family:'DM Mono',monospace">${usersCount}</td>
       <td><div class="actions">
+        <button class="btn btn-secondary btn-xs" onclick="editEntrepriseInfo('${e.id}')">&#9999;&#65039;</button>
         ${e.type === 'client' ? `<button class="btn btn-ghost btn-xs" onclick="editEntreprise('${e.id}')">&#9881; Param.</button>` : ''}
         <button class="btn btn-danger btn-xs" onclick="deleteEntreprise('${e.id}')">&#128465;</button>
       </div></td>
@@ -769,6 +779,171 @@ async function deleteEntreprise(id) {
   showToast(`${ent.nom} supprim\u00e9e`);
 }
 
+// ─── EDIT USER ─────────────────────────────────────────────
+let editingUserId = null;
+
+function openCreateUserModal() {
+  editingUserId = null;
+  resetCreateForm();
+  document.getElementById('cu-modal-title').textContent = 'Cr\u00e9er un compte';
+  document.getElementById('cu-password-group').style.display = '';
+  const btn = document.getElementById('cu-btn');
+  btn.textContent = 'Cr\u00e9er le compte';
+  btn.setAttribute('onclick', 'createUser()');
+  openModal('modal-create-user');
+}
+
+function editUser(id) {
+  const u = users.find(x => x.id == id);
+  if (!u) return;
+  editingUserId = id;
+
+  document.getElementById('cu-modal-title').textContent = 'Modifier le compte';
+  document.getElementById('cu-prenom').value = u.prenom || '';
+  document.getElementById('cu-nom').value = u.nom || '';
+  document.getElementById('cu-email').value = u.email || '';
+  document.getElementById('cu-role').value = u.role || '';
+  document.getElementById('cu-password-group').style.display = 'none';
+
+  // Trigger role change to show entreprise dropdown
+  onRoleChange();
+
+  // Set entreprise after dropdown is populated
+  if (u.entreprise_id) {
+    document.getElementById('cu-entreprise').value = u.entreprise_id;
+  }
+
+  const btn = document.getElementById('cu-btn');
+  btn.textContent = 'Modifier';
+  btn.setAttribute('onclick', 'updateUser()');
+
+  openModal('modal-create-user');
+}
+
+async function updateUser() {
+  const prenom = document.getElementById('cu-prenom').value.trim();
+  const nom = document.getElementById('cu-nom').value.trim();
+  const email = document.getElementById('cu-email').value.trim();
+  const role = document.getElementById('cu-role').value;
+  let entreprise_id = document.getElementById('cu-entreprise').value;
+
+  if (!prenom || !nom || !email || !role) {
+    showToast('Remplissez tous les champs obligatoires', 'warning');
+    return;
+  }
+
+  if (entreprise_id === '' || entreprise_id === '__new__') entreprise_id = null;
+
+  const btn = document.getElementById('cu-btn');
+  btn.disabled = true;
+  btn.textContent = 'Modification...';
+
+  try {
+    const { error } = await db.from('utilisateurs').update({
+      prenom, nom, email, role, entreprise_id: entreprise_id || null
+    }).eq('id', editingUserId);
+    if (error) throw error;
+
+    // Update local array
+    const idx = users.findIndex(u => u.id == editingUserId);
+    if (idx !== -1) {
+      users[idx].prenom = prenom;
+      users[idx].nom = nom;
+      users[idx].email = email;
+      users[idx].role = role;
+      users[idx].entreprise_id = entreprise_id;
+    }
+    filteredUsers = [...users];
+
+    closeModal('modal-create-user');
+    renderAll();
+    showToast(`Compte ${prenom} ${nom} modifi\u00e9`);
+  } catch (e) {
+    showToast('Erreur: ' + (e.message || 'Modification impossible'), 'warning');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Modifier';
+  editingUserId = null;
+}
+
+// ─── EDIT ENTREPRISE INFO ──────────────────────────────────
+let editingEntInfoId = null;
+
+function openCreateEntModal() {
+  editingEntInfoId = null;
+  document.getElementById('ne-modal-title').textContent = 'Nouvelle entreprise';
+  ['ne-nom','ne-adresse','ne-cp','ne-ville','ne-tel'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('ne-type').value = 'client';
+  const btn = document.getElementById('ne-btn');
+  btn.textContent = 'Cr\u00e9er';
+  btn.setAttribute('onclick', 'createEntreprise()');
+  openModal('modal-create-ent');
+}
+
+function editEntrepriseInfo(id) {
+  const e = entreprises.find(x => x.id == id);
+  if (!e) return;
+  editingEntInfoId = id;
+
+  document.getElementById('ne-modal-title').textContent = 'Modifier l\'entreprise';
+  document.getElementById('ne-nom').value = e.nom || '';
+  document.getElementById('ne-type').value = e.type || 'client';
+  document.getElementById('ne-adresse').value = e.adresse || '';
+  document.getElementById('ne-cp').value = e.cp || '';
+  document.getElementById('ne-ville').value = e.ville || '';
+  document.getElementById('ne-tel').value = e.tel || '';
+
+  const btn = document.getElementById('ne-btn');
+  btn.textContent = 'Modifier';
+  btn.setAttribute('onclick', 'updateEntreprise()');
+
+  openModal('modal-create-ent');
+}
+
+async function updateEntreprise() {
+  const nom = document.getElementById('ne-nom').value.trim();
+  const type = document.getElementById('ne-type').value;
+  if (!nom) { showToast('Donnez un nom', 'warning'); return; }
+
+  const btn = document.getElementById('ne-btn');
+  btn.disabled = true;
+  btn.textContent = 'Modification...';
+
+  try {
+    const { error } = await db.from('entreprises').update({
+      nom, type,
+      adresse: document.getElementById('ne-adresse').value.trim(),
+      cp: document.getElementById('ne-cp').value.trim(),
+      ville: document.getElementById('ne-ville').value.trim(),
+      tel: document.getElementById('ne-tel').value.trim(),
+    }).eq('id', editingEntInfoId);
+    if (error) throw error;
+
+    // Update local array
+    const idx = entreprises.findIndex(e => e.id == editingEntInfoId);
+    if (idx !== -1) {
+      entreprises[idx].nom = nom;
+      entreprises[idx].type = type;
+      entreprises[idx].adresse = document.getElementById('ne-adresse').value.trim();
+      entreprises[idx].cp = document.getElementById('ne-cp').value.trim();
+      entreprises[idx].ville = document.getElementById('ne-ville').value.trim();
+      entreprises[idx].tel = document.getElementById('ne-tel').value.trim();
+    }
+    filteredEnts = [...entreprises];
+
+    closeModal('modal-create-ent');
+    renderAll();
+    showToast(`Entreprise "${nom}" modifi\u00e9e`);
+  } catch (e) {
+    showToast('Erreur: ' + (e.message || 'Modification impossible'), 'warning');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Modifier';
+  editingEntInfoId = null;
+}
+
 // ─── EDIT ENTREPRISE PARAMS ─────────────────────────────────
 let editingEntId = null;
 
@@ -791,6 +966,34 @@ async function editEntreprise(id) {
   document.getElementById('ee-echec-livraison').value = params.cout_echec_livraison ?? 0;
   document.getElementById('ee-limite').value = params.limite_commandes_jour ?? 0;
   document.getElementById('ee-delai').value = params.delai_annulation_heures ?? 24;
+
+  // Charger les grilles tarifaires
+  const grilleSel = document.getElementById('ee-grille');
+  grilleSel.innerHTML = '<option value="">Aucune grille assign\u00e9e</option>';
+  const grilleInfo = document.getElementById('ee-grille-info');
+  grilleInfo.textContent = '';
+
+  try {
+    const { data: grilles } = await db.from('grilles_tarifaires').select('id, nom, type');
+    if (grilles && grilles.length) {
+      grilles.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.id;
+        opt.textContent = g.nom + (g.type ? ' (' + g.type + ')' : '');
+        grilleSel.appendChild(opt);
+      });
+    }
+  } catch (e) {
+    console.warn('Erreur chargement grilles:', e);
+  }
+
+  // Charger l'assignation actuelle
+  try {
+    const { data: assignment } = await db.from('clients_grilles').select('grille_id').eq('client_id', id).single();
+    if (assignment && assignment.grille_id) {
+      grilleSel.value = assignment.grille_id;
+    }
+  } catch (e) {}
 
   // Jours de service
   const jours = params.jours_service || ['lundi','mardi','mercredi','jeudi','vendredi','samedi'];
@@ -830,6 +1033,20 @@ async function saveEntrepriseParams() {
     // Upsert : insert or update
     const { error } = await db.from('parametres_entreprise').upsert(params, { onConflict: 'entreprise_id' });
     if (error) throw error;
+
+    // Sauvegarder la grille tarifaire assignée
+    const selectedGrille = document.getElementById('ee-grille').value;
+    if (selectedGrille) {
+      try {
+        await db.from('clients_grilles').upsert(
+          { client_id: editingEntId, grille_id: selectedGrille },
+          { onConflict: 'client_id' }
+        );
+      } catch (e) {
+        console.warn('Erreur assignation grille:', e);
+      }
+    }
+
     closeModal('modal-edit-ent');
     showToast('Param\u00e8tres enregistr\u00e9s');
   } catch (e) {
