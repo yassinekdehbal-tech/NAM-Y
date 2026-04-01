@@ -289,6 +289,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadVendeurs();
   await reloadAll();
   await checkAlerts();
+  await checkOnboarding();
 });
 
 // ─── ALERTES PROACTIVES ──────────────────────────────────────
@@ -353,6 +354,43 @@ async function checkAlerts() {
   banner.innerHTML = alerts.map(a =>
     `<div class="alert-item alert-${a.type}"><span class="alert-icon">${a.icon}</span><div class="alert-text">${a.text}</div><button class="alert-close" onclick="this.parentElement.remove()">&#10005;</button></div>`
   ).join('');
+}
+
+// ─── ONBOARDING ──────────────────────────────────────────────
+async function checkOnboarding() {
+  try {
+    const { data } = await db.from('parametres_entreprise').select('onboarding')
+      .eq('entreprise_id', entrepriseId).single();
+    if (!data || !data.onboarding) return;
+
+    const ob = data.onboarding;
+    const steps = [
+      { key: 'horaires', label: 'Configurer les horaires du magasin', done: ob.horaires },
+      { key: 'grille', label: 'Assigner une grille tarifaire', done: ob.grille },
+      { key: 'vendeur', label: 'Cr\u00e9er le premier vendeur', done: ob.vendeur },
+      { key: 'test', label: 'Faire une exp\u00e9dition test', done: ob.test },
+    ];
+    const completed = steps.filter(s => s.done).length;
+    if (completed >= steps.length) return; // onboarding terminé
+
+    const banner = document.getElementById('alerts-banner');
+    if (!banner) return;
+
+    const html = `<div style="background:var(--accent-light);border:1px solid var(--accent);border-radius:var(--radius-md);padding:16px 20px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:16px">\ud83d\ude80</span>
+        <strong style="color:var(--accent-dark)">Activation de votre compte (${completed}/${steps.length})</strong>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${steps.map(s => `<div style="display:flex;align-items:center;gap:8px;font-size:13px;color:${s.done ? 'var(--accent-dark)' : 'var(--text-secondary)'}">
+          <span>${s.done ? '\u2705' : '\u2b1c'}</span> ${s.label}
+        </div>`).join('')}
+      </div>
+    </div>`;
+
+    banner.style.display = 'flex';
+    banner.insertAdjacentHTML('afterbegin', html);
+  } catch (e) { console.warn('Onboarding check failed:', e); }
 }
 
 // ─── PERIOD ───────────────────────────────────────────────────

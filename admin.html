@@ -721,6 +721,16 @@ async function createEntreprise() {
     if (error) throw error;
     entreprises.push(data);
     filteredEnts = [...entreprises];
+
+    // Auto-créer la checklist onboarding si client
+    if (type === 'client') {
+      try {
+        await db.from('parametres_entreprise').insert({
+          entreprise_id: data.id,
+          onboarding: { horaires: false, grille: false, vendeur: false, test: false }
+        });
+      } catch (e) { console.warn('Onboarding init failed:', e); }
+    }
   } catch (e) {
     showToast('Erreur: ' + e.message, 'warning');
     return;
