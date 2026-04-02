@@ -195,6 +195,7 @@
 .form-card-subtitle { font-size: 12.5px; color: var(--text-muted); margin-top: 1px; }
 
 .form-card-body { padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+.step-content { padding: 24px; display: flex; flex-direction: column; gap: 14px; }
 
 /* ── ENLÈVEMENT (lecture seule) ── */
 .pickup-card {
@@ -798,21 +799,21 @@ select {
 <!-- Stepper -->
 <div class="stepper-container">
   <div class="stepper">
-    <div class="step active" id="step-1" onclick="goToStep(1)">
+    <div class="step active" id="stepper-1" onclick="goToStep(1)">
       <div class="step-num"><span>1</span></div>
       <div class="step-info">
         <span class="step-label">Étape 1</span>
         <span class="step-title">Client & Livraison</span>
       </div>
     </div>
-    <div class="step" id="step-2" onclick="goToStep(2)">
+    <div class="step" id="stepper-2" onclick="goToStep(2)">
       <div class="step-num"><span>2</span></div>
       <div class="step-info">
         <span class="step-label">Étape 2</span>
         <span class="step-title">Articles & Poids</span>
       </div>
     </div>
-    <div class="step" id="step-3" onclick="goToStep(3)">
+    <div class="step" id="stepper-3" onclick="goToStep(3)">
       <div class="step-num"><span>3</span></div>
       <div class="step-info">
         <span class="step-label">Étape 3</span>
@@ -835,124 +836,71 @@ select {
           <div class="form-card-subtitle">Informations du client à livrer</div>
         </div>
       </div>
-      <div class="form-card-body">
-
-        <!-- 1. DATE & CRÉNEAU en premier -->
-        <div class="date-creneau">
+      <!-- STEP 1: Client & Livraison -->
+      <div class="step-content" id="step-1">
+        <!-- Date + Créneau on one line -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div class="form-group">
             <label>Date de livraison <span class="required">*</span></label>
-            <input type="date" id="livraison-date" oninput="onDateChange()">
+            <input type="date" id="livraison-date" oninput="onDateChange()" class="form-input">
             <div id="date-warning" style="display:none;font-size:11px;color:var(--danger);margin-top:4px"></div>
           </div>
           <div class="form-group">
-            <label>Créneau horaire <span class="required">*</span></label>
+            <label>Créneau <span class="required">*</span></label>
             <div class="creneau-grid" id="creneaux-container">
-              <div style="color:var(--text-muted);font-size:12px;padding:8px">Sélectionnez une date pour voir les créneaux</div>
+              <div style="color:var(--text-muted);font-size:12px;padding:6px">Choisir une date</div>
             </div>
             <span class="error-msg" id="err-creneau">Choisissez un créneau</span>
           </div>
         </div>
 
-        <!-- 2. OPTION DE LIVRAISON -->
+        <!-- Option livraison -->
         <div class="form-group">
-          <label>Option de livraison <span class="required">*</span></label>
-          <div class="lieu-grid" style="grid-template-columns:1fr 1fr">
-            <button class="lieu-btn" onclick="selectLieu(this,'Trottoir')">
-              <span class="lieu-icon">🚚</span>
-              Trottoir
+          <label>Option livraison <span class="required">*</span></label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <button class="lieu-btn" onclick="selectLieu(this,'Pied de camion')" style="padding:12px;border:2px solid var(--border);border-radius:8px;background:var(--bg-surface);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;transition:all .15s;text-align:center">
+              🚛 Trottoir<br><span style="font-size:11px;font-weight:400;color:var(--text-muted)">Pied de camion</span>
             </button>
-            <button class="lieu-btn" onclick="selectLieu(this,'Pièce du choix')">
-              <span class="lieu-icon">🛋️</span>
-              Pièce du choix
+            <button class="lieu-btn" onclick="selectLieu(this,'Pièce du choix')" style="padding:12px;border:2px solid var(--border);border-radius:8px;background:var(--bg-surface);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;transition:all .15s;text-align:center">
+              🏠 Pièce du choix<br><span style="font-size:11px;font-weight:400;color:var(--text-muted)">Montée + installation</span>
             </button>
           </div>
           <span class="error-msg" id="err-lieu">Choisissez une option</span>
         </div>
 
-        <!-- 2b. OPTIONS DE LIVRAISON DYNAMIQUES -->
-        <div id="options-livraison-container" style="display:none">
-          <label>Options supplémentaires</label>
-          <div id="options-livraison-list"></div>
-        </div>
-
-        <!-- 3. ENLÈVEMENT avec infos livreur -->
-        <div>
-          <label>Point d'enlèvement</label>
-          <div class="pickup-card">
-            <div class="pickup-icon">🏪</div>
-            <div class="pickup-info" style="flex:1">
-              <h4 id="pickup-name">TRUFFAUT PARIS RIVE GAUCHE</h4>
-              <p id="pickup-address" style="margin-bottom:6px">85 Quai de la Gare · 75013 Paris</p>
-              <div style="display:flex;gap:14px;flex-wrap:wrap">
-                <span style="font-size:12px;color:var(--accent);font-weight:600">📞 <span id="pickup-tel">01 45 82 10 20</span></span>
-                <span style="font-size:12px;color:var(--text-muted)">🕐 <span id="pickup-horaires">Lun–Sam 9h–19h · Dim 10h–18h</span></span>
-              </div>
-              <div style="font-size:12px;color:var(--text-muted);margin-top:3px">👤 <span id="pickup-contact">Responsable livraisons : Sophie M.</span></div>
-            </div>
-            <span class="pickup-badge">Auto</span>
-          </div>
-        </div>
-
-        <!-- 4. CLIENT -->
-        <div class="form-row">
-          <div class="form-group">
-            <label>Prénom <span class="required">*</span></label>
-            <input type="text" id="client-prenom" placeholder="Ex: Caroline" oninput="updateSidebar()">
-            <span class="error-msg" id="err-prenom">Champ obligatoire</span>
-          </div>
-          <div class="form-group" style="position:relative">
-            <label>Nom <span class="required">*</span></label>
-            <input type="text" id="client-nom" placeholder="Ex: Pochet" oninput="updateSidebar();searchDestinataires(this.value)" autocomplete="off">
-            <div class="autocomplete-list" id="dest-suggestions" style="display:none"></div>
-            <span class="error-msg" id="err-nom">Champ obligatoire</span>
-          </div>
-        </div>
-
+        <!-- Adresse destinataire -->
         <div class="form-group">
           <label>Adresse de livraison <span class="required">*</span></label>
-          <div class="input-wrap">
-            <input type="text" id="client-adresse" placeholder="Tapez l'adresse..." oninput="handleAdresseInput(this)" autocomplete="off">
-            <span class="input-icon">🔍</span>
-            <div class="autocomplete-list" id="adresse-suggestions" style="display:none"></div>
-            <input type="hidden" id="client-lat">
-            <input type="hidden" id="client-lng">
-          </div>
-          <span class="error-msg" id="err-adresse">Adresse obligatoire</span>
+          <input type="text" id="client-adresse" class="form-input" placeholder="Commencez à taper l'adresse..." autocomplete="off" oninput="onAdresseInput(this.value)">
+          <div id="adresse-suggestions" class="suggestions-list" style="display:none"></div>
+          <span class="error-msg" id="err-adresse">Adresse requise</span>
         </div>
 
-        <div class="form-row">
+        <!-- Prénom + Nom + Téléphone on one line -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
           <div class="form-group">
-            <label>Code postal <span class="required">*</span></label>
-            <input type="text" id="client-cp" placeholder="75013" oninput="updatePrix()">
+            <label>Prénom <span class="required">*</span></label>
+            <input type="text" id="client-prenom" class="form-input" placeholder="Prénom">
+            <span class="error-msg" id="err-prenom">Requis</span>
           </div>
           <div class="form-group">
-            <label>Ville <span class="required">*</span></label>
-            <input type="text" id="client-ville" placeholder="Paris" oninput="updateSidebar()">
+            <label>Nom <span class="required">*</span></label>
+            <input type="text" id="client-nom" class="form-input" placeholder="Nom">
+            <span class="error-msg" id="err-nom">Requis</span>
           </div>
-        </div>
-
-        <div class="form-row">
           <div class="form-group">
             <label>Téléphone <span class="required">*</span></label>
-            <div class="input-wrap">
-              <input type="tel" id="client-tel" placeholder="06 XX XX XX XX" oninput="updateSidebar()">
-              <span class="input-icon">📱</span>
-            </div>
-            <span class="error-msg" id="err-tel">Téléphone obligatoire</span>
-          </div>
-          <div class="form-group">
-            <label>Email</label>
-            <div class="input-wrap">
-              <input type="email" id="client-email" placeholder="email@exemple.fr">
-              <span class="input-icon">✉️</span>
-            </div>
+            <input type="tel" id="client-tel" class="form-input" placeholder="06 12 34 56 78">
+            <span class="error-msg" id="err-tel">Requis</span>
           </div>
         </div>
 
+        <!-- Instructions (optional, compact) -->
         <div class="form-group">
-          <label>Instructions de livraison</label>
-          <textarea id="client-instructions" placeholder="Ex: 3ème étage sans ascenseur, digicode 1234, sonner 2 fois..."></textarea>
+          <label>Instructions livraison <span style="color:var(--text-muted);font-weight:400">(optionnel)</span></label>
+          <textarea id="client-instructions" class="form-input" rows="2" placeholder="Bâtiment B, 3ème étage, code 1234..." style="resize:none"></textarea>
         </div>
+      </div>
 
       <div class="nav-btns">
         <div></div>
@@ -974,77 +922,58 @@ select {
           <div class="form-card-subtitle">Ajoutez les articles achetés par le client</div>
         </div>
       </div>
-      <div class="form-card-body">
-
-        <!-- Liste articles -->
-        <div>
-          <label>Articles à livrer <span class="required">*</span></label>
-          <div class="articles-list" id="articles-list">
-            <div id="empty-articles" style="text-align:center;padding:20px;color:var(--text-hint);font-size:13px">
-              Aucun article ajouté — cliquez sur le bouton ci-dessous
-            </div>
+      <!-- STEP 2: Articles & Poids -->
+      <div class="step-content" id="step-2">
+        <!-- Nb colis + Poids total on one line -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label>Nombre de colis <span class="required">*</span></label>
+            <input type="number" id="nb-colis" class="form-input" min="1" value="1" oninput="updatePrix()">
           </div>
-          <span class="error-msg" id="err-articles">Ajoutez au moins un article</span>
-        </div>
-
-        <!-- Bouton ajouter -->
-        <button class="btn-add-article" onclick="toggleMiniForm()" id="btn-add">
-          <span class="plus">+</span>
-          Ajouter un article
-        </button>
-
-        <!-- Mini form ajout article -->
-        <div class="mini-form" id="mini-form">
-          <div class="mini-form-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
-            <div class="form-group">
-              <label>Description de l'article <span class="required">*</span></label>
-              <input type="text" id="art-desc" placeholder="Ex: Canapé 3 places, Table basse...">
-            </div>
-            <div class="form-group">
-              <label>Quantité <span class="required">*</span></label>
-              <input type="number" id="art-qte" placeholder="1" min="1" value="1">
-            </div>
-            <div class="form-group">
-              <label>Poids/unité (kg) <span class="required">*</span></label>
-              <input type="text" id="art-poids" placeholder="Ex: 45" oninput="updatePoidsEstime()">
-            </div>
-            <div class="form-group">
-              <label>Longueur max (cm)</label>
-              <input type="text" id="art-longueur" placeholder="Ex: 180">
-            </div>
-          </div>
-          <div style="display:flex;gap:8px;justify-content:flex-end">
-            <button class="btn btn-back" onclick="toggleMiniForm()" style="padding:8px 14px;font-size:13px">Annuler</button>
-            <button class="btn-confirm-article" onclick="addArticle()">✓ Confirmer l'article</button>
+          <div class="form-group">
+            <label>Poids total (kg) <span class="required">*</span></label>
+            <input type="number" id="poids-total" class="form-input" min="0" step="0.1" placeholder="Ex: 25" oninput="updatePrix()">
           </div>
         </div>
 
-        <!-- Total -->
-        <div class="articles-total" id="articles-total" style="display:none">
-          <span>Total colisage</span>
-          <div class="total-values">
-            <div class="total-val">
-              <span>Poids total</span>
-              <strong id="total-poids">0 kg</strong>
+        <!-- Dimensions (optional accordion) -->
+        <details style="margin-top:8px">
+          <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted);padding:8px 0">Dimensions (optionnel)</summary>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
+            <div class="form-group">
+              <label>Longueur (cm)</label>
+              <input type="number" id="dim-longueur" class="form-input" placeholder="L">
             </div>
-            <div class="total-val">
-              <span>Nb articles</span>
-              <strong id="total-articles">0</strong>
+            <div class="form-group">
+              <label>Largeur (cm)</label>
+              <input type="number" id="dim-largeur" class="form-input" placeholder="l">
             </div>
-            <div class="total-val">
-              <span>Colis lourds</span>
-              <strong id="total-lourds">0</strong>
+            <div class="form-group">
+              <label>Hauteur (cm)</label>
+              <input type="number" id="dim-hauteur" class="form-input" placeholder="H">
             </div>
           </div>
+        </details>
+
+        <!-- Description -->
+        <div class="form-group" style="margin-top:8px">
+          <label>Description marchandise</label>
+          <input type="text" id="description-marchandise" class="form-input" placeholder="Ex: Canapé + table basse">
         </div>
 
-        <!-- Description globale -->
-        <div class="form-group">
-          <label>Description globale (facultatif)</label>
-          <textarea id="description-globale" placeholder="Ex: Mobilier de jardin, meubles salon..." oninput="updatePrix()"></textarea>
+        <!-- Prix calculé (live badge) -->
+        <div id="prix-live-badge" style="margin-top:12px;padding:14px 18px;background:rgba(0,201,167,.08);border:1px solid rgba(0,201,167,.2);border-radius:10px;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:12px;color:var(--text-muted)">Prix estimé TTC</div>
+            <div style="font-size:24px;font-weight:700;color:#00A389;font-family:'DM Mono',monospace" id="prix-live-val">— €</div>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);text-align:right">
+            <div id="prix-live-grille">Grille : —</div>
+            <div id="prix-live-tranche">Tranche : —</div>
+          </div>
         </div>
-
       </div>
+
       <div class="nav-btns">
         <button class="btn btn-back" onclick="goToStep(1)">← Retour</button>
         <button class="btn btn-next" onclick="validateStep2()">
@@ -1065,8 +994,25 @@ select {
           <div class="form-card-subtitle">Vérifiez les informations avant validation</div>
         </div>
       </div>
-      <div class="form-card-body" id="recap-body">
-        <!-- Généré dynamiquement -->
+      <!-- STEP 3: Confirmation -->
+      <div class="step-content" id="step-3">
+        <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px" id="recap-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">
+            <div><span style="color:var(--text-muted)">Date :</span> <strong id="recap-date">—</strong></div>
+            <div><span style="color:var(--text-muted)">Créneau :</span> <strong id="recap-creneau">—</strong></div>
+            <div><span style="color:var(--text-muted)">Option :</span> <strong id="recap-option">—</strong></div>
+            <div><span style="color:var(--text-muted)">Colis :</span> <strong id="recap-colis">—</strong></div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:10px;font-size:13px">
+            <div><strong id="recap-dest">—</strong></div>
+            <div style="color:var(--text-muted)" id="recap-adresse">—</div>
+            <div style="color:var(--text-muted)" id="recap-tel">—</div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:13px;color:var(--text-muted)">Description : <span id="recap-desc">—</span></span>
+            <div style="font-size:22px;font-weight:700;color:#00A389;font-family:'DM Mono',monospace" id="recap-prix">— €</div>
+          </div>
+        </div>
       </div>
 
       <!-- Success state -->
@@ -1227,8 +1173,8 @@ async function searchDestinataires(query) {
   destSearchTimeout = setTimeout(async () => {
     try {
       const { data } = await db.from('expeditions')
-        .select('destinataire, dest_adresse, dest_cp, dest_ville, dest_tel, dest_email')
-        .ilike('destinataire', '%' + query + '%')
+        .select('dest_nom, dest_adresse, dest_cp, dest_ville, dest_telephone, dest_email')
+        .ilike('dest_nom', '%' + query + '%')
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -1237,7 +1183,7 @@ async function searchDestinataires(query) {
       // Dédupliquer par nom
       const seen = new Set();
       const unique = data.filter(d => {
-        const key = (d.destinataire || '').toLowerCase();
+        const key = (d.dest_nom || '').toLowerCase();
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
@@ -1245,7 +1191,7 @@ async function searchDestinataires(query) {
 
       list.innerHTML = unique.map(d => `
         <div class="autocomplete-item" onclick="selectDestinataire(${JSON.stringify(d).replace(/"/g, '&quot;')})">
-          <strong>${d.destinataire}</strong>
+          <strong>${d.dest_nom}</strong>
           <span style="font-size:11px;color:var(--text-muted)">${d.dest_adresse || ''} ${d.dest_cp || ''} ${d.dest_ville || ''}</span>
         </div>
       `).join('');
@@ -1259,16 +1205,26 @@ async function searchDestinataires(query) {
 
 function selectDestinataire(d) {
   // Séparer prénom/nom (heuristique : premier mot = prénom)
-  const parts = (d.destinataire || '').split(' ');
+  const parts = (d.dest_nom || '').split(' ');
   const prenom = parts[0] || '';
   const nom = parts.slice(1).join(' ') || '';
 
-  document.getElementById('client-prenom').value = prenom;
-  document.getElementById('client-nom').value = nom;
-  if (d.dest_adresse) document.getElementById('client-adresse').value = d.dest_adresse;
-  if (d.dest_cp) document.getElementById('client-cp').value = d.dest_cp;
-  if (d.dest_ville) document.getElementById('client-ville').value = d.dest_ville;
-  if (d.dest_tel) document.getElementById('client-tel').value = d.dest_tel;
+  const prenomEl = document.getElementById('client-prenom');
+  if (prenomEl) prenomEl.value = prenom;
+  const nomEl = document.getElementById('client-nom');
+  if (nomEl) nomEl.value = nom;
+  if (d.dest_adresse) {
+    const adresseEl = document.getElementById('client-adresse');
+    if (adresseEl) adresseEl.value = d.dest_adresse + (d.dest_cp ? ', ' + d.dest_cp : '') + (d.dest_ville ? ' ' + d.dest_ville : '');
+  }
+  const cpEl = document.getElementById('client-cp');
+  if (d.dest_cp && cpEl) cpEl.value = d.dest_cp;
+  const villeEl = document.getElementById('client-ville');
+  if (d.dest_ville && villeEl) villeEl.value = d.dest_ville;
+  if (d.dest_telephone) {
+    const telEl = document.getElementById('client-tel');
+    if (telEl) telEl.value = d.dest_telephone;
+  }
   if (d.dest_email) {
     const emailEl = document.getElementById('client-email');
     if (emailEl) emailEl.value = d.dest_email;
@@ -1310,24 +1266,30 @@ async function loadVendeurData() {
         };
 
         // Mettre à jour l'interface
-        document.getElementById('magasin-name').textContent = MAGASIN.nom;
-        document.getElementById('pickup-name').textContent = MAGASIN.nom;
-        document.getElementById('pickup-address').textContent = `${MAGASIN.adresse} · ${MAGASIN.cp} ${MAGASIN.ville}`;
-        document.getElementById('pickup-tel').textContent = MAGASIN.tel;
-        document.getElementById('pickup-horaires').textContent = MAGASIN.horaires;
-        document.getElementById('pickup-contact').textContent = MAGASIN.contact;
+        const mn = document.getElementById('magasin-name');
+        if (mn) mn.textContent = MAGASIN.nom;
+        const pn = document.getElementById('pickup-name');
+        if (pn) pn.textContent = MAGASIN.nom;
+        const pa = document.getElementById('pickup-address');
+        if (pa) pa.textContent = `${MAGASIN.adresse} · ${MAGASIN.cp} ${MAGASIN.ville}`;
+        const pt = document.getElementById('pickup-tel');
+        if (pt) pt.textContent = MAGASIN.tel;
+        const ph = document.getElementById('pickup-horaires');
+        if (ph) ph.textContent = MAGASIN.horaires;
+        const pc = document.getElementById('pickup-contact');
+        if (pc) pc.textContent = MAGASIN.contact;
       }
     }
 
     // Charger la grille tarifaire assignée au magasin
     if (sessionUser && sessionUser.entreprise_id) {
       // 1. Trouver la grille assignée à cette entreprise
-      const { data: assignment } = await db
+      const { data: assignments } = await db
         .from('clients_grilles')
         .select('grille_id')
         .eq('client_id', sessionUser.entreprise_id)
-        .limit(1)
-        .single();
+        .limit(1);
+      const assignment = assignments && assignments.length ? assignments[0] : null;
 
       if (assignment && assignment.grille_id) {
         // 2. Charger les lignes de cette grille
@@ -1340,9 +1302,9 @@ async function loadVendeurData() {
         if (lignes && lignes.length) {
           GRILLE = lignes.map(l => ({
             poids_max: l.poids_max,
-            dim_max: l.dim_max,
-            colis_max: l.colis_max,
-            prix: l.prix_lieu_choix || l.prix_pied_camion,
+            dim_max: l.dim_max_cm || l.dim_max,
+            colis_max: l.colis_max_kg || l.colis_max,
+            prix: l.prix_lieu || l.prix_lieu_choix || l.prix_pied || l.prix_pied_camion,
           }));
         }
 
@@ -1415,15 +1377,18 @@ document.querySelectorAll('.form-page').forEach((p, i) => {
   }
 });
 
-document.getElementById('magasin-name').textContent = MAGASIN.nom;
-document.getElementById('pickup-name').textContent = MAGASIN.nom;
-document.getElementById('pickup-address').textContent = `${MAGASIN.adresse} · ${MAGASIN.cp} ${MAGASIN.ville}`;
-document.getElementById('pickup-tel').textContent = MAGASIN.tel;
-document.getElementById('pickup-horaires').textContent = MAGASIN.horaires;
-document.getElementById('pickup-contact').textContent = MAGASIN.contact;
-document.getElementById('pickup-tel').textContent = MAGASIN.tel;
-document.getElementById('pickup-horaires').textContent = MAGASIN.horaires;
-document.getElementById('pickup-contact').textContent = MAGASIN.contact;
+const magasinNameEl = document.getElementById('magasin-name');
+if (magasinNameEl) magasinNameEl.textContent = MAGASIN.nom;
+const pickupNameEl = document.getElementById('pickup-name');
+if (pickupNameEl) pickupNameEl.textContent = MAGASIN.nom;
+const pickupAddressEl = document.getElementById('pickup-address');
+if (pickupAddressEl) pickupAddressEl.textContent = `${MAGASIN.adresse} · ${MAGASIN.cp} ${MAGASIN.ville}`;
+const pickupTelEl = document.getElementById('pickup-tel');
+if (pickupTelEl) pickupTelEl.textContent = MAGASIN.tel;
+const pickupHorairesEl = document.getElementById('pickup-horaires');
+if (pickupHorairesEl) pickupHorairesEl.textContent = MAGASIN.horaires;
+const pickupContactEl = document.getElementById('pickup-contact');
+if (pickupContactEl) pickupContactEl.textContent = MAGASIN.contact;
 
 // Date min = aujourd'hui
 const today = new Date().toISOString().split('T')[0];
@@ -1453,7 +1418,7 @@ function updateStepUI() {
   
   // Mettre à jour les steps
   [1,2,3].forEach(i => {
-    const step = document.getElementById(`step-${i}`);
+    const step = document.getElementById(`stepper-${i}`);
     if (!step) return;
     step.classList.remove('active','completed');
     if (i === currentStep) step.classList.add('active');
@@ -1528,11 +1493,15 @@ function validateStep1() {
 
 // ─── STEP 2 VALIDATION ──────────────────────────────────────
 function validateStep2() {
-  if (articles.length === 0) {
-    document.getElementById('err-articles').classList.add('show');
+  const poids = parseFloat(document.getElementById('poids-total')?.value) || 0;
+  if (poids <= 0) {
+    // Highlight poids field
+    const poidsEl = document.getElementById('poids-total');
+    if (poidsEl) poidsEl.classList.add('error');
     return;
   }
-  document.getElementById('err-articles').classList.remove('show');
+  const poidsEl = document.getElementById('poids-total');
+  if (poidsEl) poidsEl.classList.remove('error');
   currentStep = 3;
   updateStepUI();
   buildRecap();
@@ -1718,6 +1687,11 @@ function selectLieu(btn, val) {
 // ─── AUTOCOMPLÉTION ADRESSE (api-adresse.data.gouv.fr) ──────
 let adresseSearchTimeout = null;
 
+function onAdresseInput(value) {
+  const input = document.getElementById('client-adresse');
+  if (input) handleAdresseInput(input);
+}
+
 function handleAdresseInput(input) {
   const val = input.value.trim();
   const list = document.getElementById('adresse-suggestions');
@@ -1751,11 +1725,15 @@ function handleAdresseInput(input) {
 
 function selectAdresseGouv(el) {
   const d = JSON.parse(el.dataset.addr);
-  document.getElementById('client-adresse').value = d.label;
-  document.getElementById('client-cp').value = d.cp;
-  document.getElementById('client-ville').value = d.ville;
-  document.getElementById('client-lat').value = d.lat;
-  document.getElementById('client-lng').value = d.lng;
+  document.getElementById('client-adresse').value = d.label + ', ' + d.cp + ' ' + d.ville;
+  const cpEl = document.getElementById('client-cp');
+  if (cpEl) cpEl.value = d.cp;
+  const villeEl = document.getElementById('client-ville');
+  if (villeEl) villeEl.value = d.ville;
+  const latEl = document.getElementById('client-lat');
+  if (latEl) latEl.value = d.lat;
+  const lngEl = document.getElementById('client-lng');
+  if (lngEl) lngEl.value = d.lng;
   document.getElementById('adresse-suggestions').style.display = 'none';
   hideError('err-adresse', 'client-adresse');
   updateSidebar();
@@ -1961,7 +1939,27 @@ function calculateOptionsTotal() {
 }
 
 function updatePrix() {
-  const poids = articles.reduce((s, a) => s + a.poids, 0);
+  // Read from simplified form
+  const nbColis = parseInt(document.getElementById('nb-colis')?.value) || 0;
+  const poidsSimple = parseFloat(document.getElementById('poids-total')?.value) || 0;
+
+  // Find matching grille tranche
+  let prixSimple = 0;
+  let trancheSimple = null;
+  if (GRILLE && GRILLE.length && poidsSimple > 0) {
+    trancheSimple = GRILLE.find(g => poidsSimple <= g.poids_max) || GRILLE[GRILLE.length - 1];
+    if (trancheSimple) prixSimple = trancheSimple.prix || 0;
+  }
+
+  // Update live badge
+  const liveBadge = document.getElementById('prix-live-val');
+  if (liveBadge) liveBadge.textContent = prixSimple > 0 ? prixSimple.toFixed(2) + ' €' : '— €';
+  const grilleEl = document.getElementById('prix-live-grille');
+  if (grilleEl) grilleEl.textContent = 'Grille : ' + (MAGASIN.grille || 'Standard');
+  const trancheEl = document.getElementById('prix-live-tranche');
+  if (trancheEl) trancheEl.textContent = trancheSimple ? 'Tranche : 0-' + trancheSimple.poids_max + ' kg' : '';
+
+  const poids = articles.reduce((s, a) => s + a.poids, 0) || poidsSimple;
   const longueurMax = Math.max(...articles.map(a => a.longueur || 0), 0);
   const nbLourds = articles.filter(a => a.lourd).length;
 
@@ -2041,14 +2039,14 @@ function updateEstimationBadge(text, isDevis) {
 
 // ─── SIDEBAR SUMMARY ─────────────────────────────────────────
 function updateSidebar() {
-  const prenom = document.getElementById('client-prenom').value;
-  const nom = document.getElementById('client-nom').value;
-  const tel = document.getElementById('client-tel').value;
-  const adresse = document.getElementById('client-adresse').value;
-  const cp = document.getElementById('client-cp').value;
-  const ville = document.getElementById('client-ville').value;
-  const date = document.getElementById('livraison-date').value;
-  const poids = articles.reduce((s, a) => s + a.poids, 0);
+  const prenom = (document.getElementById('client-prenom')?.value) || '';
+  const nom = (document.getElementById('client-nom')?.value) || '';
+  const tel = (document.getElementById('client-tel')?.value) || '';
+  const adresse = (document.getElementById('client-adresse')?.value) || '';
+  const cp = (document.getElementById('client-cp')?.value) || '';
+  const ville = (document.getElementById('client-ville')?.value) || '';
+  const date = (document.getElementById('livraison-date')?.value) || '';
+  const poids = articles.reduce((s, a) => s + a.poids, 0) || (parseFloat(document.getElementById('poids-total')?.value) || 0);
 
   document.getElementById('sum-client').textContent = [prenom, nom].filter(Boolean).join(' ') || '—';
   document.getElementById('sum-tel').textContent = tel || '—';
@@ -2062,55 +2060,15 @@ function updateSidebar() {
 
 // ─── RÉCAP ───────────────────────────────────────────────────
 function buildRecap() {
-  const prenom = document.getElementById('client-prenom').value;
-  const nom = document.getElementById('client-nom').value;
-  const tel = document.getElementById('client-tel').value;
-  const email = document.getElementById('client-email').value;
-  const adresse = document.getElementById('client-adresse').value;
-  const cp = document.getElementById('client-cp').value;
-  const ville = document.getElementById('client-ville').value;
-  const date = document.getElementById('livraison-date').value;
-  const instructions = document.getElementById('client-instructions').value;
-  const totalPoids = articles.reduce((s, a) => s + a.poids, 0);
-
-  const prixTtc = parseFloat(document.getElementById('p-ttc').textContent) || 0;
-
-  document.getElementById('recap-body').innerHTML = `
-    <div class="recap-section">
-      <div class="recap-header">📍 Enlèvement</div>
-      <div class="recap-body">
-        <div class="recap-row"><span>Magasin</span><span>${MAGASIN.nom}</span></div>
-        <div class="recap-row"><span>Adresse</span><span>${MAGASIN.adresse}, ${MAGASIN.cp} ${MAGASIN.ville}</span></div>
-      </div>
-    </div>
-    <div class="recap-section">
-      <div class="recap-header">👤 Client à livrer</div>
-      <div class="recap-body">
-        <div class="recap-row"><span>Nom</span><span>${prenom} ${nom}</span></div>
-        <div class="recap-row"><span>Téléphone</span><span>${tel}</span></div>
-        ${email ? `<div class="recap-row"><span>Email</span><span>${email}</span></div>` : ''}
-        <div class="recap-row"><span>Adresse</span><span>${adresse}, ${cp} ${ville}</span></div>
-        <div class="recap-row"><span>Date</span><span>${new Date(date).toLocaleDateString('fr-FR')} · ${selectedCreneau}</span></div>
-        <div class="recap-row"><span>Lieu de dépôt</span><span>${selectedLieu}</span></div>
-        ${instructions ? `<div class="recap-row"><span>Instructions</span><span>${instructions}</span></div>` : ''}
-      </div>
-    </div>
-    <div class="recap-section">
-      <div class="recap-header">📦 Articles (${articles.length})</div>
-      <div class="recap-body">
-        ${articles.map((a, i) => `
-          <div class="recap-row">
-            <span>${i+1}. ${a.desc}</span>
-            <span>${a.poids} kg${a.longueur ? ` · ${a.longueur} cm` : ''}</span>
-          </div>
-        `).join('')}
-        <div class="recap-row" style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px">
-          <span><strong>Poids total</strong></span>
-          <span><strong>${totalPoids} kg</strong></span>
-        </div>
-      </div>
-    </div>
-  `;
+  document.getElementById('recap-date').textContent = document.getElementById('livraison-date').value || '—';
+  document.getElementById('recap-creneau').textContent = selectedCreneau || '—';
+  document.getElementById('recap-option').textContent = selectedLieu || '—';
+  document.getElementById('recap-colis').textContent = (document.getElementById('nb-colis')?.value || '0') + ' colis, ' + (document.getElementById('poids-total')?.value || '0') + ' kg';
+  document.getElementById('recap-dest').textContent = (document.getElementById('client-prenom')?.value || '') + ' ' + (document.getElementById('client-nom')?.value || '');
+  document.getElementById('recap-adresse').textContent = document.getElementById('client-adresse')?.value || '—';
+  document.getElementById('recap-tel').textContent = document.getElementById('client-tel')?.value || '—';
+  document.getElementById('recap-desc').textContent = document.getElementById('description-marchandise')?.value || '—';
+  document.getElementById('recap-prix').textContent = document.getElementById('prix-live-val')?.textContent || '— €';
 }
 
 // ─── SUBMIT ──────────────────────────────────────────────────
@@ -2131,11 +2089,16 @@ function resetForm() {
   document.querySelectorAll('input, textarea').forEach(el => { if (el.type !== 'date') el.value = ''; });
   document.querySelectorAll('.creneau-btn, .lieu-btn').forEach(b => b.classList.remove('selected'));
   document.getElementById('livraison-date').value = today;
-  document.getElementById('articles-list').innerHTML = '';
-  document.getElementById('articles-list').appendChild(document.getElementById('empty-articles'));
-  document.getElementById('empty-articles').style.display = 'block';
-  document.getElementById('articles-total').style.display = 'none';
-  document.getElementById('recap-body').style.display = 'flex';
+  const nbColisEl = document.getElementById('nb-colis');
+  if (nbColisEl) nbColisEl.value = '1';
+  const articlesList = document.getElementById('articles-list');
+  if (articlesList) articlesList.innerHTML = '';
+  const emptyArticles = document.getElementById('empty-articles');
+  if (emptyArticles) emptyArticles.style.display = 'block';
+  const articlesTotal = document.getElementById('articles-total');
+  if (articlesTotal) articlesTotal.style.display = 'none';
+  const recapBody = document.getElementById('recap-body');
+  if (recapBody) recapBody.style.display = 'flex';
   document.getElementById('confirm-nav').style.display = 'flex';
   document.getElementById('success-screen').classList.remove('show');
   currentStep = 1;
@@ -2193,7 +2156,7 @@ async function loadSuiviData() {
       todayEl.innerHTML = todayData.map(e => `
         <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-md)">
           <div style="flex:1">
-            <div style="font-weight:600;font-size:13px">${e.destinataire || ''}</div>
+            <div style="font-weight:600;font-size:13px">${e.dest_nom || ''}</div>
             <div style="font-size:12px;color:var(--text-muted)">${e.dest_adresse || ''} ${e.dest_cp || ''} ${e.dest_ville || ''}</div>
           </div>
           ${STATUT_BADGE[e.statut] || STATUT_BADGE.en_attente}
@@ -2212,7 +2175,7 @@ async function loadSuiviData() {
     if (weekData && weekData.length) {
       weekTbody.innerHTML = weekData.map(e => `<tr>
         <td class="mono" style="font-size:12px">${formatDate(e.date)}</td>
-        <td><strong>${e.destinataire || ''}</strong></td>
+        <td><strong>${e.dest_nom || ''}</strong></td>
         <td style="font-size:12px;color:var(--text-muted)">${e.dest_cp || ''} ${e.dest_ville || ''}</td>
         <td>${STATUT_BADGE[e.statut] || ''}</td>
         <td class="mono" style="font-size:12px">${e.prix_ttc ? e.prix_ttc.toFixed(2) + ' \u20ac' : '\u2014'}</td>
