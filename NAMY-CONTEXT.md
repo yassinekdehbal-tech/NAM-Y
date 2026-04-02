@@ -83,6 +83,13 @@ frais_annexes           → Suppléments par grille
 options_livraison       → Options proposées au vendeur
 clients_grilles         → Assignation grille ↔ entreprise + mode devis
 positions_chauffeurs    → GPS temps réel chauffeurs (Realtime activé)
+
+**Colonnes B2C ajoutées à expeditions** :
+- `exp_lat` float, `exp_lng` float — coordonnées enlèvement
+- `type_prestation` text — meuble/demenagement/marketplace/urgent
+- `stripe_payment_intent_id` text — ID paiement Stripe
+- `photos_urls` jsonb — photos de la commande B2C
+- `source` text default 'namy' — namy | fissalivraison
 creneaux_livraison      → Créneaux horaires par entreprise (heure_debut, heure_fin, limite)
 fermetures_namy         → Fermetures globales plateforme (date, raison)
 ```
@@ -291,6 +298,14 @@ const { data } = await db.functions.invoke('create-entreprise', {
 - [x] dashboard-client.html : création vendeur avec entreprise_id dynamique + messages d'erreur explicites
 - [x] dashboard-client.html : fix colonnes date_livraison/dest_nom → date/destinataire
 
+### Session 02/04/2026
+- [x] Migration B2C : colonnes expeditions (exp_lat/lng, type_prestation, stripe_payment_intent_id, photos_urls, source)
+- [x] RLS B2C : INSERT/SELECT anonyme pour source='fissalivraison'
+- [x] Dispatch : section "Commandes B2C à valider" dans l'éditeur (accepter/refuser)
+- [x] Dispatch : badge rouge B2C dans la barre de filtres
+- [x] Dispatch : acceptB2C → statut en_attente + placeholder Stripe capture
+- [x] Dispatch : refuseB2C → statut annulé + motif historique + placeholder Stripe cancel
+
 ### Bugs ouverts
 - [ ] Client : double "Expéditions" dans topbar sur index.html (nav.js + nav locale)
 - [ ] Client : nav admin affichée sur index.html au lieu de nav client
@@ -298,6 +313,8 @@ const { data } = await db.functions.invoke('create-entreprise', {
 - [ ] Création vendeur depuis dashboard-client : entreprise_id parfois null (récupération dynamique ajoutée, à confirmer)
 
 ### À faire
+- [ ] fissalivraison.fr : site B2C frontend (formulaire + paiement Stripe)
+- [ ] Edge Functions Stripe : capture / cancel / webhook
 - [ ] SMS automatique client (Twilio/Vonage)
 - [ ] Import historique ancien NAMY
 - [ ] Nom de domaine nam-y.com

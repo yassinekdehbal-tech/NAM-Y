@@ -245,6 +245,7 @@ body{height:100vh;overflow:hidden;font-size:13px}
 <div class="view-panel" id="view-editor" style="display:none">
   <div class="editor-layout">
     <div class="editor-left">
+      <div id="editor-b2c-validation" style="display:none"></div>
       <div id="editor-unassigned" class="editor-section-urgent"></div>
       <div class="editor-section-title">Tournees du jour</div>
       <div id="editor-tournees-list"></div>
@@ -484,6 +485,9 @@ function mapExpedition(e) {
     lat: e.lat||48.85, lng: e.lng||2.35, creneau: e.creneau||'',
     option: e.lieu||'Piece du choix', poids: e.poids||0, poids_total: e.poids_total||e.poids||0,
     tournee_id: e.tournee_id||null, statut: e.statut||'en_attente', date: e.date,
+    type_prestation: e.type_prestation, prix_ttc: e.prix_ttc, prix_ht: e.prix_ht,
+    stripe_payment_intent_id: e.stripe_payment_intent_id, source: e.source||'namy',
+    expediteur_ville: e.expediteur_ville||'',
   };
 }
 
@@ -786,8 +790,97 @@ document.addEventListener('click', function(e) {
 
 // ─── EDITOR VIEW ────────────────────────────────────────────
 function renderEditor() {
+  renderB2CValidation();
   renderEditorUnassigned();
   renderEditorTournees();
+}
+
+// ─── B2C VALIDATION ─────────────────────────────────────────
+function renderB2CValidation() {
+  const pending = commandes.filter(c => c.statut === 'en_attente_validation');
+  const el = document.getElementById('editor-b2c-validation');
+  if (!el) return;
+
+  // Badge dans la barre de filtres
+  let badge = document.getElementById('b2c-badge');
+  if (!badge) {
+    const filterBar = document.querySelector('.view-tabs') || document.querySelector('.dispatch-header');
+    if (filterBar) {
+      badge = document.createElement('span');
+      badge.id = 'b2c-badge';
+      badge.style.cssText = 'background:var(--danger);color:#fff;padding:2px 8px;border-radius:var(--radius-pill);font-size:11px;font-weight:600;margin-left:8px;display:none';
+      filterBar.appendChild(badge);
+    }
+  }
+  if (badge) {
+    badge.style.display = pending.length > 0 ? 'inline-flex' : 'none';
+    badge.textContent = pending.length + ' B2C';
+  }
+
+  if (pending.length === 0) { el.style.display = 'none'; return; }
+
+  const TYPE_LABELS = { meuble:'Meuble', demenagement:'Demenagement', marketplace:'Marketplace', urgent:'Urgent' };
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="background:var(--danger-bg);border:1px solid rgba(153,27,27,.15);border-radius:var(--radius-md);padding:12px;margin-bottom:12px">
+      <div style="font-size:12px;font-weight:700;color:var(--danger);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <span style="font-size:14px">&#9888;&#65039;</span>
+        Commandes B2C a valider (${pending.length})
+      </div>
+      ${pending.map(c => {
+        const typeLabel = TYPE_LABELS[c.type_prestation] || c.type_prestation || 'Standard';
+        const from = c.expediteur || c.expediteur_ville || '?';
+        const to = c.dest || c.destinataire || '?';
+        const toVille = c.ville || c.dest_ville || '';
+        return `<div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px;font-size:12px">
+          <span style="background:var(--warning-bg);color:var(--warning);padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;white-space:nowrap">${typeLabel}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${from} &#8594; ${to}</div>
+            <div style="color:var(--text-muted);font-size:11px">${toVille} &#183; ${c.poids || '?'}kg &#183; ${c.prix_ttc ? c.prix_ttc.toFixed(2) + ' \\u20ac' : 'Devis'}</div>
+          </div>
+          <button onclick="acceptB2C('${c.id}')" class="btn btn-sm" style="background:var(--success-bg);color:var(--success);border:1px solid rgba(22,101,52,.15);padding:4px 8px;font-size:11px" title="Accepter">&#10003;</button>
+          <button onclick="refuseB2C('${c.id}')" class="btn btn-sm" style="background:var(--danger-bg);color:var(--danger);border:1px solid rgba(153,27,27,.15);padding:4px 8px;font-size:11px" title="Refuser">&#10007;</button>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+async function acceptB2C(id) {
+  const c = commandes.find(x => x.id == id);
+  if (!c) return;
+  c.statut = 'en_attente';
+
+  try {
+    await db.from('expeditions').update({ statut: 'en_attente' }).eq('id', id);
+    // TODO: Stripe capture via Edge Function
+    // await db.functions.invoke('stripe-capture', { body: { payment_intent_id: c.stripe_payment_intent_id } });
+  } catch (e) { console.warn('Accept B2C failed:', e); }
+
+  renderAll();
+  showToast('Commande B2C acceptee');
+}
+
+async function refuseB2C(id) {
+  const motif = prompt('Motif du refus :');
+  if (motif === null) return;
+
+  const c = commandes.find(x => x.id == id);
+  if (!c) return;
+  c.statut = 'annule';
+
+  try {
+    await db.from('expeditions').update({ statut: 'annule' }).eq('id', id);
+    await db.from('historique_expeditions').insert({
+      expedition_id: id, evenement: 'B2C Refuse', commentaire: motif || '', utilisateur: 'Dispatcher'
+    });
+    // TODO: Stripe annulation via Edge Function
+    // await db.functions.invoke('stripe-cancel', { body: { payment_intent_id: c.stripe_payment_intent_id } });
+  } catch (e) { console.warn('Refuse B2C failed:', e); }
+
+  renderAll();
+  showToast('Commande B2C refusee');
 }
 
 function renderEditorUnassigned() {
