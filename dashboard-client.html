@@ -136,7 +136,11 @@
 <!-- LAYOUT WITH SIDEBAR -->
 <div style="display:flex;min-height:calc(100vh - 52px)">
   <!-- SIDEBAR -->
-  <aside id="client-sidebar" style="width:220px;background:#fff;border-right:1px solid #E8EDF3;padding:12px 8px;display:flex;flex-direction:column;gap:2px;flex-shrink:0;transition:width .2s">
+  <aside id="client-sidebar" style="width:220px;background:#fff;border-right:1px solid #E8EDF3;padding:8px;display:flex;flex-direction:column;gap:2px;flex-shrink:0;transition:width .2s">
+    <!-- Toggle en haut -->
+    <button onclick="toggleSidebar()" style="display:flex;align-items:center;justify-content:flex-end;padding:6px 8px;border:none;background:none;cursor:pointer;color:var(--text-muted);margin-bottom:4px">
+      <span id="sb-toggle-icon" style="font-size:14px">◀</span>
+    </button>
     <button class="sb-item active" onclick="switchMainTab('dashboard',this)" data-tab="dashboard">
       <span class="sb-icon">📊</span><span class="sb-label">Tableau de bord</span>
     </button>
@@ -148,10 +152,6 @@
     </button>
     <button class="sb-item" onclick="switchMainTab('settings',this)" data-tab="settings">
       <span class="sb-icon">⚙️</span><span class="sb-label">Paramètres</span>
-    </button>
-    <div style="flex:1"></div>
-    <button onclick="toggleSidebar()" class="sb-item" style="color:var(--text-muted)">
-      <span class="sb-icon" id="sb-toggle-icon">◀</span><span class="sb-label">Réduire</span>
     </button>
   </aside>
   <!-- MAIN CONTENT (wraps all tab panels) -->

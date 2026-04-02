@@ -5,63 +5,49 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const json = (body: object, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 Deno.serve(async (req) => {
-  // Gestion CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    // Vérifier la méthode
     if (req.method !== "POST") {
-      return new Response(
-        JSON.stringify({ error: "Méthode non autorisée" }),
-        { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "Méthode non autorisée" });
     }
 
-    // Récupérer les données du body
     const { email, password, role, prenom, nom, entreprise_id } = await req.json();
 
-    // Validation des champs obligatoires
+    // Validation
     if (!email || !password || !role || !prenom || !nom) {
-      return new Response(
-        JSON.stringify({ error: "Champs obligatoires manquants : email, password, role, prenom, nom" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "Champs obligatoires manquants : email, password, role, prenom, nom" });
     }
 
-    // Validation du rôle
     const rolesAutorises = ["admin", "client", "fournisseur", "dispatcher", "vendeur", "livreur"];
     if (!rolesAutorises.includes(role)) {
-      return new Response(
-        JSON.stringify({ error: `Rôle invalide. Rôles autorisés : ${rolesAutorises.join(", ")}` }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: `Rôle invalide. Autorisés : ${rolesAutorises.join(", ")}` });
     }
 
-    // Validation du mot de passe
     if (password.length < 8) {
-      return new Response(
-        JSON.stringify({ error: "Le mot de passe doit contenir au moins 8 caractères" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "Mot de passe : 8 caractères minimum" });
     }
 
-    // Client Supabase Admin (avec la service_role key)
+    // Client Admin (service_role)
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Vérifier que l'appelant est admin (via le token Authorization)
+    // Vérifier l'appelant
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Token d'authentification requis" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "Token d'authentification requis" });
     }
 
     const supabaseClient = createClient(
@@ -72,27 +58,20 @@ Deno.serve(async (req) => {
 
     const { data: { user: caller }, error: callerError } = await supabaseClient.auth.getUser();
     if (callerError || !caller) {
-      return new Response(
-        JSON.stringify({ error: "Token invalide ou expiré" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "Token invalide ou expiré" });
     }
 
-    // Vérifier que l'appelant est admin ou client
     const { data: callerProfile } = await supabaseAdmin
       .from("utilisateurs")
       .select("role")
       .eq("auth_id", caller.id)
       .single();
 
-    if (!callerProfile || !["admin", "client", "fournisseur"].includes(callerProfile.role)) {
-      return new Response(
-        JSON.stringify({ error: "Droits insuffisants. Seuls les admins, clients et fournisseurs peuvent créer des utilisateurs." }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (!callerProfile || !["admin", "client", "fournisseur", "dispatcher"].includes(callerProfile.role)) {
+      return json({ error: `Droits insuffisants (rôle: ${callerProfile?.role || 'inconnu'})` });
     }
 
-    // 1. Créer l'utilisateur dans Supabase Auth
+    // 1. Créer dans Auth
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -100,15 +79,12 @@ Deno.serve(async (req) => {
     });
 
     if (authError) {
-      return new Response(
-        JSON.stringify({ error: `Erreur Auth : ${authError.message}` }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: `Auth : ${authError.message}` });
     }
 
     const userId = authData.user.id;
 
-    // 2. Créer le profil dans la table utilisateurs
+    // 2. Créer le profil
     const { data: profil, error: profilError } = await supabaseAdmin
       .from("utilisateurs")
       .insert({
@@ -123,35 +99,25 @@ Deno.serve(async (req) => {
       .single();
 
     if (profilError) {
-      // Rollback : supprimer l'utilisateur Auth si le profil échoue
       await supabaseAdmin.auth.admin.deleteUser(userId);
-      return new Response(
-        JSON.stringify({ error: `Erreur profil : ${profilError.message}` }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: `Profil : ${profilError.message}` });
     }
 
     // Succès
-    return new Response(
-      JSON.stringify({
-        message: `Utilisateur ${prenom} ${nom} créé avec succès`,
-        user: {
-          id: profil.id,
-          auth_id: userId,
-          email,
-          role,
-          prenom,
-          nom,
-          entreprise_id: entreprise_id || null,
-        },
-      }),
-      { status: 201, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return json({
+      message: `Utilisateur ${prenom} ${nom} créé avec succès`,
+      user: {
+        id: profil.id,
+        auth_id: userId,
+        email,
+        role,
+        prenom,
+        nom,
+        entreprise_id: entreprise_id || null,
+      },
+    }, 201);
 
   } catch (err) {
-    return new Response(
-      JSON.stringify({ error: `Erreur serveur : ${err.message}` }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return json({ error: `Erreur serveur : ${err.message}` });
   }
 });
