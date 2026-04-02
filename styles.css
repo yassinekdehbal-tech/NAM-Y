@@ -1,24 +1,24 @@
 :root {
-  --bg: #0f1117;
-  --bg-card: #1a1d26;
-  --bg-hover: #22263a;
-  --border: #2a2f42;
-  --text: #e8eaf0;
-  --text-muted: #6b7280;
-  --text-dim: #9ca3af;
-  --primary: #3b82f6;
-  --primary-hover: #2563eb;
+  --bg: #F7F9FC;
+  --bg-card: #FFFFFF;
+  --bg-hover: #F0F3F8;
+  --border: #E8EDF3;
+  --text: #1A2332;
+  --text-muted: #6B7F99;
+  --text-dim: #8A9BB0;
+  --primary: #00C9A7;
+  --primary-hover: #00A389;
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
-  --info: #06b6d4;
+  --info: #3b82f6;
   --ai: #8b5cf6;
   --sidebar-w: 220px;
   --topbar-h: 36px;
   --radius: 8px;
   --radius-lg: 12px;
-  --shadow: 0 1px 3px rgba(0,0,0,0.3);
-  --shadow-lg: 0 4px 24px rgba(0,0,0,0.4);
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-lg: 0 4px 24px rgba(0,0,0,0.1);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,7 +29,7 @@ body {
   color: var(--text);
   font-size: 14px;
   line-height: 1.5;
-  overflow: hidden;
+  overflow: auto;
 }
 
 #app {
@@ -297,21 +297,21 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text-muted);
-  background: rgba(255,255,255,0.02);
+  background: var(--bg-hover);
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
 
 .data-table td {
   padding: 12px 14px;
-  border-bottom: 1px solid rgba(42,47,66,0.5);
+  border-bottom: 1px solid var(--border);
   font-size: 13px;
   vertical-align: middle;
 }
 
 .data-table tbody tr:last-child td { border-bottom: none; }
 
-.data-table tbody tr:hover { background: rgba(59,130,246,0.04); }
+.data-table tbody tr:hover { background: var(--bg-hover); }
 
 .sortable { cursor: pointer; user-select: none; }
 .sortable:hover { color: var(--text); }
@@ -429,7 +429,7 @@ body {
 
 /* ─── MAP ─── */
 .map-placeholder {
-  background: linear-gradient(135deg, #1a2535 0%, #0f1a2b 100%);
+  background: linear-gradient(135deg, #E8EDF3 0%, #F0F3F8 100%);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   position: relative;
@@ -445,7 +445,7 @@ body {
   position: absolute;
   top: 12px;
   right: 12px;
-  background: rgba(0,0,0,0.6);
+  background: rgba(255,255,255,0.9);
   color: var(--text-muted);
   font-size: 11px;
   padding: 4px 10px;
@@ -467,7 +467,7 @@ body {
 .map-pin span {
   font-size: 10px;
   font-family: 'DM Mono', monospace;
-  background: rgba(0,0,0,0.8);
+  background: rgba(26,35,50,0.85);
   color: white;
   padding: 2px 5px;
   border-radius: 4px;
@@ -506,7 +506,7 @@ body {
   font-size: 11px;
   font-weight: 700;
   border: 2px solid white;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 .map-driver-pin.pin-green .driver-avatar { background: var(--success); color: white; }
@@ -515,7 +515,7 @@ body {
 .map-driver-pin span {
   font-size: 10px;
   font-weight: 600;
-  background: rgba(0,0,0,0.75);
+  background: rgba(26,35,50,0.85);
   color: white;
   padding: 2px 6px;
   border-radius: 4px;
@@ -534,7 +534,7 @@ body {
 }
 
 .planning-table th {
-  background: rgba(255,255,255,0.03);
+  background: var(--bg-hover);
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
