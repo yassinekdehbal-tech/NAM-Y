@@ -2234,8 +2234,17 @@ async function loadSuiviData() {
 
 // ─── INIT ───────────────────────────────────────────────────
 const _initUser = typeof getSessionUser === 'function' ? getSessionUser() : null;
-if (!_initUser) { window.location.href = 'login.html'; }
-else { loadVendeurData().then(() => loadDateConstraints()); }
+const _allowedRoles = ['admin','dispatcher','client','dirigeant','vendeur'];
+console.log('[formulaire-vendeur] user:', _initUser?.email, 'role:', _initUser?.role);
+if (!_initUser) {
+  console.warn('[formulaire-vendeur] Pas de session → login');
+  window.location.href = 'login.html';
+} else if (!_allowedRoles.includes(_initUser.role)) {
+  console.warn('[formulaire-vendeur] Rôle non autorisé:', _initUser.role, '→ index');
+  window.location.href = 'index.html';
+} else {
+  loadVendeurData().then(() => loadDateConstraints());
+}
 </script>
 </body>
 </html>
