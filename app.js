@@ -44,6 +44,14 @@ function loadSession() {
   if (btnNew && ['admin','dispatcher','client','dirigeant','vendeur'].includes(role)) {
     btnNew.style.display = 'inline-flex';
   }
+
+  // Masquer filtres Magasin et Chauffeur pour client/vendeur
+  if (['client','dirigeant','vendeur'].includes(role)) {
+    const magasinFilter = document.getElementById('filter-magasin');
+    const chauffeurFilter = document.getElementById('filter-chauffeur');
+    if (magasinFilter) magasinFilter.closest('.filter-group').style.display = 'none';
+    if (chauffeurFilter) chauffeurFilter.closest('.filter-group').style.display = 'none';
+  }
 }
 
 async function logout() {

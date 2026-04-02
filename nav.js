@@ -25,11 +25,11 @@
       { href:'dashboard.html',           label:'Dashboard' },
     ],
     client:      [
-      { href:'formulaire-vendeur.html',  label:'+ Expédition' },
+      { href:'index.html',               label:'Expéditions' },
       { href:'dashboard-client.html',    label:'Mon espace' },
     ],
     dirigeant:   [
-      { href:'formulaire-vendeur.html',  label:'+ Expédition' },
+      { href:'index.html',               label:'Expéditions' },
       { href:'dashboard-client.html',    label:'Mon espace' },
     ],
     vendeur:     [

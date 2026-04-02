@@ -285,11 +285,14 @@
 
 <div class="tab-panel" id="panel-expeditions">
   <div class="dash">
-    <!-- Sub-tabs -->
-    <div style="display:flex;gap:8px;margin-bottom:4px">
-      <button class="per-btn on" onclick="switchExpTab('today',this)">Aujourd'hui</button>
-      <button class="per-btn" onclick="switchExpTab('upcoming',this)">À venir</button>
-      <button class="per-btn" onclick="switchExpTab('history',this)">Historique</button>
+    <!-- Header + create button -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="display:flex;gap:8px">
+        <button class="per-btn on" onclick="switchExpTab('today',this)">Aujourd'hui</button>
+        <button class="per-btn" onclick="switchExpTab('upcoming',this)">À venir</button>
+        <button class="per-btn" onclick="switchExpTab('history',this)">Historique</button>
+      </div>
+      <a href="formulaire-vendeur.html" style="padding:8px 16px;background:var(--accent);color:#fff;border-radius:var(--radius-md);font-size:12px;font-weight:600;text-decoration:none;font-family:var(--font-body)">+ Créer une expédition</a>
     </div>
     <!-- Filters -->
     <div class="filters-row">
@@ -1166,18 +1169,30 @@ async function createVendeur() {
   btn.textContent = 'Création...';
 
   try {
-    const { data: session } = await db.auth.getSession();
-    console.log('[createVendeur] session:', session?.session?.user?.id);
-    console.log('[createVendeur] entreprise_id:', entrepriseId);
+    // Récupérer entreprise_id si null
+    let entId = entrepriseId;
+    if (!entId) {
+      const { data: sess } = await db.auth.getSession();
+      const authId = sess?.session?.user?.id;
+      console.log('[createVendeur] auth_id:', authId);
+      if (authId) {
+        const { data: profil } = await db.from('utilisateurs').select('entreprise_id').eq('auth_id', authId).single();
+        entId = profil?.entreprise_id;
+        if (entId) entrepriseId = entId; // cache for next time
+      }
+    }
+    console.log('[createVendeur] entreprise_id:', entId);
+    if (!entId) throw new Error('entreprise_id introuvable — reconnectez-vous');
 
     const body = {
       email, password, role: 'vendeur', prenom, nom,
-      entreprise_id: entrepriseId
+      entreprise_id: entId
     };
     console.log('[createVendeur] body:', JSON.stringify(body));
 
     const resp = await db.functions.invoke('create-user', { body });
-    console.log('[createVendeur] resp:', JSON.stringify(resp));
+    console.log('[createVendeur] resp.data:', JSON.stringify(resp.data));
+    console.log('[createVendeur] resp.error:', JSON.stringify(resp.error));
 
     if (resp.error) throw new Error(typeof resp.error === 'string' ? resp.error : resp.error.message || JSON.stringify(resp.error));
 
