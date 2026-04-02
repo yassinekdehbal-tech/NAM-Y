@@ -68,7 +68,12 @@
       "Bash(winget search:*)",
       "Bash(git add:*)",
       "Bash(git commit -m ':*)",
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "Bash(grep:*)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//Users/wassila/Downloads/NAM-Y/**)",
+      "Bash(done)"
     ]
   }
 }

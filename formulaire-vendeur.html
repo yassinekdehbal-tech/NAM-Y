@@ -1600,7 +1600,7 @@ async function onDateChange() {
   if (limiteJour > 0 && sessionUser && sessionUser.entreprise_id) {
     try {
       const { count } = await db.from('expeditions').select('*', { count: 'exact', head: true })
-        .eq('entreprise_id', sessionUser.entreprise_id).eq('date_livraison', dateStr);
+        .eq('entreprise_id', sessionUser.entreprise_id).eq('date', dateStr);
       if (count >= limiteJour) {
         warning.style.display = 'block';
         warning.textContent = 'Ce jour est complet (' + count + '/' + limiteJour + ' livraisons)';
@@ -1645,7 +1645,7 @@ async function renderAvailableCreneaux(dateStr) {
       try {
         const { count } = await db.from('expeditions').select('*', { count: 'exact', head: true })
           .eq('entreprise_id', sessionUser.entreprise_id)
-          .eq('date_livraison', dateStr)
+          .eq('date', dateStr)
           .eq('creneau', value);
         if (count >= c.limite_colis) {
           disabled = true;
