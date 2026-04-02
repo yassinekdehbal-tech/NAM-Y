@@ -821,14 +821,14 @@ async function loadChauffeurData() {
     }
 
     // Charger les véhicules
-    const { data: vehicules } = await db.from('vehicules').select('*').order('nom');
+    const { data: vehicules } = await db.from('vehicules').select('*').order('libelle');
     const vehSel = document.getElementById('ci-vehicule');
     if (vehSel) {
       vehSel.innerHTML = '';
       const vList = (vehicules && vehicules.length) ? vehicules : FALLBACK_VEHICULES;
       vList.forEach(v => {
         const opt = document.createElement('option');
-        opt.textContent = `${v.nom} — ${v.plaque}`;
+        opt.textContent = `${v.libelle || v.nom} — ${v.immatriculation || v.plaque}`;
         vehSel.appendChild(opt);
       });
       const other = document.createElement('option');
@@ -873,7 +873,7 @@ async function loadChauffeurData() {
       vehSel.innerHTML = '';
       FALLBACK_VEHICULES.forEach(v => {
         const opt = document.createElement('option');
-        opt.textContent = `${v.nom} — ${v.plaque}`;
+        opt.textContent = `${v.libelle || v.nom} — ${v.immatriculation || v.plaque}`;
         vehSel.appendChild(opt);
       });
       const other = document.createElement('option');

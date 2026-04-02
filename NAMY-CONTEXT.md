@@ -111,8 +111,8 @@ fermetures_namy         → Fermetures globales plateforme (date, raison)
 | Rôle | Ancien nom | Accès | Redirect après login |
 |---|---|---|---|
 | `admin` | admin | Tout — gestion comptes incluse | `dashboard.html` |
-| `client` | dirigeant | Stats enseigne, expéditions, gestion vendeurs | `dashboard-client.html` |
-| `fournisseur` | — (nouveau) | Stats transport, gestion livreurs, tournées | `dashboard-transporteur.html` |
+| `client` | dirigeant | Stats enseigne, expéditions, gestion vendeurs | `dashboard.html` |
+| `fournisseur` | — (nouveau) | Stats transport, gestion livreurs, tournées | `dashboard.html` |
 | `dispatcher` | exploitant | Dispatch, tournées, carte chauffeurs | `dispatch.html` |
 | `vendeur` | vendeur | Création expéditions (son magasin) | `formulaire-vendeur.html` |
 | `livreur` | chauffeur | Tournées assignées, statuts, photos, signatures | `chauffeur.html` |

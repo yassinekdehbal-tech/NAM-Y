@@ -37,9 +37,9 @@ const FALLBACK_ENTREPRISES = [
 ];
 
 const FALLBACK_VEHICULES = [
-  { id: 1, nom: 'Fourgon 12m³', plaque: 'AB456CD' },
-  { id: 2, nom: 'Grand fourgon 20m³', plaque: 'ES105XL' },
-  { id: 3, nom: 'Camion 30m³', plaque: 'GH789IJ' },
+  { id: 1, libelle: 'Fourgon 12m³', immatriculation: 'AB456CD', type: 'fourgon_12' },
+  { id: 2, libelle: 'Grand fourgon 20m³', immatriculation: 'ES105XL', type: 'fourgon_20' },
+  { id: 3, libelle: 'Camion 30m³', immatriculation: 'GH789IJ', type: 'camion_30' },
 ];
 
 const FALLBACK_GRILLES_TARIFAIRES = [
@@ -184,7 +184,7 @@ async function loadFromSupabase() {
     ] = await Promise.allSettled([
       db.from('chauffeurs').select('*').order('id'),
       db.from('entreprises').select('*').order('nom'),
-      db.from('vehicules').select('*').order('nom'),
+      db.from('vehicules').select('*').order('libelle'),
       db.from('grilles_tarifaires').select('*').order('id'),
       db.from('tournees').select('*').order('date_tournee', { ascending: false }),
       db.from('expeditions').select('*').order('id', { ascending: false }),

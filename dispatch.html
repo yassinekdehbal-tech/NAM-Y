@@ -457,7 +457,7 @@ async function loadData() {
     chauffeursList = (chData && chData.length)
       ? chData.filter(c => c.prenom !== 'LIVRAISONS EN ATTENTE' && c.prenom !== 'COURSE ANNULATION').map(c => `${c.prenom} ${c.nom}`.trim())
       : FALLBACK_CHAUFFEURS;
-    vehiculesList  = (vData && vData.length)  ? vData.map(v => v.nom) : FALLBACK_VEHICULES;
+    vehiculesList  = (vData && vData.length)  ? vData.map(v => v.libelle || v.nom) : FALLBACK_VEHICULES;
     entreprisesList= (eData && eData.length)  ? eData.map(e => e.nom) : FALLBACK_ENTREPRISES;
 
     console.log('[DISPATCH] Donnees chargees depuis Supabase');
