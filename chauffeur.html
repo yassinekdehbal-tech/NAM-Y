@@ -549,12 +549,11 @@ canvas#sig-canvas {
       </div>
     </div>
 
-    <div class="form-field">
-      <div class="form-label">🚐 Véhicule utilisé</div>
-      <select class="form-input" id="ci-vehicule">
-        <option>Chargement...</option>
-      </select>
-    </div>
+        <div class="form-group">
+          <label>Immatriculation</label>
+          <input type="text" class="form-input" id="ci-plaque" placeholder="AA-123-AA" style="text-transform:uppercase" maxlength="9" oninput="validatePlaque()">
+          <span id="ci-plaque-error" style="display:none;color:var(--danger);font-size:11px;margin-top:4px">Format requis : AA-123-AA</span>
+        </div>
 
     <button class="btn-big btn-primary" onclick="startDay()">
       ✅ Commencer ma journée
@@ -789,11 +788,6 @@ const FALLBACK_STOPS = [
   { id:10,done:true,  collected:true,  nom:'Craft Kate',       adresse:'Saint-Germain-en-Laye',   cp:'78100', ville:'Saint-Germain',      lat:48.898, lng:2.094, creneau:'09:00-13:00', option:'Pièce du choix', poids:50, desc:'Meubles de jardin',       tel:'0622334455', nb_colis:3,  eta:'✓ Livré', status:'livre' },
 ];
 
-const FALLBACK_VEHICULES = [
-  { libelle: 'Fourgon 20m³', immatriculation: 'ES105XL' },
-  { libelle: 'Fourgon 12m³', immatriculation: 'AB456CD' },
-  { libelle: 'Break', immatriculation: 'CD789EF' },
-];
 
 let STOPS = [...FALLBACK_STOPS];
 
@@ -820,21 +814,17 @@ async function loadChauffeurData() {
       };
     }
 
-    // Charger les véhicules
-    const { data: vehicules } = await db.from('vehicules').select('*').order('libelle');
-    const vehSel = document.getElementById('ci-vehicule');
-    if (vehSel) {
-      vehSel.innerHTML = '';
-      const vList = (vehicules && vehicules.length) ? vehicules : FALLBACK_VEHICULES;
-      vList.forEach(v => {
-        const opt = document.createElement('option');
-        opt.textContent = `${v.libelle || v.nom} — ${v.immatriculation || v.plaque}`;
-        vehSel.appendChild(opt);
-      });
-      const other = document.createElement('option');
-      other.textContent = 'Autre';
-      vehSel.appendChild(other);
+    // Validation plaque immatriculation
+    function validatePlaque() {
+      const input = document.getElementById('ci-plaque');
+      const error = document.getElementById('ci-plaque-error');
+      const val = (input.value || '').trim().toUpperCase();
+      const valid = /^[A-Z]{2}-[0-9]{3}-[A-Z]{2}$/i.test(val);
+      if (val && !valid) { error.style.display = 'block'; input.style.borderColor = 'var(--danger)'; }
+      else { error.style.display = 'none'; input.style.borderColor = ''; }
+      return valid || !val;
     }
+    window.validatePlaque = validatePlaque;
 
     // Charger les stops de la tournée du jour
     if (sessionUser) {
@@ -868,18 +858,6 @@ async function loadChauffeurData() {
   } catch (err) {
     console.warn('[CHAUFFEUR] Erreur Supabase, données locales:', err);
     STOPS = [...FALLBACK_STOPS];
-    const vehSel = document.getElementById('ci-vehicule');
-    if (vehSel) {
-      vehSel.innerHTML = '';
-      FALLBACK_VEHICULES.forEach(v => {
-        const opt = document.createElement('option');
-        opt.textContent = `${v.libelle || v.nom} — ${v.immatriculation || v.plaque}`;
-        vehSel.appendChild(opt);
-      });
-      const other = document.createElement('option');
-      other.textContent = 'Autre';
-      vehSel.appendChild(other);
-    }
   }
 }
 
@@ -903,7 +881,6 @@ async function startDay() {
     plaque: plaque.toUpperCase(),
     debut: document.getElementById('ci-debut').value,
     fin: document.getElementById('ci-fin').value,
-    vehicule: document.getElementById('ci-vehicule').value,
     date: new Date().toISOString().split('T')[0],
   };
 
@@ -915,7 +892,6 @@ async function startDay() {
       heure_debut: checkinData.debut,
       heure_fin_prevue: checkinData.fin,
       plaque: checkinData.plaque,
-      vehicule: checkinData.vehicule,
     }).select().single();
     if (data) checkinData.supabase_id = data.id;
   } catch(e) { console.warn('Check-in save failed:', e); }
@@ -1296,7 +1272,7 @@ async function renderProfil() {
       <div class="ci-body">
         <div class="ci-row"><span>Date</span><span>${checkinData.date}</span></div>
         <div class="ci-row"><span>Plaque</span><span>${checkinData.plaque}</span></div>
-        <div class="ci-row"><span>Véhicule</span><span>${checkinData.vehicule?.split('—')[0]?.trim() || '—'}</span></div>
+        <div class="ci-row"><span>Immatriculation</span><span>${checkinData.plaque || '—'}</span></div>
         <div class="ci-row"><span>Heure début</span><span>${checkinData.debut}</span></div>
         <div class="ci-row"><span>Heure fin prévue</span><span>${checkinData.fin}</span></div>
       </div>

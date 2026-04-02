@@ -66,8 +66,8 @@
 entreprises             → Magasins, plateforme, fournisseurs (type enum)
 utilisateurs            → Profils liés à auth.users (rôle + permissions JSONB)
 parametres_entreprise   → Config par entreprise (jours ouvrés, rayon max, fermetures)
-vehicules               → Parc véhicules
-chauffeurs              → Livreurs (liés à un utilisateur)
+vehicules               → ⚠️ DÉPRÉCIÉE — ne plus utiliser (migration douce)
+chauffeurs              → Livreurs (+ type_vehicule, immatriculation depuis migration)
 expeditions             → Commandes de livraison (table centrale)
 tournees                → Regroupement livraisons par livreur/jour
 tournee_stops           → Étapes d'une tournée (statut, signature, photo)

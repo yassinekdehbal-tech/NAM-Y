@@ -4,7 +4,6 @@ let ENTREPRISES = [];
 let GRILLES_TARIFAIRES = [];
 let TOURNEES = [];
 let EXPEDITIONS = [];
-let VEHICULES = [];
 let PLANNING_DATES = [];
 let PLANNING_DISPO = {};
 let STATS_MAGASINS = [];
@@ -34,12 +33,6 @@ const FALLBACK_ENTREPRISES = [
   { id: 8,  nom: 'TRUFFAUT DOMUS',            adresse: '16 Rue de Lisbonne',        cp: '93110', ville: 'Rosny-sous-Bois',    lat: 48.874, lng: 2.488 },
   { id: 9,  nom: 'TRUFFAUT PARIS RIVE GAUCHE',adresse: '85 Quai de la Gare',        cp: '75013', ville: 'Paris',              lat: 48.832, lng: 2.372 },
   { id: 10, nom: 'TRUFFAUT FOURQUEUX',        adresse: 'Zone d\'activité du Pincé Loup', cp: '78112', ville: 'Saint-Germain-en-Laye', lat: 48.898, lng: 2.082 },
-];
-
-const FALLBACK_VEHICULES = [
-  { id: 1, libelle: 'Fourgon 12m³', immatriculation: 'AB456CD', type: 'fourgon_12' },
-  { id: 2, libelle: 'Grand fourgon 20m³', immatriculation: 'ES105XL', type: 'fourgon_20' },
-  { id: 3, libelle: 'Camion 30m³', immatriculation: 'GH789IJ', type: 'camion_30' },
 ];
 
 const FALLBACK_GRILLES_TARIFAIRES = [
@@ -174,7 +167,6 @@ async function loadFromSupabase() {
     const [
       chauffeursRes,
       entreprisesRes,
-      vehiculesRes,
       grillesRes,
       tourneesRes,
       expeditionsRes,
@@ -184,7 +176,6 @@ async function loadFromSupabase() {
     ] = await Promise.allSettled([
       db.from('chauffeurs').select('*').order('id'),
       db.from('entreprises').select('*').order('nom'),
-      db.from('vehicules').select('*').order('libelle'),
       db.from('grilles_tarifaires').select('*').order('id'),
       db.from('tournees').select('*').order('date_tournee', { ascending: false }),
       db.from('expeditions').select('*').order('id', { ascending: false }),
@@ -198,9 +189,6 @@ async function loadFromSupabase() {
 
     ENTREPRISES = (entreprisesRes.status === 'fulfilled' && entreprisesRes.value.data?.length)
       ? entreprisesRes.value.data : FALLBACK_ENTREPRISES;
-
-    VEHICULES = (vehiculesRes.status === 'fulfilled' && vehiculesRes.value.data?.length)
-      ? vehiculesRes.value.data : FALLBACK_VEHICULES;
 
     GRILLES_TARIFAIRES = (grillesRes.status === 'fulfilled' && grillesRes.value.data?.length)
       ? grillesRes.value.data : FALLBACK_GRILLES_TARIFAIRES;
@@ -238,7 +226,6 @@ async function loadFromSupabase() {
     console.warn('[NAMY] Erreur Supabase, utilisation des données locales:', err);
     CHAUFFEURS = FALLBACK_CHAUFFEURS;
     ENTREPRISES = FALLBACK_ENTREPRISES;
-    VEHICULES = FALLBACK_VEHICULES;
     GRILLES_TARIFAIRES = FALLBACK_GRILLES_TARIFAIRES;
     TOURNEES = FALLBACK_TOURNEES;
     EXPEDITIONS = FALLBACK_EXPEDITIONS;

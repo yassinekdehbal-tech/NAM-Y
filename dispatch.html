@@ -375,7 +375,6 @@ const FALLBACK_TOURNEES = [
 ];
 
 const FALLBACK_CHAUFFEURS = ['TAREK MAKNI','Gore GREENCHARGEUR','Dama TRAORE','Rachid SANOU','Amine EXCEL LIV','Mohamed KLILA'];
-const FALLBACK_VEHICULES  = ['Fourgon 12m3','Grand fourgon 20m3','Camion 30m3'];
 const FALLBACK_ENTREPRISES= ['TRUFFAUT PARIS RIVE GAUCHE','TRUFFAUT LE CHESNAY','TRUFFAUT PLAISIR','TRUFFAUT DOMUS'];
 
 // ─── STATE ──────────────────────────────────────────────────
@@ -448,7 +447,7 @@ async function loadData() {
 
     // Dropdowns
     const { data: chData } = await db.from('chauffeurs').select('*').eq('actif',true);
-    const { data: vData }  = await db.from('vehicules').select('*');
+    const vData = null; // vehicules table deprecated
     const { data: eData }  = await db.from('entreprises').select('nom').order('nom');
 
     commandes = (exps && exps.length) ? exps.map(mapExpedition) : filterByDate(FALLBACK_COMMANDES, date, allMode);
@@ -457,7 +456,7 @@ async function loadData() {
     chauffeursList = (chData && chData.length)
       ? chData.filter(c => c.prenom !== 'LIVRAISONS EN ATTENTE' && c.prenom !== 'COURSE ANNULATION').map(c => `${c.prenom} ${c.nom}`.trim())
       : FALLBACK_CHAUFFEURS;
-    vehiculesList  = (vData && vData.length)  ? vData.map(v => v.libelle || v.nom) : FALLBACK_VEHICULES;
+    vehiculesList  = ['3m³','6m³','12m³','20m³','Hayon'];
     entreprisesList= (eData && eData.length)  ? eData.map(e => e.nom) : FALLBACK_ENTREPRISES;
 
     console.log('[DISPATCH] Donnees chargees depuis Supabase');
@@ -466,7 +465,7 @@ async function loadData() {
     commandes = filterByDate(FALLBACK_COMMANDES, date, allMode);
     tournees  = filterByDate(FALLBACK_TOURNEES, date, allMode);
     chauffeursList = FALLBACK_CHAUFFEURS;
-    vehiculesList  = FALLBACK_VEHICULES;
+    vehiculesList  = ['3m³','6m³','12m³','20m³','Hayon'];
     entreprisesList= FALLBACK_ENTREPRISES;
     showToast('Mode hors ligne - donnees locales','warning');
   }
