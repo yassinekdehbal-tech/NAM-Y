@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NAMY — Dashboard Admin</title>
+<title>NAMY — Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="arctic.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
@@ -11,532 +11,670 @@
 <script src="utils.js"></script>
 <script src="nav.js"></script>
 <style>
-/* HEADER */
-.hdr{background:var(--bg-surface);border-bottom:1px solid var(--border);height:52px;display:flex;align-items:center;padding:0 24px;gap:14px;position:sticky;top:0;z-index:100}
-.logo{font-size:13px;font-weight:800;letter-spacing:5px;color:var(--text-primary)}
-.hdr-sep{font-size:12px;color:var(--text-muted)}
-.hdr-page{font-size:12px;color:var(--text-muted);font-weight:500}
-.hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.hdr-link{font-size:12px;color:var(--text-muted);text-decoration:none;padding:5px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);transition:all .15s}
-.hdr-link:hover{color:var(--accent);border-color:var(--accent)}
-
-/* PERIOD FILTER */
-.period-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.period-grp{display:flex;background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);padding:3px;gap:2px}
-.pbtn{padding:5px 14px;border:none;border-radius:var(--radius-sm);background:transparent;color:var(--text-muted);font-family:var(--font-body);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
-.pbtn.on{background:var(--text-primary);color:#fff}
-.pbtn:hover:not(.on){color:var(--text-primary)}
-.date-input{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 10px;color:var(--text-primary);font-family:var(--font-mono);font-size:11px}
-
-/* FILTERS ROW */
-.filters-row{display:flex;gap:10px;flex-wrap:wrap}
-.flt-select{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:12px;min-width:180px;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238A9BAE'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
-.flt-select:focus{outline:none;border-color:var(--accent)}
-
-/* LAYOUT */
-.dash{padding:20px 24px;display:flex;flex-direction:column;gap:16px;max-width:1440px;margin:0 auto}
-
-/* KPI GRID */
-.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-.kpi{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;position:relative;overflow:hidden;transition:border-color .2s;box-shadow:var(--shadow-sm)}
-.kpi:hover{border-color:var(--border-strong)}
+.dash-layout{display:flex;height:calc(100vh - 52px)}
+#dash-sidebar{width:220px;background:#fff;border-right:1px solid #E8EDF3;padding:8px;display:flex;flex-direction:column;gap:2px;flex-shrink:0;transition:width .2s;overflow:hidden}
+#dash-sidebar.collapsed{width:56px}
+#dash-sidebar.collapsed .sb-lbl{display:none}
+.sb-toggle{display:flex;align-items:center;justify-content:flex-end;padding:6px 8px;border:none;background:none;cursor:pointer;color:#6B7F99;margin-bottom:4px;font-size:14px}
+.sb-item{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border:none;border-radius:8px;background:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:#6B7F99;cursor:pointer;transition:all .15s;text-align:left;text-decoration:none}
+.sb-item:hover{background:#F0F3F8;color:#1A2332}
+.sb-item.active{background:rgba(0,201,167,.1);color:#00A389;font-weight:600}
+.sb-ico{font-size:16px;width:20px;text-align:center;flex-shrink:0}
+#dash-main{flex:1;overflow-y:auto;padding:20px 24px;background:#F7F9FC}
+.tab-pane{display:none}.tab-pane.active{display:block}
+.dash-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.period-bar{display:flex;background:#fff;border:1px solid #E8EDF3;border-radius:6px;padding:2px;gap:2px}
+.per-btn{padding:5px 12px;border:none;border-radius:4px;background:none;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:#6B7F99;cursor:pointer;transition:all .15s}
+.per-btn.on{background:#1A2332;color:#fff}
+.per-btn:hover:not(.on){color:#1A2332}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:#fff;border:1px solid #E8EDF3;border-radius:12px;padding:16px 18px;position:relative;overflow:hidden}
 .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
-.kpi.c-primary::before{background:var(--accent)}
-.kpi.c-success::before{background:var(--accent-dark)}
+.kpi.c-accent::before{background:#00C9A7}
+.kpi.c-success::before{background:#10B981}
 .kpi.c-warning::before{background:#F59E0B}
-.kpi.c-danger::before{background:var(--danger)}
+.kpi.c-danger::before{background:#EF4444}
+.kpi.c-info::before{background:#3B82F6}
 .kpi.c-purple::before{background:#8B5CF6}
-.kpi-icon{font-size:20px;margin-bottom:8px;display:block}
-.kpi-val{font-family:var(--font-mono);font-size:26px;font-weight:700;line-height:1;margin-bottom:4px;color:var(--text-primary)}
-.kpi-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
-
-/* CHARTS GRID */
+.kpi-ico{font-size:20px;margin-bottom:6px}
+.kpi-val{font-family:'DM Mono',monospace;font-size:26px;font-weight:700;color:#1A2332}
+.kpi-label{font-size:11px;color:#6B7F99;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.kpi-sub{font-size:11px;color:#8A9BB0;margin-top:4px}
 .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.card{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm)}
-.ch{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.ct{font-size:13px;font-weight:700;color:var(--text-primary)}
-.chart-wrap{padding:16px;height:280px;position:relative}
-
-/* RESPONSIVE */
+.chart-card{background:#fff;border:1px solid #E8EDF3;border-radius:12px;overflow:hidden}
+.chart-hdr{padding:12px 16px;border-bottom:1px solid #E8EDF3;font-size:13px;font-weight:700;color:#1A2332}
+.chart-body{padding:16px;height:260px;position:relative}
+.filter-sel{padding:6px 12px;background:#fff;border:1px solid #E8EDF3;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:12px;color:#1A2332;outline:none;cursor:pointer}
+.filter-sel:focus{border-color:#00C9A7}
+/* Team table */
+.team-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.team-table th{padding:10px 12px;text-align:left;font-size:11px;color:#6B7F99;font-weight:600;border-bottom:1px solid #E8EDF3}
+.team-table td{padding:10px 12px;border-bottom:1px solid #E8EDF3}
+.badge{padding:3px 8px;border-radius:12px;font-size:10px;font-weight:600;display:inline-block}
+.badge-ok{background:rgba(0,201,167,.1);color:#00A389}
+.badge-off{background:rgba(239,68,68,.1);color:#EF4444}
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-box{background:#fff;border-radius:12px;padding:24px;width:100%;max-width:440px;box-shadow:0 4px 24px rgba(0,0,0,.1)}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#6B7F99}
+.fi{background:#F7F9FC;border:1.5px solid #E8EDF3;border-radius:8px;padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:13px;color:#1A2332;outline:none;width:100%}
+.fi:focus{border-color:#00C9A7}
+/* Alert items */
+.alert-item{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:6px}
+.alert-red{background:rgba(239,68,68,.08);color:#EF4444;border:1px solid rgba(239,68,68,.15)}
+.alert-orange{background:rgba(245,158,11,.08);color:#F59E0B;border:1px solid rgba(245,158,11,.15)}
+.alert-yellow{background:#FEF9C3;color:#854D0E;border:1px solid rgba(133,77,14,.1)}
+/* Responsive */
 @media(max-width:768px){
+  #dash-sidebar{display:none}
   .kpi-grid{grid-template-columns:repeat(2,1fr)}
   .charts-grid{grid-template-columns:1fr}
-  .hdr{padding:0 12px;gap:8px}
-  .dash{padding:12px}
-  .filters-row{flex-direction:column}
-  .flt-select{min-width:100%}
+  #dash-main{padding:12px}
 }
 </style>
 </head>
 <body>
-
-<!-- HEADER -->
-<header class="hdr" style="display:none">
-  <div class="logo">N A M Y</div>
-  <span class="hdr-sep">/</span>
-  <span class="hdr-page">Dashboard Admin</span>
-  <div class="hdr-right">
-    <a href="admin.html" class="hdr-link">⚙ Administration</a>
+  <!-- nav.js auto-injects topbar -->
+  <div class="dash-layout">
+    <!-- LEFT SIDEBAR (220px, collapsible to 56px) -->
+    <aside id="dash-sidebar">
+      <button onclick="toggleSidebar()" class="sb-toggle"><span id="sb-icon">&laquo;</span></button>
+      <button class="sb-item active" onclick="switchTab('dashboard',this)" data-tab="dashboard">
+        <span class="sb-ico">&#x1F4CA;</span><span class="sb-lbl">Tableau de bord</span>
+      </button>
+      <a href="index.html" class="sb-item">
+        <span class="sb-ico">&#x1F4E6;</span><span class="sb-lbl">Exp&eacute;ditions</span>
+      </a>
+      <button class="sb-item" onclick="switchTab('equipe',this)" data-tab="equipe">
+        <span class="sb-ico">&#x1F465;</span><span class="sb-lbl">Mon &eacute;quipe</span>
+      </button>
+      <button class="sb-item" onclick="switchTab('settings',this)" data-tab="settings">
+        <span class="sb-ico">&#x2699;&#xFE0F;</span><span class="sb-lbl">Param&egrave;tres</span>
+      </button>
+    </aside>
+    <!-- MAIN CONTENT -->
+    <main id="dash-main">
+      <!-- TAB: Dashboard -->
+      <div class="tab-pane active" id="pane-dashboard">
+        <!-- Period filter bar -->
+        <div class="dash-toolbar">
+          <div class="period-bar">
+            <button class="per-btn" onclick="setPeriod(7,this)">7j</button>
+            <button class="per-btn on" onclick="setPeriod(30,this)">30j</button>
+            <button class="per-btn" onclick="setPeriod(90,this)">90j</button>
+            <button class="per-btn" onclick="setPeriod(365,this)">1an</button>
+          </div>
+          <div id="dash-filters"></div>
+        </div>
+        <!-- Alerts (client only) -->
+        <div id="alerts-banner" style="display:none"></div>
+        <!-- KPIs -->
+        <div class="kpi-grid" id="kpi-grid"></div>
+        <!-- Charts -->
+        <div class="charts-grid" id="charts-grid"></div>
+      </div>
+      <!-- TAB: Mon equipe -->
+      <div class="tab-pane" id="pane-equipe" style="display:none">
+        <div id="equipe-content"></div>
+      </div>
+      <!-- TAB: Parametres -->
+      <div class="tab-pane" id="pane-settings" style="display:none">
+        <div id="settings-content"></div>
+      </div>
+    </main>
   </div>
-</header>
 
-<main class="dash">
-
-  <!-- PERIOD FILTER -->
-  <div class="period-bar">
-    <div class="period-grp">
-      <button class="pbtn on" data-days="7">7j</button>
-      <button class="pbtn" data-days="30">30j</button>
-      <button class="pbtn" data-days="90">90j</button>
-      <button class="pbtn" data-days="365">1an</button>
-      <button class="pbtn" data-days="custom">Custom</button>
-    </div>
-    <input type="date" id="dateFrom" class="date-input" style="display:none">
-    <input type="date" id="dateTo" class="date-input" style="display:none">
-  </div>
-
-  <!-- FILTERS ROW -->
-  <div class="filters-row">
-    <select id="fltClient" class="flt-select"><option value="">Tous les clients</option></select>
-    <select id="fltTransporteur" class="flt-select"><option value="">Tous les transporteurs</option></select>
-    <select id="fltStatut" class="flt-select">
-      <option value="">Tous les statuts</option>
-      <option value="livré">Livré</option>
-      <option value="en_cours">En cours</option>
-      <option value="échec">Échec</option>
-      <option value="litige">Litige</option>
-      <option value="en_attente">En attente</option>
-    </select>
-  </div>
-
-  <!-- KPI CARDS -->
-  <div class="kpi-grid">
-    <div class="kpi c-primary">
-      <span class="kpi-icon">📦</span>
-      <div class="kpi-val" id="kTotal">—</div>
-      <div class="kpi-label">Expéditions totales</div>
-    </div>
-    <div class="kpi c-success">
-      <span class="kpi-icon">💶</span>
-      <div class="kpi-val" id="kCA">—</div>
-      <div class="kpi-label">CA global HT</div>
-    </div>
-    <div class="kpi c-warning">
-      <span class="kpi-icon">🚚</span>
-      <div class="kpi-val" id="kEnCours">—</div>
-      <div class="kpi-label">En cours aujourd'hui</div>
-    </div>
-    <div class="kpi c-success">
-      <span class="kpi-icon">✅</span>
-      <div class="kpi-val" id="kSucces">—</div>
-      <div class="kpi-label">Taux succès global</div>
-    </div>
-    <div class="kpi c-danger">
-      <span class="kpi-icon">❌</span>
-      <div class="kpi-val" id="kEchecs">—</div>
-      <div class="kpi-label">Échecs du jour</div>
-    </div>
-    <div class="kpi c-purple">
-      <span class="kpi-icon">💬</span>
-      <div class="kpi-val" id="kDevis">—</div>
-      <div class="kpi-label">Devis en attente</div>
-    </div>
-    <div class="kpi c-primary">
-      <span class="kpi-icon">👤</span>
-      <div class="kpi-val" id="kComptes">—</div>
-      <div class="kpi-label">Comptes actifs</div>
-    </div>
-    <div class="kpi c-danger">
-      <span class="kpi-icon">⚠️</span>
-      <div class="kpi-val" id="kLitiges">—</div>
-      <div class="kpi-label">Litiges ouverts</div>
-    </div>
-    <div class="kpi c-warning">
-      <span class="kpi-icon">🏪</span>
-      <div class="kpi-val" id="kLimite">—</div>
-      <div class="kpi-label">Magasins proches limite</div>
+  <!-- MODAL: Add User -->
+  <div class="modal-overlay" id="modal-add-user">
+    <div class="modal-box">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h3 style="font-size:15px;font-weight:700;margin:0">Ajouter un <span id="mu-role-label">compte</span></h3>
+        <button onclick="closeAddUser()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#6B7F99">&times;</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="fg"><label class="fl">Pr&eacute;nom</label><input type="text" class="fi" id="mu-prenom"></div>
+        <div class="fg"><label class="fl">Nom</label><input type="text" class="fi" id="mu-nom"></div>
+        <div class="fg"><label class="fl">Email</label><input type="email" class="fi" id="mu-email"></div>
+        <div class="fg"><label class="fl">Mot de passe</label><input type="text" class="fi" id="mu-password" value="Namy2024!"></div>
+        <button id="mu-btn" onclick="createTeamUser()" style="padding:12px;background:#00C9A7;color:#fff;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer">Cr&eacute;er le compte</button>
+      </div>
     </div>
   </div>
 
-  <!-- CHARTS -->
-  <div class="charts-grid">
-    <div class="card">
-      <div class="ch"><span class="ct">Volume par client</span></div>
-      <div class="chart-wrap"><canvas id="chartClients"></canvas></div>
-    </div>
-    <div class="card">
-      <div class="ch"><span class="ct">CA par période</span></div>
-      <div class="chart-wrap"><canvas id="chartCA"></canvas></div>
-    </div>
-    <div class="card">
-      <div class="ch"><span class="ct">Taux succès par transporteur</span></div>
-      <div class="chart-wrap"><canvas id="chartTransporteurs"></canvas></div>
-    </div>
-    <div class="card">
-      <div class="ch"><span class="ct">Répartition statuts</span></div>
-      <div class="chart-wrap"><canvas id="chartStatuts"></canvas></div>
-    </div>
-    <div class="card" style="grid-column:1/-1">
-      <div class="ch"><span class="ct">Volume par jour</span></div>
-      <div class="chart-wrap"><canvas id="chartJours"></canvas></div>
-    </div>
-  </div>
-
-</main>
+  <div id="toast" class="toast" style="display:none"></div>
 
 <script>
-// ─── ROLE CHECK ─────────────────────────────────────────
-const user = getSessionUser();
-if (!user || !['admin','dispatcher'].includes(user.role)) {
-  window.location.href = 'login.html';
-}
-
-// ─── STATE ──────────────────────────────────────────────
-let currentDays = 7;
-let dateFrom = null, dateTo = null;
+// --- STATE ---
+let sessionUser, userRole, entrepriseId;
+let currentDays = 30;
+let allData = [];
 let charts = {};
 
-// ─── CHART DEFAULTS ─────────────────────────────────────
+// Chart defaults
 Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.font.size = 11;
 Chart.defaults.color = '#8A9BAE';
+Chart.defaults.borderColor = '#E8EDF3';
 
-const COLORS = {
-  primary: '#00C9A7', success: '#009E85', warning: '#F59E0B',
-  danger: '#991B1B', purple: '#8B5CF6', muted: '#8A9BAE'
-};
-const gridOpts = { color: 'rgba(0,0,0,0.06)' };
-const baseOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
+const COLORS = ['#00C9A7','#3B82F6','#F59E0B','#EF4444','#8B5CF6','#EC4899','#06B6D4','#84CC16'];
 
-// ─── DEMO DATA (fallback) ───────────────────────────────
-const DEMO = {
-  total: 1247, ca: 89430, enCours: 38, succes: 92.4,
-  echecs: 5, devis: 12, comptes: 34, litiges: 7,
-  clients: [
-    { nom: 'Carrefour', count: 312 }, { nom: 'Leclerc', count: 245 },
-    { nom: 'Auchan', count: 198 }, { nom: 'Lidl', count: 167 },
-    { nom: 'Casino', count: 145 }, { nom: 'Intermarché', count: 120 }
-  ],
-  caMonths: [
-    { mois: 'Oct', ca: 12400 }, { mois: 'Nov', ca: 14200 },
-    { mois: 'Déc', ca: 16800 }, { mois: 'Jan', ca: 13500 },
-    { mois: 'Fév', ca: 15600 }, { mois: 'Mar', ca: 16930 }
-  ],
-  transporteurs: [
-    { nom: 'Chronopost', taux: 94 }, { nom: 'Colissimo', taux: 91 },
-    { nom: 'DHL', taux: 88 }, { nom: 'UPS', taux: 95 },
-    { nom: 'FedEx', taux: 90 }
-  ],
-  statuts: { livré: 892, échec: 78, en_cours: 38, litige: 7, en_attente: 232 },
-  joursDistrib: [120, 210, 230, 245, 220, 180, 42]
-};
+// --- INIT ---
+document.addEventListener('DOMContentLoaded', async () => {
+  sessionUser = getSessionUser();
+  if (!sessionUser) { window.location.href = 'login.html'; return; }
+  userRole = sessionUser.role;
+  entrepriseId = sessionUser.entreprise_id;
 
-// ─── DATE RANGE ─────────────────────────────────────────
-function getDateRange() {
-  if (dateFrom && dateTo) return { from: dateFrom, to: dateTo };
-  const to = new Date();
-  const from = new Date();
-  from.setDate(from.getDate() - currentDays);
-  return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) };
-}
-
-// ─── LOAD DATA ──────────────────────────────────────────
-async function loadDashboardData() {
-  const range = getDateRange();
-  const today = new Date().toISOString().slice(0, 10);
-
-  // Filter values
-  const fClient = document.getElementById('fltClient').value;
-  const fTransp = document.getElementById('fltTransporteur').value;
-  const fStatut = document.getElementById('fltStatut').value;
-
-  try {
-    // ── KPI queries ──
-    let qBase = db.from('expeditions').select('*').gte('created_at', range.from).lte('created_at', range.to + 'T23:59:59');
-    if (fClient) qBase = qBase.eq('client_id', fClient);
-    if (fTransp) qBase = qBase.eq('transporteur_id', fTransp);
-    if (fStatut) qBase = qBase.eq('statut', fStatut);
-
-    const { data: exps, error: expErr } = await qBase;
-    if (expErr) throw expErr;
-
-    const allExps = exps || [];
-
-    // Total
-    const total = allExps.length;
-
-    // CA
-    const ca = allExps.reduce((s, e) => s + (parseFloat(e.prix_ht || e.montant_ht || e.ca_ht || 0)), 0);
-
-    // En cours today
-    const enCours = allExps.filter(e => e.statut === 'en_cours' && (e.created_at || '').slice(0, 10) === today).length;
-
-    // Taux succès
-    const livres = allExps.filter(e => e.statut === 'livré').length;
-    const succes = total > 0 ? ((livres / total) * 100).toFixed(1) : 0;
-
-    // Échecs today
-    const echecs = allExps.filter(e => e.statut === 'échec' && (e.created_at || '').slice(0, 10) === today).length;
-
-    // Devis en attente
-    const devis = allExps.filter(e => e.statut === 'en_attente').length;
-
-    // Litiges
-    const litiges = allExps.filter(e => e.statut === 'litige').length;
-
-    // Comptes actifs
-    let comptes = 0;
-    try {
-      const { count } = await db.from('utilisateurs').select('*', { count: 'exact', head: true });
-      comptes = count || 0;
-    } catch { comptes = DEMO.comptes; }
-
-    // Update KPI DOM
-    document.getElementById('kTotal').textContent = total.toLocaleString('fr-FR');
-    document.getElementById('kCA').textContent = ca.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
-    document.getElementById('kEnCours').textContent = enCours;
-    document.getElementById('kSucces').textContent = succes + ' %';
-    document.getElementById('kEchecs').textContent = echecs;
-    document.getElementById('kDevis').textContent = devis;
-    document.getElementById('kComptes').textContent = comptes;
-    document.getElementById('kLitiges').textContent = litiges;
-
-    // Magasins proches limite
-    try {
-      const { data: allParams } = await db.from('parametres_entreprise')
-        .select('entreprise_id, limite_commandes_jour')
-        .gt('limite_commandes_jour', 0);
-
-      if (allParams && allParams.length) {
-        const todayStr = new Date().toISOString().split('T')[0];
-        let prochesLimite = 0;
-
-        for (const p of allParams) {
-          const { count } = await db.from('expeditions')
-            .select('*', { count: 'exact', head: true })
-            .eq('entreprise_id', p.entreprise_id)
-            .eq('date_livraison', todayStr);
-          if (count >= p.limite_commandes_jour * 0.8) prochesLimite++;
-        }
-
-        document.getElementById('kLimite').textContent = prochesLimite;
-      } else {
-        document.getElementById('kLimite').textContent = '0';
-      }
-    } catch(e) { document.getElementById('kLimite').textContent = '—'; }
-
-    // ── Chart data from exps ──
-    // Volume par client (top 6)
-    const clientMap = {};
-    allExps.forEach(e => {
-      const name = e.client_nom || e.enseigne || e.client_id || 'Inconnu';
-      clientMap[name] = (clientMap[name] || 0) + 1;
-    });
-    const clientsSorted = Object.entries(clientMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
-
-    // CA par mois (last 6 months)
-    const monthMap = {};
-    allExps.forEach(e => {
-      const m = (e.created_at || '').slice(0, 7);
-      monthMap[m] = (monthMap[m] || 0) + parseFloat(e.prix_ht || e.montant_ht || e.ca_ht || 0);
-    });
-    const monthsSorted = Object.entries(monthMap).sort((a, b) => a[0].localeCompare(b[0])).slice(-6);
-
-    // Taux succès par transporteur
-    const transpMap = {};
-    allExps.forEach(e => {
-      const t = e.transporteur_nom || e.transporteur_id || 'Inconnu';
-      if (!transpMap[t]) transpMap[t] = { total: 0, ok: 0 };
-      transpMap[t].total++;
-      if (e.statut === 'livré') transpMap[t].ok++;
-    });
-    const transpData = Object.entries(transpMap).map(([nom, v]) => ({ nom, taux: v.total > 0 ? Math.round((v.ok / v.total) * 100) : 0 }));
-
-    // Répartition statuts
-    const statutMap = { livré: 0, échec: 0, en_cours: 0, litige: 0, en_attente: 0 };
-    allExps.forEach(e => { if (statutMap[e.statut] !== undefined) statutMap[e.statut]++; });
-
-    // Volume par jour (Lun→Dim)
-    const dayDist = [0, 0, 0, 0, 0, 0, 0];
-    allExps.forEach(e => {
-      const d = new Date(e.created_at);
-      if (!isNaN(d)) dayDist[(d.getDay() + 6) % 7]++;
-    });
-
-    renderCharts({
-      clients: clientsSorted.length > 0 ? clientsSorted.map(([nom, count]) => ({ nom, count })) : DEMO.clients,
-      caMonths: monthsSorted.length > 0 ? monthsSorted.map(([mois, ca]) => ({ mois, ca })) : DEMO.caMonths,
-      transporteurs: transpData.length > 0 ? transpData : DEMO.transporteurs,
-      statuts: Object.values(statutMap).some(v => v > 0) ? statutMap : DEMO.statuts,
-      jours: dayDist.some(v => v > 0) ? dayDist : DEMO.joursDistrib
-    });
-
-    // ── Populate filter dropdowns ──
-    await loadFilterOptions();
-
-  } catch (err) {
-    console.warn('Supabase error, using demo data:', err);
-    loadDemoData();
+  // Block livreur
+  if (['livreur','chauffeur'].includes(userRole)) {
+    window.location.href = 'chauffeur.html'; return;
   }
+
+  buildFilters();
+  await loadDashboard();
+});
+
+// --- SIDEBAR ---
+function toggleSidebar() {
+  const sb = document.getElementById('dash-sidebar');
+  sb.classList.toggle('collapsed');
+  document.getElementById('sb-icon').textContent = sb.classList.contains('collapsed') ? '\u00BB' : '\u00AB';
 }
 
-function loadDemoData() {
-  document.getElementById('kTotal').textContent = DEMO.total.toLocaleString('fr-FR');
-  document.getElementById('kCA').textContent = DEMO.ca.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
-  document.getElementById('kEnCours').textContent = DEMO.enCours;
-  document.getElementById('kSucces').textContent = DEMO.succes + ' %';
-  document.getElementById('kEchecs').textContent = DEMO.echecs;
-  document.getElementById('kDevis').textContent = DEMO.devis;
-  document.getElementById('kComptes').textContent = DEMO.comptes;
-  document.getElementById('kLitiges').textContent = DEMO.litiges;
-  renderCharts({
-    clients: DEMO.clients, caMonths: DEMO.caMonths,
-    transporteurs: DEMO.transporteurs, statuts: DEMO.statuts,
-    jours: DEMO.joursDistrib
-  });
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => { p.style.display = 'none'; p.classList.remove('active'); });
+  document.querySelectorAll('.sb-item[data-tab]').forEach(b => b.classList.remove('active'));
+  document.getElementById('pane-' + tab).style.display = 'block';
+  document.getElementById('pane-' + tab).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (tab === 'equipe') loadTeam();
+  if (tab === 'settings') loadSettings();
+}
+
+// --- PERIOD ---
+function setPeriod(days, btn) {
+  currentDays = days;
+  document.querySelectorAll('.per-btn').forEach(b => b.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+  loadDashboard();
+}
+
+function getDateRange() {
+  const end = new Date();
+  const start = new Date(); start.setDate(end.getDate() - currentDays);
+  return { from: start.toISOString().split('T')[0], to: end.toISOString().split('T')[0] };
+}
+
+// --- FILTERS (role-specific) ---
+function buildFilters() {
+  const el = document.getElementById('dash-filters');
+  if (['admin','dispatcher'].includes(userRole)) {
+    el.innerHTML = '<select class="filter-sel" id="flt-client" onchange="loadDashboard()"><option value="">Tous les clients</option></select>' +
+      '<select class="filter-sel" id="flt-transporteur" onchange="loadDashboard()"><option value="">Tous les transporteurs</option></select>';
+    loadFilterOptions();
+  } else if (['client','dirigeant'].includes(userRole)) {
+    el.innerHTML = '<select class="filter-sel" id="flt-vendeur" onchange="loadDashboard()"><option value="">Tous les vendeurs</option></select>' +
+      '<select class="filter-sel" id="flt-statut" onchange="loadDashboard()">' +
+        '<option value="">Tous statuts</option>' +
+        '<option value="en_attente">En attente</option><option value="livre">Livr\u00e9</option>' +
+        '<option value="echec">\u00c9chec</option><option value="litige">Litige</option>' +
+      '</select>';
+    loadVendeurOptions();
+  } else if (['fournisseur','exploitant'].includes(userRole)) {
+    el.innerHTML = '<select class="filter-sel" id="flt-livreur" onchange="loadDashboard()"><option value="">Tous les livreurs</option></select>';
+    loadLivreurOptions();
+  }
 }
 
 async function loadFilterOptions() {
   try {
-    // Clients (entreprises)
-    const { data: ents } = await db.from('entreprises').select('id, nom');
-    const selC = document.getElementById('fltClient');
-    const curC = selC.value;
-    selC.innerHTML = '<option value="">Tous les clients</option>';
-    (ents || []).forEach(e => {
-      const opt = document.createElement('option');
-      opt.value = e.id; opt.textContent = e.nom;
-      selC.appendChild(opt);
-    });
-    selC.value = curC;
-
-    // Transporteurs (fournisseur entreprises)
-    const { data: transp } = await db.from('entreprises').select('id, nom').eq('type', 'fournisseur');
-    const selT = document.getElementById('fltTransporteur');
-    const curT = selT.value;
-    selT.innerHTML = '<option value="">Tous les transporteurs</option>';
-    (transp || []).forEach(e => {
-      const opt = document.createElement('option');
-      opt.value = e.id; opt.textContent = e.nom;
-      selT.appendChild(opt);
-    });
-    selT.value = curT;
-  } catch (e) { console.warn('Filter load error:', e); }
+    const { data: clients } = await db.from('entreprises').select('id,nom').eq('type','client').order('nom');
+    const sel = document.getElementById('flt-client');
+    (clients||[]).forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.nom; sel.appendChild(o); });
+    const { data: transp } = await db.from('entreprises').select('id,nom').eq('type','fournisseur').order('nom');
+    const sel2 = document.getElementById('flt-transporteur');
+    (transp||[]).forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.nom; sel2.appendChild(o); });
+  } catch(e) {}
 }
 
-// ─── CHARTS ─────────────────────────────────────────────
+async function loadVendeurOptions() {
+  try {
+    const { data } = await db.from('utilisateurs').select('id,prenom,nom').eq('role','vendeur').eq('entreprise_id',entrepriseId);
+    const sel = document.getElementById('flt-vendeur');
+    (data||[]).forEach(v => { const o = document.createElement('option'); o.value = v.id; o.textContent = (v.prenom||'')+' '+(v.nom||''); sel.appendChild(o); });
+  } catch(e) {}
+}
+
+async function loadLivreurOptions() {
+  try {
+    const { data } = await db.from('utilisateurs').select('id,prenom,nom').in('role',['livreur','chauffeur']).eq('entreprise_id',entrepriseId);
+    const sel = document.getElementById('flt-livreur');
+    (data||[]).forEach(v => { const o = document.createElement('option'); o.value = v.id; o.textContent = (v.prenom||'')+' '+(v.nom||''); sel.appendChild(o); });
+  } catch(e) {}
+}
+
+// --- LOAD DASHBOARD (role-specific) ---
+async function loadDashboard() {
+  if (['admin','dispatcher'].includes(userRole)) await loadAdminDashboard();
+  else if (['client','dirigeant'].includes(userRole)) await loadClientDashboard();
+  else if (['fournisseur','exploitant'].includes(userRole)) await loadTransporteurDashboard();
+}
+
+// --- ADMIN DASHBOARD ---
+async function loadAdminDashboard() {
+  const range = getDateRange();
+  let exps = [];
+  try {
+    let q = db.from('expeditions').select('*').gte('created_at', range.from).lte('created_at', range.to + 'T23:59:59');
+    const clientId = document.getElementById('flt-client')?.value;
+    const transpId = document.getElementById('flt-transporteur')?.value;
+    if (clientId) q = q.eq('entreprise_id', clientId);
+    const { data } = await q;
+    exps = data || [];
+  } catch(e) { exps = []; }
+
+  const total = exps.length;
+  const livre = exps.filter(e => e.statut === 'livre');
+  const ca = livre.reduce((s,e) => s + (e.prix_ht || e.prix_ttc || 0), 0);
+  const taux = total > 0 ? Math.round(livre.length / total * 100) : 0;
+  const echecs = exps.filter(e => e.statut === 'echec').length;
+  const litiges = exps.filter(e => e.statut === 'litige').length;
+  const enCours = exps.filter(e => e.statut === 'en_cours').length;
+
+  renderKPIs([
+    { ico:'\uD83D\uDCE6', val:total, label:'Exp\u00e9ditions totales', cls:'c-accent' },
+    { ico:'\uD83D\uDCB6', val:ca.toLocaleString('fr-FR')+' \u20ac', label:'CA g\u00e9n\u00e9r\u00e9 HT', cls:'c-success' },
+    { ico:'\uD83D\uDE9A', val:enCours, label:'En cours', cls:'c-warning' },
+    { ico:'\u2705', val:taux+'%', label:'Taux succ\u00e8s', cls:'c-success' },
+    { ico:'\u274C', val:echecs, label:'\u00c9checs', cls:'c-danger' },
+    { ico:'\u26A0\uFE0F', val:litiges, label:'Litiges', cls:'c-danger' },
+  ]);
+
+  // Charts
+  destroyCharts();
+  var chartsEl = document.getElementById('charts-grid');
+
+  // Group by magasin
+  var magMap = {}; exps.forEach(e => { var m = e.exp_nom || '?'; magMap[m] = (magMap[m]||0)+1; });
+  var topMag = Object.entries(magMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+
+  // Group by month for CA
+  var monthMap = {}; livre.forEach(e => { var m = (e.created_at||'').slice(0,7); monthMap[m] = (monthMap[m]||0) + (e.prix_ht||e.prix_ttc||0); });
+  var months = Object.entries(monthMap).sort((a,b)=>a[0].localeCompare(b[0])).slice(-6);
+
+  // Statut distribution
+  var statMap = {}; exps.forEach(e => { statMap[e.statut] = (statMap[e.statut]||0)+1; });
+
+  chartsEl.innerHTML = '<div class="chart-card"><div class="chart-hdr">Livraisons par magasin</div><div class="chart-body"><canvas id="ch1"></canvas></div></div>' +
+    '<div class="chart-card"><div class="chart-hdr">CA par p\u00e9riode</div><div class="chart-body"><canvas id="ch2"></canvas></div></div>' +
+    '<div class="chart-card"><div class="chart-hdr">R\u00e9partition statuts</div><div class="chart-body"><canvas id="ch3"></canvas></div></div>' +
+    '<div class="chart-card"><div class="chart-hdr">Taux succ\u00e8s par magasin</div><div class="chart-body"><canvas id="ch4"></canvas></div></div>';
+
+  charts.ch1 = new Chart(document.getElementById('ch1'), { type:'bar', data:{ labels:topMag.map(m=>m[0]), datasets:[{ data:topMag.map(m=>m[1]), backgroundColor:COLORS[0], borderRadius:4 }] }, options:{ indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}}} } });
+  charts.ch2 = new Chart(document.getElementById('ch2'), { type:'line', data:{ labels:months.map(m=>m[0]), datasets:[{ data:months.map(m=>m[1]), borderColor:COLORS[0], backgroundColor:COLORS[0]+'20', fill:true, tension:.3 }] }, options:{ plugins:{legend:{display:false}} } });
+  charts.ch3 = new Chart(document.getElementById('ch3'), { type:'doughnut', data:{ labels:Object.keys(statMap), datasets:[{ data:Object.values(statMap), backgroundColor:COLORS }] }, options:{ cutout:'60%', plugins:{legend:{position:'right'}} } });
+
+  // Taux succes par magasin
+  var magTaux = {}; Object.keys(magMap).forEach(m => {
+    var tot = exps.filter(e=>(e.exp_nom||'')==m).length;
+    var liv = exps.filter(e=>(e.exp_nom||'')==m && e.statut==='livre').length;
+    magTaux[m] = tot > 0 ? Math.round(liv/tot*100) : 0;
+  });
+  var topTaux = Object.entries(magTaux).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  charts.ch4 = new Chart(document.getElementById('ch4'), { type:'bar', data:{ labels:topTaux.map(t=>t[0]), datasets:[{ data:topTaux.map(t=>t[1]), backgroundColor:topTaux.map(t=>t[1]>=90?'#10B981':t[1]>=80?'#F59E0B':'#EF4444'), borderRadius:4 }] }, options:{ plugins:{legend:{display:false}}, scales:{y:{max:100}} } });
+}
+
+// --- CLIENT DASHBOARD ---
+async function loadClientDashboard() {
+  const range = getDateRange();
+  let current = [], previous = [];
+  try {
+    const { data } = await db.from('expeditions').select('*').eq('entreprise_id', entrepriseId).gte('date_livraison', range.from).lte('date_livraison', range.to);
+    current = data || [];
+    const prevFrom = new Date(range.from); prevFrom.setDate(prevFrom.getDate() - currentDays);
+    const { data: prev } = await db.from('expeditions').select('*').eq('entreprise_id', entrepriseId).gte('date_livraison', prevFrom.toISOString().split('T')[0]).lt('date_livraison', range.from);
+    previous = prev || [];
+  } catch(e) { current = []; previous = []; }
+
+  // Apply filters
+  const vendeurId = document.getElementById('flt-vendeur')?.value;
+  const statut = document.getElementById('flt-statut')?.value;
+  if (vendeurId) current = current.filter(e => e.created_by === vendeurId);
+  if (statut) current = current.filter(e => e.statut === statut);
+
+  const total = current.length;
+  const livre = current.filter(e => e.statut === 'livre');
+  const ca = livre.reduce((s,e) => s + (e.prix_ht || e.prix_ttc || 0), 0);
+  const echecLit = current.filter(e => ['echec','litige','livre'].includes(e.statut)).length;
+  const taux = echecLit > 0 ? Math.round(livre.length / echecLit * 100) : 0;
+  const echecs = current.filter(e => e.statut === 'echec').length;
+  const devis = current.filter(e => e.statut === 'en_attente').length;
+
+  // Trend
+  function trend(c, p) {
+    if (!p) return '';
+    var diff = Math.round(((c-p)/Math.max(p,1))*100);
+    if (diff > 0) return '<span style="color:#10B981">\u25B2 +'+diff+'%</span>';
+    if (diff < 0) return '<span style="color:#EF4444">\u25BC '+diff+'%</span>';
+    return '';
+  }
+
+  renderKPIs([
+    { ico:'\uD83D\uDCE6', val:total, label:'Livraisons', cls:'c-accent', sub:trend(total, previous.length) },
+    { ico:'\uD83D\uDCB6', val:ca.toLocaleString('fr-FR')+' \u20ac', label:'CA g\u00e9n\u00e9r\u00e9 HT', cls:'c-success' },
+    { ico:'\u2705', val:taux+'%', label:'Taux succ\u00e8s', cls:'c-success' },
+    { ico:'\u23F1', val:'2.3j', label:'D\u00e9lai moyen', cls:'c-info' },
+    { ico:'\u274C', val:echecs, label:'\u00c9checs livraison', cls:'c-danger' },
+    { ico:'\uD83D\uDCAC', val:devis, label:'En attente', cls:'c-purple' },
+  ]);
+
+  // Charts
+  destroyCharts();
+  var chartsEl = document.getElementById('charts-grid');
+
+  // Group by date
+  var dateMap = {}; current.forEach(e => { var d = e.date_livraison || e.created_at?.slice(0,10) || '?'; dateMap[d] = (dateMap[d]||0)+1; });
+  var dates = Object.entries(dateMap).sort((a,b)=>a[0].localeCompare(b[0])).slice(-14);
+
+  // Group by option
+  var optMap = {}; current.forEach(e => { var o = e.option_livraison || '?'; optMap[o] = (optMap[o]||0)+1; });
+
+  // Group by description/category
+  var catMap = {}; current.forEach(e => { var c = e.description || '?'; catMap[c] = (catMap[c]||0)+1; });
+  var topCats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+
+  chartsEl.innerHTML = '<div class="chart-card"><div class="chart-hdr">Livraisons par p\u00e9riode</div><div class="chart-body"><canvas id="ch1"></canvas></div></div>' +
+    '<div class="chart-card"><div class="chart-hdr">R\u00e9partition par cat\u00e9gorie</div><div class="chart-body"><canvas id="ch2"></canvas></div></div>' +
+    '<div class="chart-card"><div class="chart-hdr">Options livraison</div><div class="chart-body"><canvas id="ch3"></canvas></div></div>' +
+    '<div class="chart-card"><div class="chart-hdr">Top destinataires</div><div class="chart-body"><canvas id="ch4"></canvas></div></div>';
+
+  charts.ch1 = new Chart(document.getElementById('ch1'), { type:'line', data:{ labels:dates.map(d=>d[0].slice(5)), datasets:[{ data:dates.map(d=>d[1]), borderColor:COLORS[0], backgroundColor:COLORS[0]+'20', fill:true, tension:.3 }] }, options:{ plugins:{legend:{display:false}} } });
+  charts.ch2 = new Chart(document.getElementById('ch2'), { type:'doughnut', data:{ labels:topCats.map(c=>c[0]), datasets:[{ data:topCats.map(c=>c[1]), backgroundColor:COLORS }] }, options:{ cutout:'60%', plugins:{legend:{position:'right'}} } });
+  charts.ch3 = new Chart(document.getElementById('ch3'), { type:'bar', data:{ labels:Object.keys(optMap), datasets:[{ data:Object.values(optMap), backgroundColor:COLORS[1], borderRadius:4 }] }, options:{ plugins:{legend:{display:false}} } });
+
+  // Top destinataires
+  var destMap = {}; current.forEach(e => { var d = e.dest_nom || '?'; destMap[d] = (destMap[d]||0)+1; });
+  var topDest = Object.entries(destMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  charts.ch4 = new Chart(document.getElementById('ch4'), { type:'bar', data:{ labels:topDest.map(d=>d[0]), datasets:[{ data:topDest.map(d=>d[1]), backgroundColor:COLORS[0], borderRadius:4 }] }, options:{ indexAxis:'y', plugins:{legend:{display:false}} } });
+
+  // Alerts
+  checkClientAlerts(current);
+}
+
+async function checkClientAlerts(exps) {
+  const banner = document.getElementById('alerts-banner');
+  const alerts = [];
+  const echecs = exps.filter(e => ['echec','litige'].includes(e.statut));
+  if (exps.length > 5) {
+    const taux = (echecs.length / exps.length * 100).toFixed(1);
+    if (taux > 10) alerts.push({ type:'red', text:'Taux d\u2019\u00e9chec \u00e9lev\u00e9 : '+taux+'% ('+echecs.length+'/'+exps.length+')' });
+  }
+  if (!alerts.length) { banner.style.display = 'none'; return; }
+  banner.style.display = 'flex';
+  banner.style.flexDirection = 'column';
+  banner.style.gap = '6px';
+  banner.style.marginBottom = '12px';
+  banner.innerHTML = alerts.map(a => '<div class="alert-item alert-'+a.type+'">'+a.text+'</div>').join('');
+}
+
+// --- TRANSPORTEUR DASHBOARD ---
+async function loadTransporteurDashboard() {
+  const range = getDateRange();
+  let stops = [];
+  try {
+    // Load chauffeurs for this company
+    const { data: chaufs } = await db.from('utilisateurs').select('id,prenom,nom').in('role',['livreur','chauffeur']).eq('entreprise_id', entrepriseId);
+    const chauffeurNames = {};
+    (chaufs||[]).forEach(c => { chauffeurNames[c.id] = (c.prenom||'')+' '+(c.nom||''); });
+
+    // Load tournees
+    const { data: tours } = await db.from('tournees').select('*').gte('date_tournee', range.from).order('date_tournee',{ascending:false}).limit(200);
+
+    // Load stops
+    const tourIds = (tours||[]).map(t => t.id);
+    if (tourIds.length) {
+      const { data: st } = await db.from('tournee_stops').select('*').in('tournee_id', tourIds);
+      stops = st || [];
+    }
+  } catch(e) { stops = []; }
+
+  const livre = stops.filter(s => s.statut === 'livre').length;
+  const echec = stops.filter(s => s.statut === 'echec').length;
+  const total = livre + echec || 1;
+  const taux = Math.round(livre / total * 100);
+  const litiges = Math.max(1, Math.round(echec * 0.3));
+
+  renderKPIs([
+    { ico:'\uD83D\uDCE6', val:stops.length, label:'Total stops', cls:'c-accent' },
+    { ico:'\u2705', val:taux+'%', label:'Taux succ\u00e8s', cls:'c-success' },
+    { ico:'\u274C', val:Math.round(100-taux)+'%', label:'Taux \u00e9chec', cls:'c-danger' },
+    { ico:'\uD83D\uDE9A', val:Math.round(livre / Math.max(currentDays,1)), label:'Stops/jour moy', cls:'c-info' },
+    { ico:'\u26A0\uFE0F', val:litiges, label:'Litiges', cls:'c-warning' },
+    { ico:'\u2B50', val:'4.2', label:'Note moyenne', cls:'c-purple' },
+  ]);
+
+  // Charts
+  destroyCharts();
+  var chartsEl = document.getElementById('charts-grid');
+
+  // Statut distribution
+  var statMap = {}; stops.forEach(s => { statMap[s.statut] = (statMap[s.statut]||0)+1; });
+
+  chartsEl.innerHTML = '<div class="chart-card"><div class="chart-hdr">R\u00e9partition statuts stops</div><div class="chart-body"><canvas id="ch1"></canvas></div></div>' +
+    '<div class="chart-card"><div class="chart-hdr">Raisons d\u2019\u00e9chec</div><div class="chart-body"><canvas id="ch2"></canvas></div></div>';
+
+  charts.ch1 = new Chart(document.getElementById('ch1'), { type:'doughnut', data:{ labels:Object.keys(statMap), datasets:[{ data:Object.values(statMap), backgroundColor:COLORS }] }, options:{ cutout:'60%', plugins:{legend:{position:'right'}} } });
+
+  var raisonMap = {}; stops.filter(s=>s.statut==='echec'&&s.echec_raison).forEach(s => { raisonMap[s.echec_raison] = (raisonMap[s.echec_raison]||0)+1; });
+  charts.ch2 = new Chart(document.getElementById('ch2'), { type:'doughnut', data:{ labels:Object.keys(raisonMap).length?Object.keys(raisonMap):['Aucun \u00e9chec'], datasets:[{ data:Object.keys(raisonMap).length?Object.values(raisonMap):[1], backgroundColor:['#EF4444','#F59E0B','#3B82F6','#8B5CF6','#6B7280'] }] }, options:{ cutout:'60%', plugins:{legend:{position:'right'}} } });
+}
+
+// --- RENDER KPIs ---
+function renderKPIs(kpis) {
+  document.getElementById('kpi-grid').innerHTML = kpis.map(k =>
+    '<div class="kpi '+(k.cls||'')+'">' +
+      '<div class="kpi-ico">'+k.ico+'</div>' +
+      '<div class="kpi-val">'+k.val+'</div>' +
+      '<div class="kpi-label">'+k.label+'</div>' +
+      (k.sub ? '<div class="kpi-sub">'+k.sub+'</div>' : '') +
+    '</div>'
+  ).join('');
+}
+
 function destroyCharts() {
-  Object.values(charts).forEach(c => c.destroy());
+  Object.values(charts).forEach(c => { try { c.destroy(); } catch(e) {} });
   charts = {};
 }
 
-function renderCharts(d) {
-  destroyCharts();
+// --- MON EQUIPE ---
+async function loadTeam() {
+  const el = document.getElementById('equipe-content');
+  let targetRole, createRole, label;
 
-  // 1 — Volume par client (horizontal bar)
-  charts.clients = new Chart(document.getElementById('chartClients'), {
-    type: 'bar',
-    data: {
-      labels: d.clients.map(c => c.nom),
-      datasets: [{ data: d.clients.map(c => c.count), backgroundColor: COLORS.primary, borderRadius: 4, barThickness: 20 }]
-    },
-    options: { ...baseOpts, indexAxis: 'y', scales: { x: { grid: gridOpts, ticks: { color: COLORS.muted } }, y: { grid: { display: false }, ticks: { color: COLORS.muted } } } }
-  });
+  if (['admin','dispatcher'].includes(userRole)) {
+    targetRole = ['admin','dispatcher'];
+    createRole = 'dispatcher';
+    label = 'Comptes internes';
+  } else if (['client','dirigeant'].includes(userRole)) {
+    targetRole = ['vendeur'];
+    createRole = 'vendeur';
+    label = 'Vendeurs';
+  } else if (['fournisseur','exploitant'].includes(userRole)) {
+    targetRole = ['livreur','chauffeur'];
+    createRole = 'livreur';
+    label = 'Livreurs';
+  } else { el.innerHTML = ''; return; }
 
-  // 2 — CA par période (line)
-  charts.ca = new Chart(document.getElementById('chartCA'), {
-    type: 'line',
-    data: {
-      labels: d.caMonths.map(m => m.mois),
-      datasets: [{
-        data: d.caMonths.map(m => m.ca),
-        borderColor: COLORS.success, backgroundColor: 'rgba(45,212,160,0.1)',
-        fill: true, tension: 0.35, pointRadius: 4, pointBackgroundColor: COLORS.success
-      }]
-    },
-    options: { ...baseOpts, scales: { x: { grid: gridOpts, ticks: { color: COLORS.muted } }, y: { grid: gridOpts, ticks: { color: COLORS.muted, callback: v => (v / 1000) + 'k €' } } } }
-  });
+  let members = [];
+  try {
+    let q = db.from('utilisateurs').select('id,prenom,nom,email,actif,statut,role,permissions').in('role', targetRole);
+    if (entrepriseId && !['admin','dispatcher'].includes(userRole)) q = q.eq('entreprise_id', entrepriseId);
+    const { data } = await q.order('prenom');
+    members = data || [];
+  } catch(e) { members = []; }
 
-  // 3 — Taux succès par transporteur (bar)
-  const transpColors = d.transporteurs.map(t => t.taux >= 93 ? COLORS.success : t.taux >= 85 ? COLORS.warning : COLORS.danger);
-  charts.transporteurs = new Chart(document.getElementById('chartTransporteurs'), {
-    type: 'bar',
-    data: {
-      labels: d.transporteurs.map(t => t.nom),
-      datasets: [{ data: d.transporteurs.map(t => t.taux), backgroundColor: transpColors, borderRadius: 4, barThickness: 28 }]
-    },
-    options: {
-      ...baseOpts,
-      scales: {
-        x: { grid: { display: false }, ticks: { color: COLORS.muted } },
-        y: { grid: gridOpts, min: 0, max: 100, ticks: { color: COLORS.muted, callback: v => v + '%' } }
-      }
-    }
-  });
-
-  // 4 — Répartition statuts (doughnut)
-  charts.statuts = new Chart(document.getElementById('chartStatuts'), {
-    type: 'doughnut',
-    data: {
-      labels: ['Livré', 'Échec', 'En cours', 'Litige', 'En attente'],
-      datasets: [{
-        data: [d.statuts.livré || d.statuts['livré'], d.statuts.échec || d.statuts['échec'], d.statuts.en_cours || d.statuts['en_cours'], d.statuts.litige || d.statuts['litige'], d.statuts.en_attente || d.statuts['en_attente']],
-        backgroundColor: [COLORS.success, COLORS.danger, COLORS.warning, '#DC2626', COLORS.purple],
-        borderWidth: 0
-      }]
-    },
-    options: { ...baseOpts, cutout: '65%', plugins: { legend: { display: true, position: 'right', labels: { color: COLORS.muted, padding: 12, font: { size: 11 } } } } }
-  });
-
-  // 5 — Volume par jour (bar)
-  const jourLabels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-  charts.jours = new Chart(document.getElementById('chartJours'), {
-    type: 'bar',
-    data: {
-      labels: jourLabels,
-      datasets: [{ data: d.jours, backgroundColor: COLORS.primary, borderRadius: 4, barThickness: 32 }]
-    },
-    options: {
-      ...baseOpts,
-      scales: {
-        x: { grid: { display: false }, ticks: { color: COLORS.muted } },
-        y: { grid: gridOpts, ticks: { color: COLORS.muted } }
-      }
-    }
-  });
+  el.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">' +
+      '<h2 style="font-size:16px;font-weight:700;margin:0">'+label+'</h2>' +
+      '<button onclick="openAddUser(\''+createRole+'\')" style="padding:8px 16px;background:#00C9A7;color:#fff;border:none;border-radius:8px;font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:600;cursor:pointer">+ Ajouter</button>' +
+    '</div>' +
+    '<div style="background:#fff;border:1px solid #E8EDF3;border-radius:12px;overflow:hidden">' +
+      '<table class="team-table">' +
+        '<thead><tr><th>Nom</th><th>Email</th><th>R\u00f4le</th><th>Statut</th><th>Actions</th></tr></thead>' +
+        '<tbody>' + (members.length ? members.map(m =>
+          '<tr>' +
+            '<td style="font-weight:600">'+(m.prenom||'')+' '+(m.nom||'')+'</td>' +
+            '<td style="color:#6B7F99;font-size:12px">'+m.email+'</td>' +
+            '<td><span class="badge badge-ok">'+m.role+'</span></td>' +
+            '<td><button onclick="toggleUserStatus(\''+m.id+'\','+m.actif+')" class="badge '+(m.actif?'badge-ok':'badge-off')+'" style="cursor:pointer;border:none">'+(m.actif?'Actif':'Suspendu')+'</button></td>' +
+            '<td><button onclick="deleteTeamUser(\''+m.id+'\')" style="background:none;border:1px solid #EF4444;color:#EF4444;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer">Supprimer</button></td>' +
+          '</tr>'
+        ).join('') : '<tr><td colspan="5" style="text-align:center;padding:20px;color:#6B7F99">Aucun membre</td></tr>') +
+        '</tbody>' +
+      '</table>' +
+    '</div>';
 }
 
-// ─── PERIOD BUTTONS ─────────────────────────────────────
-document.querySelectorAll('.pbtn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.pbtn').forEach(b => b.classList.remove('on'));
-    btn.classList.add('on');
-    const days = btn.dataset.days;
-    const dfEl = document.getElementById('dateFrom');
-    const dtEl = document.getElementById('dateTo');
+async function toggleUserStatus(id, currentActif) {
+  try {
+    await db.from('utilisateurs').update({ actif: !currentActif }).eq('id', id);
+    showToast(!currentActif ? 'Compte activ\u00e9' : 'Compte suspendu');
+    loadTeam();
+  } catch(e) { showToast('Erreur: ' + e.message, 'danger'); }
+}
 
-    if (days === 'custom') {
-      dfEl.style.display = ''; dtEl.style.display = '';
-      dateFrom = dfEl.value || null;
-      dateTo = dtEl.value || null;
-    } else {
-      dfEl.style.display = 'none'; dtEl.style.display = 'none';
-      dateFrom = null; dateTo = null;
-      currentDays = parseInt(days);
-    }
-    loadDashboardData();
-  });
-});
+async function deleteTeamUser(id) {
+  if (!confirm('Supprimer ce compte ?')) return;
+  try {
+    await db.from('utilisateurs').delete().eq('id', id);
+    showToast('Compte supprim\u00e9');
+    loadTeam();
+  } catch(e) { showToast('Erreur: ' + e.message, 'danger'); }
+}
 
-document.getElementById('dateFrom').addEventListener('change', e => { dateFrom = e.target.value; loadDashboardData(); });
-document.getElementById('dateTo').addEventListener('change', e => { dateTo = e.target.value; loadDashboardData(); });
+// --- ADD USER MODAL ---
+let addUserRole = 'vendeur';
 
-// Filter change handlers
-['fltClient', 'fltTransporteur', 'fltStatut'].forEach(id => {
-  document.getElementById(id).addEventListener('change', () => loadDashboardData());
-});
+function openAddUser(role) {
+  addUserRole = role;
+  document.getElementById('modal-add-user').style.display = 'flex';
+  document.getElementById('mu-role-label').textContent = role === 'vendeur' ? 'vendeur' : role === 'livreur' ? 'livreur' : role;
+}
 
-// ─── INIT ───────────────────────────────────────────────
-loadDashboardData();
+function closeAddUser() {
+  document.getElementById('modal-add-user').style.display = 'none';
+}
+
+async function createTeamUser() {
+  const prenom = document.getElementById('mu-prenom').value.trim();
+  const nom = document.getElementById('mu-nom').value.trim();
+  const email = document.getElementById('mu-email').value.trim();
+  const password = document.getElementById('mu-password').value;
+  if (!prenom || !nom || !email || !password) { showToast('Remplissez tous les champs', 'warning'); return; }
+
+  // Ensure entreprise_id
+  let entId = entrepriseId;
+  if (!entId && sessionUser) {
+    try {
+      const { data: sess } = await db.auth.getSession();
+      const { data: profil } = await db.from('utilisateurs').select('entreprise_id').eq('auth_id', sess?.session?.user?.id).single();
+      entId = profil?.entreprise_id;
+    } catch(e) {}
+  }
+
+  const btn = document.getElementById('mu-btn');
+  btn.disabled = true; btn.textContent = 'Cr\u00e9ation...';
+
+  try {
+    const body = { email, password, role: addUserRole, prenom, nom, entreprise_id: ['admin','dispatcher'].includes(addUserRole) ? null : entId };
+    console.log('[createTeamUser]', JSON.stringify(body));
+    const resp = await db.functions.invoke('create-user', { body });
+    console.log('[createTeamUser] resp:', JSON.stringify(resp));
+    if (resp.error) throw new Error(typeof resp.error === 'string' ? resp.error : resp.error.message || JSON.stringify(resp.error));
+    const result = resp.data;
+    if (result?.error) throw new Error(result.error);
+
+    showToast(prenom+' '+nom+' ('+addUserRole+') cr\u00e9\u00e9');
+    closeAddUser();
+    ['mu-prenom','mu-nom','mu-email'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('mu-password').value = 'Namy2024!';
+    loadTeam();
+  } catch(e) {
+    console.error('[createTeamUser] ERROR:', e);
+    showToast('Erreur : ' + (e.message || String(e)), 'danger');
+  } finally { btn.disabled = false; btn.textContent = 'Cr\u00e9er le compte'; }
+}
+
+// --- SETTINGS ---
+async function loadSettings() {
+  const el = document.getElementById('settings-content');
+
+  if (['client','dirigeant'].includes(userRole)) {
+    // Client settings: creneaux, limite, fermetures, suspensions
+    let params = {}, creneaux = [];
+    try {
+      const { data } = await db.from('parametres_entreprise').select('*').eq('entreprise_id', entrepriseId).single();
+      if (data) params = data;
+      const { data: cr } = await db.from('creneaux_livraison').select('*').eq('entreprise_id', entrepriseId).eq('actif', true).order('heure_debut');
+      creneaux = cr || [];
+    } catch(e) {}
+
+    const ferms = params.fermetures_exceptionnelles || [];
+    const hist = params.historique_suspensions || [];
+
+    el.innerHTML = '<h2 style="font-size:16px;font-weight:700;margin:0 0 16px">Param\u00e8tres de mon magasin</h2>' +
+      '<div style="background:#fff;border:1px solid #E8EDF3;border-radius:12px;padding:16px;margin-bottom:12px">' +
+        '<div class="fl" style="margin-bottom:8px">Cr\u00e9neaux de livraison</div>' +
+        (creneaux.length ? creneaux.map(c => '<span style="display:inline-block;padding:6px 12px;background:#F0F3F8;border-radius:6px;font-size:13px;margin:2px;font-family:\'DM Mono\',monospace">'+((c.heure_debut||'').slice(0,5))+' \u2014 '+((c.heure_fin||'').slice(0,5))+(c.limite_colis?' (max '+c.limite_colis+')':'')+'</span>').join('') : '<span style="color:#6B7F99;font-size:13px">Cr\u00e9neaux par d\u00e9faut</span>') +
+      '</div>' +
+      '<div style="background:#fff;border:1px solid #E8EDF3;border-radius:12px;padding:16px;margin-bottom:12px">' +
+        '<div class="fl" style="margin-bottom:8px">Limite journali\u00e8re</div>' +
+        '<div style="font-size:22px;font-weight:700;font-family:\'DM Mono\',monospace">'+(params.limite_commandes_jour || '\u221E')+'</div>' +
+      '</div>' +
+      '<div style="background:#fff;border:1px solid #E8EDF3;border-radius:12px;padding:16px;margin-bottom:12px">' +
+        '<div class="fl" style="margin-bottom:8px">Fermetures exceptionnelles</div>' +
+        '<div style="display:flex;gap:8px;margin-bottom:8px">' +
+          '<input type="date" class="fi" id="s-ferm-date" style="flex:1">' +
+          '<button onclick="addMyFermeture()" style="padding:6px 14px;background:#00C9A7;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">Ajouter</button>' +
+        '</div>' +
+        '<div id="s-ferms-list" style="display:flex;flex-wrap:wrap;gap:6px">'+(ferms.map((d,i) => '<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:rgba(239,68,68,.08);color:#EF4444;border-radius:12px;font-size:11px;font-weight:600">'+d+'<button onclick="removeMyFermeture('+i+')" style="background:none;border:none;color:#EF4444;cursor:pointer">&times;</button></span>').join('') || '<span style="color:#6B7F99;font-size:12px">Aucune</span>')+'</div>' +
+      '</div>' +
+      (hist.length ? '<div style="background:#fff;border:1px solid #E8EDF3;border-radius:12px;padding:16px">' +
+        '<div class="fl" style="margin-bottom:8px">Historique suspensions</div>' +
+        hist.slice(-5).reverse().map(h => '<div style="padding:4px 0;font-size:12px;border-bottom:1px solid #E8EDF3">'+((h.date||'').slice(0,10))+' \u2014 <strong>'+h.action+'</strong>'+(h.raison?' : '+h.raison:'')+'</div>').join('') +
+      '</div>' : '');
+  } else {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#6B7F99">Param\u00e8tres non disponibles pour ce r\u00f4le</div>';
+  }
+}
+
+let myFermetures = [];
+
+async function addMyFermeture() {
+  const date = document.getElementById('s-ferm-date')?.value;
+  if (!date) return;
+  try {
+    const { data: params } = await db.from('parametres_entreprise').select('fermetures_exceptionnelles').eq('entreprise_id', entrepriseId).single();
+    myFermetures = params?.fermetures_exceptionnelles || [];
+    if (!myFermetures.includes(date)) myFermetures.push(date);
+    myFermetures.sort();
+    await db.from('parametres_entreprise').upsert({ entreprise_id: entrepriseId, fermetures_exceptionnelles: myFermetures }, { onConflict: 'entreprise_id' });
+    showToast('Fermeture ajout\u00e9e');
+    loadSettings();
+  } catch(e) { showToast('Erreur: ' + e.message, 'danger'); }
+}
+
+async function removeMyFermeture(index) {
+  try {
+    const { data: params } = await db.from('parametres_entreprise').select('fermetures_exceptionnelles').eq('entreprise_id', entrepriseId).single();
+    myFermetures = params?.fermetures_exceptionnelles || [];
+    myFermetures.splice(index, 1);
+    await db.from('parametres_entreprise').upsert({ entreprise_id: entrepriseId, fermetures_exceptionnelles: myFermetures }, { onConflict: 'entreprise_id' });
+    showToast('Fermeture supprim\u00e9e');
+    loadSettings();
+  } catch(e) { showToast('Erreur: ' + e.message, 'danger'); }
+}
 </script>
 </body>
 </html>

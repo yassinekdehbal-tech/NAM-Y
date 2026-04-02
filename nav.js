@@ -26,11 +26,11 @@
     ],
     client:      [
       { href:'index.html',               label:'Expéditions' },
-      { href:'dashboard-client.html',    label:'Mon espace' },
+      { href:'dashboard.html',    label:'Mon espace' },
     ],
     dirigeant:   [
       { href:'index.html',               label:'Expéditions' },
-      { href:'dashboard-client.html',    label:'Mon espace' },
+      { href:'dashboard.html',    label:'Mon espace' },
     ],
     vendeur:     [
       { href:'index.html',               label:'Expéditions' },
@@ -38,11 +38,11 @@
     ],
     fournisseur: [
       { href:'index.html',                    label:'Expéditions' },
-      { href:'dashboard-transporteur.html',   label:'Mon espace' },
+      { href:'dashboard.html',   label:'Mon espace' },
     ],
     exploitant:  [
       { href:'index.html',                    label:'Expéditions' },
-      { href:'dashboard-transporteur.html',   label:'Mon espace' },
+      { href:'dashboard.html',   label:'Mon espace' },
     ],
   };
 

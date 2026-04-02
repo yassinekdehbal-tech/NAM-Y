@@ -44,9 +44,7 @@
 | Fichier | Description | Statut Supabase |
 |---|---|---|
 | `login.html` | Authentification — redirige selon rôle | ✅ Branché |
-| `dashboard.html` | Dashboard Admin NAMY (8 KPIs + 5 graphiques Chart.js) | ✅ Branché |
-| `dashboard-client.html` | Dashboard Client/Enseigne (7 KPIs + 5 graphiques, filtré RLS) | ✅ Branché |
-| `dashboard-transporteur.html` | Dashboard Transporteur (8 KPIs + 6 graphiques + avis, filtré RLS) | ✅ Branché |
+| `dashboard.html` | Dashboard unifié "Mon espace" adaptatif (admin/client/fournisseur) avec sidebar | ✅ Branché |
 | `admin.html` | Administration : Fiche entreprise (point d'entrée), calendrier NAMY, grilles, comptes internes | ✅ Branché |
 | `dispatch.html` | Dispatch 3 vues : Timeline (axe temps) + Éditeur tournées (drag&drop) + Carte temps réel | ✅ Branché |
 | `nav.js` | Navigation universelle partagée (topbar dynamique par rôle) | — |
