@@ -359,6 +359,11 @@ function hideModal(id) {
 
 // ─── DATA LOADING ──────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  const user = getSessionUser();
+  if (!user || !['admin'].includes(user.role)) {
+    window.location.href = 'login.html';
+    return;
+  }
   try {
     const [
       configRes,

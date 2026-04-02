@@ -39,13 +39,10 @@ function loadSession() {
   if (nameEl) nameEl.textContent = user.prenom ? (user.prenom + ' ' + (user.nom || '')) : (user.email || '—');
   if (roleEl) roleEl.textContent = role || 'user';
 
-  // Masquer les liens de nav non autorisés selon le rôle
-  const nav = document.getElementById('main-nav');
-  if (nav) {
-    nav.querySelectorAll('a[data-roles]').forEach(a => {
-      const allowed = a.dataset.roles.split(',');
-      if (!allowed.includes(role)) a.style.display = 'none';
-    });
+  // Bouton "+ Créer une expédition" visible pour admin, dispatcher, client, vendeur
+  const btnNew = document.getElementById('btn-new-expedition');
+  if (btnNew && ['admin','dispatcher','client','dirigeant','vendeur'].includes(role)) {
+    btnNew.style.display = 'inline-flex';
   }
 }
 

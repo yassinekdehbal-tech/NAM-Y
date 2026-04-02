@@ -367,6 +367,11 @@ const PERMS_LIVREUR = [
 
 // ─── LOAD DATA ──────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  const user = getSessionUser();
+  if (!user || !['admin'].includes(user.role)) {
+    window.location.href = 'login.html';
+    return;
+  }
   await loadData();
   renderAll();
 });

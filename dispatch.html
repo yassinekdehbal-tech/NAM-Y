@@ -514,6 +514,11 @@ function populateDropdowns() {
 
 // ─── INIT ───────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  const user = getSessionUser();
+  if (!user || !['admin','dispatcher'].includes(user.role)) {
+    window.location.href = 'login.html';
+    return;
+  }
   initDatePicker();
   await loadData();
   initDriverTracking();

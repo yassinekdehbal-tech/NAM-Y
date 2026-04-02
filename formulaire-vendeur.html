@@ -1081,9 +1081,9 @@ select {
           <button class="btn btn-next" onclick="resetForm()" style="flex:0;padding:11px 22px">
             + Nouvelle expédition
           </button>
-          <button class="btn btn-back" style="flex:0;padding:11px 22px">
-            📄 Imprimer le bon
-          </button>
+          <a href="index.html" class="btn btn-back" style="flex:0;padding:11px 22px;text-decoration:none">
+            ← Voir mes expéditions
+          </a>
         </div>
       </div>
 
@@ -2233,7 +2233,9 @@ async function loadSuiviData() {
 }
 
 // ─── INIT ───────────────────────────────────────────────────
-loadVendeurData().then(() => loadDateConstraints());
+const _initUser = typeof getSessionUser === 'function' ? getSessionUser() : null;
+if (!_initUser) { window.location.href = 'login.html'; }
+else { loadVendeurData().then(() => loadDateConstraints()); }
 </script>
 </body>
 </html>

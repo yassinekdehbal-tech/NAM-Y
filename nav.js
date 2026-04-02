@@ -22,8 +22,6 @@
       { href:'index.html',               label:'Expéditions' },
       { href:'formulaire-vendeur.html',  label:'+ Expédition' },
       { href:'dispatch.html',            label:'Dispatch' },
-      { href:'grilles-tarifaires.html',  label:'Grilles' },
-      { href:'admin.html',               label:'Admin' },
       { href:'dashboard.html',           label:'Dashboard' },
     ],
     client:      [
