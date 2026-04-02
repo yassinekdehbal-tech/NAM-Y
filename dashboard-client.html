@@ -1145,18 +1145,38 @@ async function createVendeur() {
       if (!entId) throw new Error('Impossible de déterminer votre entreprise. Reconnectez-vous.');
     }
 
-    const body = { email, password, role: 'vendeur', prenom, nom, entreprise_id: entId };
-    console.log('[createVendeur] Body envoyé:', JSON.stringify(body));
+    const reqBody = { email, password, role: 'vendeur', prenom, nom, entreprise_id: entId };
+    console.log('[createVendeur] ── APPEL Edge Function ──');
+    console.log('[createVendeur] entrepriseId =', entId, '(type:', typeof entId, ')');
+    console.log('[createVendeur] Body =', JSON.stringify(reqBody, null, 2));
 
-    const resp = await db.functions.invoke('create-user', { body });
+    // Vérifier la session auth avant l'appel
+    const { data: { session: authSession } } = await db.auth.getSession();
+    console.log('[createVendeur] Auth session =', authSession ? 'OK (user: ' + authSession.user.email + ')' : 'NULL — pas connecté !');
+    if (!authSession) throw new Error('Session expirée. Reconnectez-vous.');
 
-    console.log('[createVendeur] Réponse complète:', JSON.stringify(resp));
+    const resp = await db.functions.invoke('create-user', { body: reqBody });
 
-    // La Edge Function peut retourner l'erreur dans data ou dans error
-    const result = typeof resp.data === 'string' ? JSON.parse(resp.data) : resp.data;
-    if (resp.error) throw new Error(resp.error.message || JSON.stringify(resp.error));
-    if (result?.error) throw new Error(result.error);
-    if (!result?.user) throw new Error('Réponse inattendue : ' + JSON.stringify(result));
+    console.log('[createVendeur] ── RÉPONSE ──');
+    console.log('[createVendeur] resp.error =', resp.error);
+    console.log('[createVendeur] resp.data =', resp.data);
+    console.log('[createVendeur] resp.data type =', typeof resp.data);
+
+    // Parser la réponse
+    let result = resp.data;
+    if (typeof result === 'string') {
+      try { result = JSON.parse(result); } catch(pe) { console.warn('Parse failed:', pe); }
+    }
+
+    console.log('[createVendeur] result parsé =', JSON.stringify(result, null, 2));
+
+    // Gestion d'erreur exhaustive
+    if (resp.error) {
+      const errMsg = resp.error.message || resp.error.context?.body || JSON.stringify(resp.error);
+      throw new Error('Edge Function error: ' + errMsg);
+    }
+    if (result?.error) throw new Error('Serveur: ' + result.error);
+    if (!result?.user) throw new Error('Pas de user dans la réponse. Résultat: ' + JSON.stringify(result).substring(0, 200));
 
     // Permissions vendeur
     const perms = {
