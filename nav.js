@@ -27,12 +27,10 @@
       { href:'dashboard.html',           label:'Dashboard' },
     ],
     client:      [
-      { href:'index.html',               label:'Expéditions' },
       { href:'formulaire-vendeur.html',  label:'+ Expédition' },
       { href:'dashboard-client.html',    label:'Mon espace' },
     ],
     dirigeant:   [
-      { href:'index.html',               label:'Expéditions' },
       { href:'formulaire-vendeur.html',  label:'+ Expédition' },
       { href:'dashboard-client.html',    label:'Mon espace' },
     ],
@@ -59,7 +57,7 @@
   function buildNav() {
     const user = typeof getSessionUser === 'function' ? getSessionUser() : null;
     const role = user ? user.role : null;
-    const links = NAV_LINKS[role] || NAV_LINKS.admin;
+    const links = NAV_LINKS[role] || [{ href:'login.html', label:'Connexion' }];
     const currentPage = getCurrentPage();
     const prenom = user ? (user.prenom || user.email || '') : '';
     const roleLabel = ROLE_LABELS[role] || role || '';
