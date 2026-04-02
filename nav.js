@@ -79,12 +79,24 @@
         <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
           ${prenom ? `<span style="font-size:13px;color:#6B7F99">${prenom}</span>` : ''}
           ${roleLabel ? `<span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;background:rgba(0,201,167,.12);color:#00A389">${roleLabel}</span>` : ''}
-          <button onclick="sessionStorage.removeItem('namy_user');sessionStorage.removeItem('namy_role');window.location.href='login.html'" style="background:none;border:1px solid #E8EDF3;border-radius:6px;color:#EF4444;font-size:12px;padding:5px 12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s">Déconnexion</button>
+          <button id="namy-logout-btn" style="background:none;border:1px solid #E8EDF3;border-radius:6px;color:#EF4444;font-size:12px;padding:5px 12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s">Déconnexion</button>
         </div>
       </div>
     `;
 
     document.body.insertBefore(nav, document.body.firstChild);
+
+    // Logout handler — appelle db.auth.signOut() puis redirige
+    document.getElementById('namy-logout-btn').addEventListener('click', async () => {
+      try {
+        if (typeof db !== 'undefined' && db.auth) {
+          await db.auth.signOut();
+        }
+      } catch(e) { /* ignore signOut errors */ }
+      sessionStorage.removeItem('namy_user');
+      sessionStorage.removeItem('namy_role');
+      window.location.href = 'login.html';
+    });
   }
 
   // Auto-init when DOM ready

@@ -425,7 +425,8 @@ function initPeriodButtons() {
 
 // ─── LOGOUT ────────────────────────────────────────────────
 function initLogout() {
-  document.getElementById('btn-logout').addEventListener('click', () => {
+  document.getElementById('btn-logout').addEventListener('click', async () => {
+    try { if (typeof db !== 'undefined' && db.auth) await db.auth.signOut(); } catch(e) {}
     sessionStorage.clear();
     window.location.href = 'login.html';
   });

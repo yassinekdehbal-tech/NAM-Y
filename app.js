@@ -46,7 +46,8 @@ function loadSession() {
   }
 }
 
-function logout() {
+async function logout() {
+  try { if (typeof db !== 'undefined' && db.auth) await db.auth.signOut(); } catch(e) {}
   sessionStorage.removeItem('namy_user');
   sessionStorage.removeItem('namy_role');
   window.location.href = 'login.html';

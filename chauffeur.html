@@ -1306,7 +1306,7 @@ async function renderProfil() {
       🔴 Terminer ma journée
     </button>
 
-    <button onclick="sessionStorage.removeItem('namy_user');sessionStorage.removeItem('namy_role');window.location.href='login.html'" style="width:100%;padding:14px;background:none;border:1px solid var(--border);border-radius:var(--rl);color:var(--text-muted);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px">
+    <button onclick="(async()=>{try{if(typeof db!=='undefined'&&db.auth)await db.auth.signOut()}catch(e){}sessionStorage.removeItem('namy_user');sessionStorage.removeItem('namy_role');window.location.href='login.html'})()" style="width:100%;padding:14px;background:none;border:1px solid var(--border);border-radius:var(--rl);color:var(--text-muted);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px">
       Déconnexion
     </button>
   `;
