@@ -595,15 +595,20 @@ async function createTeamUser() {
     const result = resp.data;
     if (result?.error) throw new Error(result.error);
 
-    showToast(prenom+' '+nom+' ('+addUserRole+') cr\u00e9\u00e9');
+    showToast(prenom+' '+nom+' ('+addUserRole+') créé avec succès', 'success');
     closeAddUser();
     ['mu-prenom','mu-nom','mu-email'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('mu-password').value = 'Namy2024!';
     loadTeam();
+    // Recharger les filtres vendeur/livreur si applicable
+    if (addUserRole === 'vendeur') loadVendeurOptions();
+    if (addUserRole === 'livreur') loadLivreurOptions();
   } catch(e) {
     console.error('[createTeamUser] ERROR:', e);
-    showToast('Erreur : ' + (e.message || String(e)), 'danger');
-  } finally { btn.disabled = false; btn.textContent = 'Cr\u00e9er le compte'; }
+    let msg = e.message || String(e);
+    if (msg.includes('already') || msg.includes('registered')) msg = 'Cet email est déjà utilisé. Choisissez une adresse différente.';
+    showToast('Erreur : ' + msg, 'danger');
+  } finally { btn.disabled = false; btn.textContent = 'Créer le compte'; }
 }
 
 // --- SETTINGS ---

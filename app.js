@@ -95,7 +95,7 @@ function populateFilters() {
   // Magasin select
   const magasinSel = document.getElementById('filter-magasin');
   if (magasinSel) {
-    const noms = [...new Set(expeditions.map(e => e.expediteur))].sort();
+    const noms = [...new Set(expeditions.map(e => e.exp_nom))].sort();
     noms.forEach(nom => {
       const opt = document.createElement('option');
       opt.value = nom;
@@ -179,7 +179,7 @@ function applyFilters() {
   filteredExpeditions = expeditions.filter(e => {
     // Date filter
     if (startDate || endDate) {
-      const eDate = new Date(e.date);
+      const eDate = new Date(e.date_livraison || e.date);
       if (startDate && eDate < startDate) return false;
       if (endDate && eDate > endDate) return false;
     }
@@ -188,7 +188,7 @@ function applyFilters() {
     if (activeStatuts.length > 0 && !activeStatuts.includes(e.statut)) return false;
 
     // Magasin filter
-    if (magasin && e.expediteur != magasin) return false;
+    if (magasin && e.exp_nom != magasin) return false;
 
     // Chauffeur filter
     if (chauffeurId) {
@@ -204,10 +204,10 @@ function applyFilters() {
     if (search) {
       const haystack = [
         String(e.id),
-        e.destinataire || '',
+        e.dest_nom || '',
         e.dest_adresse || '',
         e.dest_ville || '',
-        e.expediteur || ''
+        e.exp_nom || ''
       ].join(' ').toLowerCase();
       if (!haystack.includes(search)) return false;
     }
@@ -368,10 +368,10 @@ function renderTable() {
     const canDelete = e.statut == 'en_attente';
 
     return '<tr>' +
-      '<td style="white-space:nowrap">' + formatDateFR(e.date) + '</td>' +
+      '<td style="white-space:nowrap">' + formatDateFR(e.date_livraison || e.date) + '</td>' +
       '<td><span style="font-family:\'DM Mono\',monospace;font-size:13px">' + e.id + '</span></td>' +
-      '<td>' + (e.expediteur || '—') + '</td>' +
-      '<td>' + (e.destinataire || '—') + '<br><span style="color:var(--text-muted);font-size:12px">' + (e.dest_ville || '') + '</span></td>' +
+      '<td>' + (e.exp_nom || '—') + '</td>' +
+      '<td>' + (e.dest_nom || '—') + '<br><span style="color:var(--text-muted);font-size:12px">' + (e.dest_ville || '') + '</span></td>' +
       '<td>' + renderStatutBadge(e.statut) + '</td>' +
       '<td>' + (chauffeurName ? chauffeurName : '<span style="color:var(--text-muted)">—</span>') + '</td>' +
       '<td style="font-family:\'DM Mono\',monospace;font-weight:600;white-space:nowrap">' + (e.prix_ttc != null ? Number(e.prix_ttc).toFixed(2) + ' \u20ac' : '—') + '</td>' +
@@ -462,7 +462,7 @@ function openDetail(id) {
   // General info
   html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:4px">';
   html += '<div class="detail-info-row"><strong>Numero</strong> ' + e.id + '</div>';
-  html += '<div class="detail-info-row"><strong>Date de livraison</strong> ' + formatDateFR(e.date) + '</div>';
+  html += '<div class="detail-info-row"><strong>Date de livraison</strong> ' + formatDateFR(e.date_livraison || e.date) + '</div>';
   html += '<div class="detail-info-row"><strong>Creneau</strong> ' + (e.creneau || '—') + '</div>';
   html += '<div class="detail-info-row"><strong>Description</strong> ' + (e.description || '—') + '</div>';
   html += '<div class="detail-info-row"><strong>Lieu de livraison</strong> ' + (e.lieu || '—') + '</div>';
@@ -474,13 +474,13 @@ function openDetail(id) {
   html += '<div class="detail-cards">';
 
   html += '<div class="detail-card"><h4>Enlevement</h4>';
-  html += '<p><strong>' + (e.expediteur || '') + '</strong></p>';
-  html += '<p>' + (e.expediteur_adresse || '') + '</p>';
-  html += '<p>' + (e.expediteur_cp || '') + ' ' + (e.expediteur_ville || '') + '</p>';
+  html += '<p><strong>' + (e.exp_nom || '') + '</strong></p>';
+  html += '<p>' + (e.exp_nom_adresse || '') + '</p>';
+  html += '<p>' + (e.exp_nom_cp || '') + ' ' + (e.exp_nom_ville || '') + '</p>';
   html += '</div>';
 
   html += '<div class="detail-card"><h4>Livraison</h4>';
-  html += '<p><strong>' + (e.destinataire || '') + '</strong></p>';
+  html += '<p><strong>' + (e.dest_nom || '') + '</strong></p>';
   html += '<p>' + (e.dest_adresse || '') + '</p>';
   html += '<p>' + (e.dest_cp || '') + ' ' + (e.dest_ville || '') + '</p>';
   html += '<p>' + (e.dest_tel || '') + '</p>';
@@ -626,9 +626,9 @@ function exportCSV() {
     const prixTTC = e.prix_ttc != null ? Number(e.prix_ttc).toFixed(2) : '';
     return [
       e.id,
-      e.date || '',
-      e.expediteur || '',
-      e.destinataire || '',
+      e.date_livraison || e.date || '',
+      e.exp_nom || '',
+      e.dest_nom || '',
       e.dest_ville || '',
       e.dest_adresse || '',
       e.dest_cp || '',
