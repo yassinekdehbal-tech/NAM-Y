@@ -369,12 +369,13 @@
       <div class="filter-group">
         <label>Statut :</label>
         <div class="statut-btns">
+          <button class="statut-btn" data-statut="accepte" onclick="toggleStatut(this)">Accepté</button>
           <button class="statut-btn" data-statut="en_attente" onclick="toggleStatut(this)">En attente</button>
-          <button class="statut-btn" data-statut="planifie" onclick="toggleStatut(this)">Planifie</button>
-          <button class="statut-btn" data-statut="en_cours" onclick="toggleStatut(this)">En cours</button>
-          <button class="statut-btn" data-statut="livre" onclick="toggleStatut(this)">Livre</button>
-          <button class="statut-btn" data-statut="echec" onclick="toggleStatut(this)">Echec</button>
-          <button class="statut-btn" data-statut="litige" onclick="toggleStatut(this)">Litige</button>
+          <button class="statut-btn" data-statut="retire" onclick="toggleStatut(this)">Retiré</button>
+          <button class="statut-btn" data-statut="echec_retrait" onclick="toggleStatut(this)">Échec retrait</button>
+          <button class="statut-btn" data-statut="livre" onclick="toggleStatut(this)">Livré</button>
+          <button class="statut-btn" data-statut="echec_livraison" onclick="toggleStatut(this)">Échec livraison</button>
+          <button class="statut-btn" data-statut="retourne" onclick="toggleStatut(this)">Retourné</button>
         </div>
       </div>
 
@@ -411,25 +412,25 @@
         <span class="stat-value" id="stat-total">0</span>
         <span class="stat-label">Total</span>
       </div>
+      <div class="stat-card stat-success">
+        <span class="stat-value" id="stat-accepte">0</span>
+        <span class="stat-label">Accepté</span>
+      </div>
       <div class="stat-card stat-warning">
         <span class="stat-value" id="stat-attente">0</span>
         <span class="stat-label">En attente</span>
       </div>
       <div class="stat-card stat-info">
-        <span class="stat-value" id="stat-planifie">0</span>
-        <span class="stat-label">Planifie</span>
-      </div>
-      <div class="stat-card" style="--stat-color: var(--accent)">
-        <span class="stat-value" id="stat-encours" style="color:var(--accent)">0</span>
-        <span class="stat-label">En cours</span>
+        <span class="stat-value" id="stat-retire">0</span>
+        <span class="stat-label">Retiré</span>
       </div>
       <div class="stat-card stat-success">
         <span class="stat-value" id="stat-livre">0</span>
-        <span class="stat-label">Livre</span>
+        <span class="stat-label">Livré</span>
       </div>
       <div class="stat-card stat-danger">
-        <span class="stat-value" id="stat-litige">0</span>
-        <span class="stat-label">Litige / Echec</span>
+        <span class="stat-value" id="stat-echec">0</span>
+        <span class="stat-label">Échecs</span>
       </div>
     </div>
 
@@ -495,12 +496,13 @@
         <div class="form-group">
           <label>Nouveau statut</label>
           <select id="status-new" class="form-control">
-            <option value="en_attente">En attente</option>
-            <option value="planifie">Planifie</option>
-            <option value="en_cours">En cours</option>
-            <option value="livre">Livre</option>
-            <option value="echec">Echec</option>
-            <option value="litige">Litige</option>
+            <option value="accepte">Accepté</option>
+            <option value="en_attente">En attente (devis)</option>
+            <option value="retire">Retiré</option>
+            <option value="echec_retrait">Échec retrait</option>
+            <option value="livre">Livré</option>
+            <option value="echec_livraison">Échec livraison</option>
+            <option value="retourne">Retourné</option>
           </select>
         </div>
         <div class="form-group">

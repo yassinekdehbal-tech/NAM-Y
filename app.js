@@ -250,20 +250,21 @@ function resetFilters() {
 // ─── STATS ──────────────────────────────────────────────────
 function updateStats() {
   const total = filteredExpeditions.length;
-  const attente = filteredExpeditions.filter(e => e.statut == 'en_attente').length;
-  const planifie = filteredExpeditions.filter(e => e.statut == 'planifie').length;
-  const encours = filteredExpeditions.filter(e => e.statut == 'en_cours').length;
-  const livre = filteredExpeditions.filter(e => e.statut == 'livre').length;
-  const litige = filteredExpeditions.filter(e => e.statut == 'litige' || e.statut == 'echec').length;
+  const accepte = filteredExpeditions.filter(e => e.statut === 'accepte').length;
+  const attente = filteredExpeditions.filter(e => e.statut === 'en_attente').length;
+  const retire = filteredExpeditions.filter(e => e.statut === 'retire').length;
+  const livre = filteredExpeditions.filter(e => e.statut === 'livre').length;
+  const echec = filteredExpeditions.filter(e => ['echec_retrait','echec_livraison','echec','litige'].includes(e.statut)).length;
 
-  document.getElementById('stat-total').textContent = total;
-  document.getElementById('stat-attente').textContent = attente;
-  document.getElementById('stat-planifie').textContent = planifie;
-  document.getElementById('stat-encours').textContent = encours;
-  document.getElementById('stat-livre').textContent = livre;
-  document.getElementById('stat-litige').textContent = litige;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('stat-total', total);
+  set('stat-accepte', accepte);
+  set('stat-attente', attente);
+  set('stat-retire', retire);
+  set('stat-livre', livre);
+  set('stat-echec', echec);
 
-  document.getElementById('footer-info').textContent = total + ' expedition' + (total > 1 ? 's' : '') + ' (filtrees)';
+  document.getElementById('footer-info').textContent = total + ' expédition' + (total > 1 ? 's' : '');
 }
 
 // ─── SORTING ────────────────────────────────────────────────
@@ -330,14 +331,20 @@ function getChauffeurName(exp) {
 
 function renderStatutBadge(statut) {
   const map = {
-    'en_attente': ['badge-warning', 'En attente'],
-    'planifie':   ['badge-info',    'Planifie'],
-    'en_cours':   ['badge-primary', 'En cours'],
-    'livre':      ['badge-success', 'Livre'],
-    'echec':      ['badge-danger',  'Echec'],
-    'litige':     ['badge-danger',  'Litige'],
+    'accepte':         ['badge-success', 'Accepté'],
+    'en_attente':      ['badge-warning', 'En attente'],
+    'retire':          ['badge-info',    'Retiré'],
+    'echec_retrait':   ['badge-danger',  'Échec retrait'],
+    'livre':           ['badge-success', 'Livré'],
+    'echec_livraison': ['badge-danger',  'Échec livraison'],
+    'retourne':        ['badge-muted',   'Retourné'],
+    // Legacy support
+    'planifie':        ['badge-info',    'Planifié'],
+    'en_cours':        ['badge-primary', 'En cours'],
+    'echec':           ['badge-danger',  'Échec'],
+    'litige':          ['badge-danger',  'Litige'],
   };
-  const [cls, label] = map[statut] || ['badge-muted', statut];
+  const [cls, label] = map[statut] || ['badge-muted', statut || '—'];
   return '<span class="badge ' + cls + '"><span class="status-dot"></span> ' + label + '</span>';
 }
 
@@ -444,91 +451,131 @@ function goToPage(page) {
 }
 
 // ─── DETAIL MODAL ───────────────────────────────────────────
-function openDetail(id) {
+async function openDetail(id) {
   const e = expeditions.find(x => String(x.id) == String(id));
   if (!e) return;
+  const user = getSessionUser();
+  const role = user?.role || '';
+  const isMagasin = ['client','dirigeant','vendeur'].includes(role);
 
   document.getElementById('detail-id').textContent = '#' + e.id;
   const body = document.getElementById('detail-body');
-  const tourName = getChauffeurName(e);
+  const tourName = isMagasin ? null : getChauffeurName(e);
 
   let html = '';
 
-  // Warning if no tournee
-  if (!e.tournee) {
-    html += '<div class="no-tournee-banner">Aucune tournee attribuee a cette commande.</div>';
-  }
-
   // General info
-  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:4px">';
-  html += '<div class="detail-info-row"><strong>Numero</strong> ' + e.id + '</div>';
-  html += '<div class="detail-info-row"><strong>Date de livraison</strong> ' + formatDateFR(e.date_livraison || e.date) + '</div>';
-  html += '<div class="detail-info-row"><strong>Creneau</strong> ' + (e.creneau || '—') + '</div>';
-  html += '<div class="detail-info-row"><strong>Description</strong> ' + (e.description || '—') + '</div>';
-  html += '<div class="detail-info-row"><strong>Lieu de livraison</strong> ' + (e.lieu || '—') + '</div>';
+  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:8px">';
+  html += '<div class="detail-info-row"><strong>Numéro</strong> #' + e.id + '</div>';
+  html += '<div class="detail-info-row"><strong>Date</strong> ' + formatDateFR(e.date_livraison || e.date) + '</div>';
+  html += '<div class="detail-info-row"><strong>Créneau</strong> ' + (e.creneau || '—') + '</div>';
+  html += '<div class="detail-info-row"><strong>Option</strong> ' + (e.option_livraison || e.lieu || '—') + '</div>';
   html += '<div class="detail-info-row"><strong>Statut</strong> ' + renderStatutBadge(e.statut) + '</div>';
-  html += '<div class="detail-info-row"><strong>Chauffeur</strong> ' + (tourName || '—') + '</div>';
+  if (!isMagasin && tourName) html += '<div class="detail-info-row"><strong>Livreur</strong> ' + tourName + '</div>';
   html += '</div>';
 
-  // Cards: expediteur / destinataire / marchandises
+  // Cards
   html += '<div class="detail-cards">';
-
-  html += '<div class="detail-card"><h4>Enlevement</h4>';
+  html += '<div class="detail-card"><h4>Enlèvement</h4>';
   html += '<p><strong>' + (e.exp_nom || '') + '</strong></p>';
-  html += '<p>' + (e.exp_nom_adresse || '') + '</p>';
-  html += '<p>' + (e.exp_nom_cp || '') + ' ' + (e.exp_nom_ville || '') + '</p>';
+  html += '<p>' + (e.exp_adresse || '') + '</p>';
+  html += '<p>' + (e.exp_cp || '') + ' ' + (e.exp_ville || '') + '</p>';
   html += '</div>';
-
   html += '<div class="detail-card"><h4>Livraison</h4>';
   html += '<p><strong>' + (e.dest_nom || '') + '</strong></p>';
   html += '<p>' + (e.dest_adresse || '') + '</p>';
   html += '<p>' + (e.dest_cp || '') + ' ' + (e.dest_ville || '') + '</p>';
-  html += '<p>' + (e.dest_tel || '') + '</p>';
-  html += '<p>' + (e.dest_email || '') + '</p>';
+  html += '<p>' + (e.dest_telephone || '') + '</p>';
   html += '</div>';
-
   html += '<div class="detail-card"><h4>Marchandises</h4>';
-  html += '<p>Poids total : <strong>' + (e.poids || 0) + ' kg</strong></p>';
-  html += '<p>Colis lourd : <strong>' + (e.poids_lourd || 0) + ' kg</strong></p>';
-  html += '<p>Taille max : <strong>' + (e.taille || 0) + ' cm</strong></p>';
+  html += '<p>Poids : <strong>' + (e.poids_total || e.poids || 0) + ' kg</strong></p>';
   html += '<p>Nb colis : <strong>' + (e.nb_colis || 0) + '</strong></p>';
-  html += '<p>Lieu : <strong>' + (e.lieu || '—') + '</strong></p>';
-  html += '</div>';
-
-  html += '</div>';
+  if (e.poids_max_colis) html += '<p>Colis max : <strong>' + e.poids_max_colis + ' kg</strong></p>';
+  if (e.distance_km) html += '<p>Distance : <strong>' + e.distance_km + ' km</strong></p>';
+  html += '<p>' + (e.description || '—') + '</p>';
+  html += '</div></div>';
 
   // Tarification
   const prixHT = e.prix_ht != null ? Number(e.prix_ht) : (e.prix_ttc ? e.prix_ttc / 1.2 : 0);
-  const tva = prixHT * 0.2;
   const ttc = e.prix_ttc != null ? Number(e.prix_ttc) : prixHT * 1.2;
+  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:8px">';
+  html += '<h4 style="font-size:13px;font-weight:600;margin-bottom:8px">Tarification</h4>';
+  html += '<div style="display:flex;justify-content:space-between;font-size:13px"><span>HT</span><span style="font-family:\'DM Mono\',monospace">' + prixHT.toFixed(2) + ' €</span></div>';
+  html += '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-muted)"><span>TVA 20%</span><span style="font-family:\'DM Mono\',monospace">' + (prixHT * 0.2).toFixed(2) + ' €</span></div>';
+  html += '<div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)"><span>TTC</span><span style="font-family:\'DM Mono\',monospace;color:var(--primary)">' + ttc.toFixed(2) + ' €</span></div>';
+  html += '</div>';
 
-  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:4px">';
-  html += '<h4 style="font-size:13px;font-weight:600;margin-bottom:10px">Tarification</h4>';
-  html += '<table class="tarif-table">';
-  html += '<tr><td>TOTAL HT</td><td style="text-align:right;font-family:\'DM Mono\',monospace">' + prixHT.toFixed(2) + ' \u20ac</td></tr>';
-  html += '<tr style="color:var(--text-muted)"><td>TVA (20%)</td><td style="text-align:right;font-family:\'DM Mono\',monospace">' + tva.toFixed(2) + ' \u20ac</td></tr>';
-  html += '<tr style="background:rgba(59,130,246,0.08)"><td><strong>TOTAL TTC</strong></td><td style="text-align:right;font-family:\'DM Mono\',monospace;font-weight:700;color:var(--primary);font-size:15px">' + ttc.toFixed(2) + ' \u20ac</td></tr>';
-  html += '</table></div>';
+  // Photos
+  const photosRetrait = e.photos_retrait || [];
+  const photosLivraison = e.photos_livraison || [];
+  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:8px">';
+  html += '<h4 style="font-size:13px;font-weight:600;margin-bottom:8px">Photos</h4>';
+  html += '<div style="margin-bottom:8px"><span style="font-size:11px;color:var(--text-muted);text-transform:uppercase">Retrait</span>';
+  if (photosRetrait.length) {
+    html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px">' + photosRetrait.map(u => '<img src="' + u + '" style="width:100%;height:80px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border)" onclick="window.open(\'' + u + '\')">').join('') + '</div>';
+  } else { html += '<div style="font-size:12px;color:var(--text-muted);margin-top:4px">Aucune photo</div>'; }
+  html += '</div>';
+  html += '<div><span style="font-size:11px;color:var(--text-muted);text-transform:uppercase">Livraison</span>';
+  if (photosLivraison.length) {
+    html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px">' + photosLivraison.map(u => '<img src="' + u + '" style="width:100%;height:80px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border)" onclick="window.open(\'' + u + '\')">').join('') + '</div>';
+  } else { html += '<div style="font-size:12px;color:var(--text-muted);margin-top:4px">Aucune photo</div>'; }
+  html += '</div></div>';
 
-  // Historique
-  if (e.historique && e.historique.length > 0) {
-    html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">';
-    html += '<table class="history-table"><thead><tr><th>Evenement</th><th>Date</th><th>Commentaire</th><th>Utilisateur</th></tr></thead><tbody>';
-    e.historique.forEach(h => {
-      html += '<tr>';
-      html += '<td>' + (h.evenement || '') + '</td>';
-      html += '<td style="font-family:\'DM Mono\',monospace;font-size:12px">' + (h.date || '') + '</td>';
-      html += '<td>' + (h.commentaire || '') + '</td>';
-      html += '<td style="color:var(--text-muted)">' + (h.utilisateur || '') + '</td>';
-      html += '</tr>';
-    });
-    html += '</tbody></table></div>';
-  } else {
-    html += '<div style="color:var(--text-muted);font-size:13px;padding:12px;text-align:center;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius)">Aucun evenement de suivi</div>';
+  // Commentaires
+  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:8px">';
+  html += '<h4 style="font-size:13px;font-weight:600;margin-bottom:8px">Commentaires</h4>';
+  html += '<div id="detail-comments-list" style="margin-bottom:8px"><div style="font-size:12px;color:var(--text-muted)">Chargement...</div></div>';
+  html += '<div style="display:flex;gap:6px"><input type="text" id="detail-comment-input" placeholder="Ajouter un commentaire..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-family:\'DM Sans\',sans-serif;font-size:12px;outline:none"><button onclick="addComment(' + e.id + ')" style="padding:8px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:\'DM Sans\',sans-serif">Envoyer</button></div>';
+  html += '</div>';
+
+  // Bouton litige
+  const litigeStatuts = ['livre','echec_livraison','retourne'];
+  const litigeRoles = ['admin','dispatcher','client','dirigeant','vendeur'];
+  if (litigeStatuts.includes(e.statut) && litigeRoles.includes(role)) {
+    const livDate = e.date_livraison ? new Date(e.date_livraison) : null;
+    const expired = livDate && (new Date() - livDate) / 86400000 > 7;
+    html += '<div style="margin-top:8px;text-align:center">';
+    if (expired) {
+      html += '<button disabled style="padding:10px 20px;background:var(--bg-hover);color:var(--text-muted);border:none;border-radius:8px;font-size:13px;cursor:not-allowed" title="Délai de déclaration dépassé (7 jours)">⚠️ Délai litige dépassé</button>';
+    } else {
+      html += '<a href="litige-nouveau.html?expedition_id=' + e.id + '" style="display:inline-block;padding:10px 20px;background:rgba(239,68,68,.08);color:#EF4444;border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">⚠️ Ouvrir un litige</a>';
+    }
+    html += '</div>';
   }
 
   body.innerHTML = html;
   openModal('modal-detail');
+
+  // Load comments async
+  loadDetailComments(e.id);
+}
+
+async function loadDetailComments(expId) {
+  const el = document.getElementById('detail-comments-list');
+  if (!el) return;
+  try {
+    const { data } = await db.from('expedition_commentaires').select('*').eq('expedition_id', expId).order('created_at');
+    if (!data || !data.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text-muted)">Aucun commentaire</div>'; return; }
+    el.innerHTML = data.map(c => '<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><strong>' + (c.auteur_nom || '—') + '</strong> <span style="color:var(--text-muted);font-size:10px">' + (c.created_at ? new Date(c.created_at).toLocaleString('fr-FR') : '') + '</span><div style="margin-top:2px">' + (c.commentaire || '') + '</div></div>').join('');
+  } catch(e) { el.innerHTML = '<div style="font-size:12px;color:var(--text-muted)">Erreur chargement</div>'; }
+}
+
+async function addComment(expId) {
+  const input = document.getElementById('detail-comment-input');
+  const text = input?.value.trim();
+  if (!text) return;
+  const user = getSessionUser();
+  try {
+    await db.from('expedition_commentaires').insert({
+      expedition_id: expId,
+      auteur_id: user?.id,
+      auteur_nom: (user?.prenom || '') + ' ' + (user?.nom || ''),
+      auteur_role: user?.role,
+      commentaire: text,
+    });
+    input.value = '';
+    await loadDetailComments(expId);
+  } catch(e) { console.error('Comment error:', e); }
 }
 
 // ─── STATUS CHANGE ──────────────────────────────────────────

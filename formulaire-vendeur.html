@@ -2207,7 +2207,7 @@ async function submitExpedition() {
       description: document.getElementById('description-marchandise')?.value || '',
       prix_ht: parseFloat(document.getElementById('prix-live-val')?.textContent) || 0,
       prix_ttc: parseFloat(document.getElementById('prix-live-val')?.textContent) || 0,
-      statut: 'en_attente',
+      statut: (parseFloat(document.getElementById('prix-live-val')?.textContent) || 0) > 0 ? 'accepte' : 'en_attente',
       lat: clientLat,
       lng: clientLng,
     };
