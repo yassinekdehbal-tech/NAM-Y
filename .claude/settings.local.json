@@ -75,7 +75,8 @@
       "Read(//Users/wassila/Downloads/NAM-Y/**)",
       "Bash(done)",
       "Bash(for m:*)",
-      "Bash(do /tmp/supabase migration repair $m --status applied)"
+      "Bash(do /tmp/supabase migration repair $m --status applied)",
+      "Bash(do tail:*)"
     ]
   }
 }

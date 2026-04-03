@@ -1056,8 +1056,39 @@ function renderMapView() {
   setTimeout(function() { if (map) map.invalidateSize(); }, 100);
 }
 
-function toggleMapLayer(layer) { /* TODO */ }
-function toggleMapTournee(id) { /* TODO */ }
+let hiddenLayers = new Set();
+let hiddenTournees = new Set();
+
+function toggleMapLayer(layer) {
+  if (hiddenLayers.has(layer)) hiddenLayers.delete(layer);
+  else hiddenLayers.add(layer);
+  // Toggle button visual
+  event?.target?.classList?.toggle('active');
+  updateMarkerVisibility();
+}
+
+function toggleMapTournee(id) {
+  if (hiddenTournees.has(id)) hiddenTournees.delete(id);
+  else hiddenTournees.add(id);
+  event?.target?.classList?.toggle('active');
+  updateMarkerVisibility();
+}
+
+function updateMarkerVisibility() {
+  Object.entries(markers).forEach(function([cmdId, m]) {
+    const cmd = commandes.find(c => c.id == cmdId);
+    if (!cmd) return;
+    let visible = true;
+    // Layer filter (by statut)
+    if (hiddenLayers.has(cmd.statut)) visible = false;
+    if (hiddenLayers.has('unassigned') && !cmd.tournee_id) visible = false;
+    if (hiddenLayers.has('assigned') && cmd.tournee_id) visible = false;
+    // Tournee filter
+    if (cmd.tournee_id && hiddenTournees.has(String(cmd.tournee_id))) visible = false;
+    if (visible) { if (!map.hasLayer(m)) m.addTo(map); }
+    else { if (map.hasLayer(m)) map.removeLayer(m); }
+  });
+}
 
 // ─── DRIVER TRACKING ────────────────────────────────────────
 let driverMarkers = {};

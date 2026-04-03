@@ -983,7 +983,39 @@ async function toggleLivreurStatus(id, currentActif) {
   } catch(e) { showToast('Erreur: ' + e.message); }
 }
 
-function editLivreurPerms(id) { showToast('Gestion permissions à venir'); }
+async function editLivreurPerms(id) {
+  const user = teamData.find(u => u.id == id);
+  if (!user) return;
+  const perms = user.permissions || {};
+  const keys = [
+    { key: 'voir_prix', label: 'Voir les prix' },
+    { key: 'voir_contact_client', label: 'Voir contact client' },
+    { key: 'signaler_litige', label: 'Signaler litige' },
+    { key: 'modifier_ordre_stops', label: 'Modifier ordre stops' },
+  ];
+  const html = keys.map(k =>
+    '<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;cursor:pointer">' +
+    '<input type="checkbox" data-perm="' + k.key + '"' + (perms[k.key] ? ' checked' : '') + '> ' + k.label + '</label>'
+  ).join('');
+  const div = document.createElement('div');
+  div.innerHTML = '<div style="padding:16px"><h3 style="margin-bottom:12px;font-size:15px">Permissions — ' + (user.prenom || '') + ' ' + (user.nom || '') + '</h3>' + html +
+    '<div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="this.closest(\'div[style]\').remove()">Annuler</button>' +
+    '<button class="btn btn-accent btn-sm" onclick="saveLivreurPerms(\'' + id + '\',this)">Enregistrer</button></div></div>';
+  div.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);z-index:1000;min-width:320px';
+  document.body.appendChild(div);
+}
+
+async function saveLivreurPerms(id, btn) {
+  const modal = btn.closest('div[style]');
+  const perms = {};
+  modal.querySelectorAll('input[data-perm]').forEach(cb => { perms[cb.dataset.perm] = cb.checked; });
+  try {
+    await db.from('utilisateurs').update({ permissions: perms }).eq('id', id);
+    showToast('Permissions enregistrées');
+  } catch (e) { showToast('Erreur: ' + e.message, 'warning'); }
+  modal.remove();
+  loadTeam();
+}
 
 // ─── ADD LIVREUR ─────────────────────────────────────────────
 function openAddLivreur() { document.getElementById('modal-add-livreur').classList.add('show'); }
