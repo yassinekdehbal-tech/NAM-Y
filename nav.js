@@ -14,6 +14,7 @@
       { href:'index.html',               label:'Expéditions' },
       { href:'formulaire-vendeur.html',  label:'+ Expédition' },
       { href:'dispatch.html',            label:'Dispatch' },
+      { href:'litiges.html',             label:'Litiges' },
       { href:'grilles-tarifaires.html',  label:'Grilles' },
       { href:'admin.html',               label:'Admin' },
       { href:'dashboard.html',           label:'Dashboard' },
@@ -22,15 +23,18 @@
       { href:'index.html',               label:'Expéditions' },
       { href:'formulaire-vendeur.html',  label:'+ Expédition' },
       { href:'dispatch.html',            label:'Dispatch' },
+      { href:'litiges.html',             label:'Litiges' },
       { href:'dashboard.html',           label:'Dashboard' },
     ],
     client:      [
       { href:'index.html',               label:'Expéditions' },
-      { href:'dashboard.html',    label:'Mon espace' },
+      { href:'litiges.html',             label:'Litiges' },
+      { href:'dashboard.html',           label:'Mon espace' },
     ],
     dirigeant:   [
       { href:'index.html',               label:'Expéditions' },
-      { href:'dashboard.html',    label:'Mon espace' },
+      { href:'litiges.html',             label:'Litiges' },
+      { href:'dashboard.html',           label:'Mon espace' },
     ],
     vendeur:     [
       { href:'index.html',               label:'Expéditions' },
@@ -38,11 +42,13 @@
     ],
     fournisseur: [
       { href:'index.html',                    label:'Expéditions' },
-      { href:'dashboard.html',   label:'Mon espace' },
+      { href:'litiges.html',                  label:'Litiges' },
+      { href:'dashboard.html',                label:'Mon espace' },
     ],
     exploitant:  [
       { href:'index.html',                    label:'Expéditions' },
-      { href:'dashboard.html',   label:'Mon espace' },
+      { href:'litiges.html',                  label:'Litiges' },
+      { href:'dashboard.html',                label:'Mon espace' },
     ],
   };
 

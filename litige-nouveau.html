@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAMY — Nouveau litige</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="arctic.css">
+<script src="https://js-de.sentry-cdn.com/d0ac5289e4a58c4925307922a7ca7df5.min.js" crossorigin="anonymous"></script>
+<script>Sentry.onLoad(function(){Sentry.init({dsn:"https://d0ac5289e4a58c4925307922a7ca7df5@o4511156454686720.ingest.de.sentry.io/4511156473626704",environment:window.location.hostname==="localhost"||window.location.hostname==="127.0.0.1"?"development":"production",release:"namy@1.0.0",tracesSampleRate:0.2})});</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="utils.js"></script>
+<script src="nav.js"></script>
+<style>
+body{background:#F7F9FC;font-family:'DM Sans',sans-serif;color:#1A2332}
+.page{max-width:720px;margin:20px auto;padding:0 20px}
+.page-title{font-size:20px;font-weight:700;margin-bottom:16px}
+.card{background:#fff;border:1px solid #E8EDF3;border-radius:12px;padding:20px;margin-bottom:16px}
+.card-title{font-size:14px;font-weight:700;margin-bottom:12px;color:#1A2332}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.fl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#6B7F99}
+.fi{background:#F7F9FC;border:1.5px solid #E8EDF3;border-radius:8px;padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:13px;color:#1A2332;outline:none;width:100%}
+.fi:focus{border-color:#00C9A7}
+.fi[readonly]{background:#F0F3F8;cursor:default}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn-submit{padding:12px 24px;background:#00C9A7;color:#fff;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;width:100%}
+.btn-submit:hover{background:#00A389}
+.btn-submit:disabled{background:#E8EDF3;color:#6B7F99;cursor:not-allowed}
+.info-box{background:#FEF9C3;border:1px solid rgba(133,77,14,.15);border-radius:8px;padding:12px 16px;font-size:13px;color:#854D0E;margin-bottom:16px}
+.expired-box{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.15);border-radius:8px;padding:16px;text-align:center;color:#EF4444;font-size:14px;font-weight:600}
+.upload-zone{border:2px dashed #E8EDF3;border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:border-color .15s}
+.upload-zone:hover{border-color:#00C9A7}
+.upload-zone input{display:none}
+.photo-preview{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.photo-preview img{width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid #E8EDF3}
+.success-box{background:rgba(0,201,167,.08);border:1px solid rgba(0,201,167,.2);border-radius:12px;padding:24px;text-align:center;display:none}
+.success-box h2{color:#00A389;font-size:18px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="page-title">Ouvrir un litige</div>
+
+  <!-- Expired message (hidden by default) -->
+  <div class="expired-box" id="expired-box" style="display:none">
+    Le délai de déclaration de litige est dépassé (7 jours après livraison).
+  </div>
+
+  <!-- Form -->
+  <div id="litige-form">
+    <!-- Expedition info (read-only) -->
+    <div class="card">
+      <div class="card-title">Informations de la livraison</div>
+      <div class="fr">
+        <div class="fg"><label class="fl">N° expédition</label><input type="text" class="fi" id="exp-num" readonly></div>
+        <div class="fg"><label class="fl">Date livraison</label><input type="text" class="fi" id="exp-date" readonly></div>
+      </div>
+      <div class="fg"><label class="fl">Adresse livraison</label><input type="text" class="fi" id="exp-adresse" readonly></div>
+      <div class="fg" id="exp-livreur-group" style="display:none"><label class="fl">Livreur</label><input type="text" class="fi" id="exp-livreur" readonly></div>
+    </div>
+
+    <!-- Litige details -->
+    <div class="card">
+      <div class="card-title">Détails du litige</div>
+      <div class="fg">
+        <label class="fl">Catégorie *</label>
+        <select class="fi" id="lt-categorie" required>
+          <option value="">Sélectionner...</option>
+          <option value="casse">Casse / Dommage</option>
+          <option value="livraison_incomplete">Livraison incomplète</option>
+          <option value="colis_manquant">Colis manquant</option>
+          <option value="erreur_adresse">Erreur d'adresse</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">Description *</label>
+        <textarea class="fi" id="lt-description" rows="4" placeholder="Décrivez le problème en détail..." required></textarea>
+      </div>
+      <div class="fr">
+        <div class="fg">
+          <label class="fl">Valeur de vente HT (€) *</label>
+          <input type="number" class="fi" id="lt-valeur-vente" min="0" step="0.01" required>
+        </div>
+        <div class="fg">
+          <label class="fl">Valeur d'achat (€)</label>
+          <input type="number" class="fi" id="lt-valeur-achat" min="0" step="0.01">
+          <span style="font-size:11px;color:#6B7F99">Prix d'achat — aide au traitement plus rapide</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Photos -->
+    <div class="card">
+      <div class="card-title">Photos</div>
+      <div class="upload-zone" onclick="document.getElementById('lt-photos').click()">
+        <div style="font-size:24px;margin-bottom:4px">📷</div>
+        <div style="font-size:13px;color:#6B7F99">Cliquez pour ajouter des photos (max 5)</div>
+        <input type="file" id="lt-photos" accept="image/*" multiple onchange="previewPhotos(this)">
+      </div>
+      <div class="photo-preview" id="photo-preview"></div>
+    </div>
+
+    <!-- Submit -->
+    <button class="btn-submit" id="btn-submit" onclick="submitLitige()">Soumettre le litige</button>
+  </div>
+
+  <!-- Success -->
+  <div class="success-box" id="success-box">
+    <div style="font-size:40px;margin-bottom:8px">✅</div>
+    <h2>Litige enregistré</h2>
+    <p style="color:#6B7F99;font-size:13px">Votre litige a été transmis à l'équipe NAMY.<br>Vous serez notifié de l'avancement.</p>
+    <a href="litiges.html" style="display:inline-block;margin-top:12px;padding:10px 20px;background:#00C9A7;color:#fff;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600">Voir mes litiges</a>
+  </div>
+</div>
+
+<div id="toast" class="toast" style="display:none"></div>
+
+<script>
+let expeditionData = null;
+let sessionUser = null;
+let selectedFiles = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  sessionUser = getSessionUser();
+  if (!sessionUser) { window.location.href = 'login.html'; return; }
+
+  const params = new URLSearchParams(window.location.search);
+  const expId = params.get('expedition_id');
+  if (!expId) { showToast('Expédition non spécifiée', 'danger'); return; }
+
+  // Load expedition
+  try {
+    const { data, error } = await db.from('expeditions').select('*').eq('id', expId).maybeSingle();
+    if (error || !data) { showToast('Expédition introuvable', 'danger'); return; }
+    expeditionData = data;
+
+    document.getElementById('exp-num').value = '#' + data.id;
+    document.getElementById('exp-date').value = data.date_livraison || '—';
+    document.getElementById('exp-adresse').value = (data.dest_adresse || '') + ' ' + (data.dest_cp || '') + ' ' + (data.dest_ville || '');
+
+    // Show livreur only for admin/dispatcher/fournisseur
+    if (['admin','dispatcher','fournisseur','exploitant'].includes(sessionUser.role)) {
+      document.getElementById('exp-livreur-group').style.display = 'block';
+      document.getElementById('exp-livreur').value = '—'; // Would need to load from tournee
+    }
+
+    // Check 7-day limit
+    if (data.date_livraison) {
+      const livDate = new Date(data.date_livraison);
+      const now = new Date();
+      const diffDays = (now - livDate) / (1000 * 60 * 60 * 24);
+      if (diffDays > 7) {
+        document.getElementById('expired-box').style.display = 'block';
+        document.getElementById('litige-form').style.display = 'none';
+        return;
+      }
+    }
+  } catch(e) {
+    showToast('Erreur chargement: ' + e.message, 'danger');
+  }
+});
+
+function previewPhotos(input) {
+  selectedFiles = [...input.files].slice(0, 5);
+  const preview = document.getElementById('photo-preview');
+  preview.innerHTML = '';
+  selectedFiles.forEach(f => {
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(f);
+    preview.appendChild(img);
+  });
+}
+
+async function submitLitige() {
+  const categorie = document.getElementById('lt-categorie').value;
+  const description = document.getElementById('lt-description').value.trim();
+  const valeurVente = parseFloat(document.getElementById('lt-valeur-vente').value) || 0;
+  const valeurAchat = parseFloat(document.getElementById('lt-valeur-achat').value) || 0;
+
+  if (!categorie || !description || !valeurVente) {
+    showToast('Remplissez les champs obligatoires', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true; btn.textContent = 'Envoi en cours...';
+
+  try {
+    // Create litige
+    const dateLimite = new Date();
+    dateLimite.setDate(dateLimite.getDate() + 7);
+
+    const { data: litige, error } = await db.from('litiges').insert({
+      expedition_id: expeditionData.id || expeditionData.uuid,
+      ouvert_par_id: sessionUser.id,
+      ouvert_par_nom: (sessionUser.prenom || '') + ' ' + (sessionUser.nom || ''),
+      entreprise_client_id: expeditionData.entreprise_id,
+      entreprise_transporteur_id: null, // Could be resolved from tournee
+      categorie,
+      description,
+      valeur_vente: valeurVente,
+      valeur_achat: valeurAchat,
+      statut: 'ouvert',
+      date_limite: dateLimite.toISOString(),
+    }).select().single();
+
+    if (error) throw error;
+
+    // Upload photos
+    if (selectedFiles.length && litige) {
+      for (const file of selectedFiles) {
+        const path = `${litige.id}/${Date.now()}_${file.name}`;
+        const { error: upErr } = await db.storage.from('litiges-photos').upload(path, file);
+        if (!upErr) {
+          const { data: urlData } = db.storage.from('litiges-photos').getPublicUrl(path);
+          await db.from('litiges_photos').insert({
+            litige_id: litige.id,
+            url: urlData.publicUrl,
+            ajoute_par_role: ['client','dirigeant','vendeur'].includes(sessionUser.role) ? 'magasin' : sessionUser.role === 'livreur' ? 'livreur' : 'namy',
+            ajoute_par_id: sessionUser.id,
+          });
+        }
+      }
+    }
+
+    // Show success
+    document.getElementById('litige-form').style.display = 'none';
+    document.getElementById('success-box').style.display = 'block';
+
+  } catch(e) {
+    console.error('[submitLitige]', e);
+    showToast('Erreur: ' + (e.message || e), 'danger');
+    btn.disabled = false; btn.textContent = 'Soumettre le litige';
+  }
+}
+</script>
+</body>
+</html>

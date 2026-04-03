@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAMY — Détail litige</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="arctic.css">
+<script src="https://js-de.sentry-cdn.com/d0ac5289e4a58c4925307922a7ca7df5.min.js" crossorigin="anonymous"></script>
+<script>Sentry.onLoad(function(){Sentry.init({dsn:"https://d0ac5289e4a58c4925307922a7ca7df5@o4511156454686720.ingest.de.sentry.io/4511156473626704",environment:window.location.hostname==="localhost"||window.location.hostname==="127.0.0.1"?"development":"production",release:"namy@1.0.0",tracesSampleRate:0.2})});</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="utils.js"></script>
+<script src="nav.js"></script>
+<style>
+body{background:#F7F9FC;font-family:'DM Sans',sans-serif;color:#1A2332}
+.page{max-width:900px;margin:20px auto;padding:0 20px}
+.back-link{font-size:13px;color:#6B7F99;text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-bottom:12px}
+.back-link:hover{color:#00C9A7}
+.page-header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.page-title{font-size:20px;font-weight:700}
+.badge{padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600}
+.b-ouvert{background:rgba(59,130,246,.1);color:#3B82F6}
+.b-en_examen{background:rgba(245,158,11,.1);color:#F59E0B}
+.b-responsabilite_confirmee{background:rgba(249,115,22,.1);color:#F97316}
+.b-rejete{background:rgba(107,127,153,.1);color:#6B7F99}
+.b-remboursement_accorde{background:rgba(0,201,167,.1);color:#00A389}
+.b-cloture{background:rgba(107,127,153,.1);color:#6B7F99}
+.card{background:#fff;border:1px solid #E8EDF3;border-radius:12px;padding:20px;margin-bottom:16px}
+.card-title{font-size:14px;font-weight:700;margin-bottom:12px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px}
+.info-label{color:#6B7F99;font-size:11px;text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.info-val{font-weight:600;margin-bottom:8px}
+.photos-grid{display:flex;gap:8px;flex-wrap:wrap}
+.photos-grid img{width:100px;height:100px;object-fit:cover;border-radius:8px;border:1px solid #E8EDF3;cursor:pointer}
+.photos-grid img:hover{border-color:#00C9A7}
+.msg-list{display:flex;flex-direction:column;gap:10px;max-height:400px;overflow-y:auto;margin-bottom:12px}
+.msg-item{padding:10px 14px;border-radius:8px;font-size:13px}
+.msg-mine{background:rgba(0,201,167,.06);border:1px solid rgba(0,201,167,.15)}
+.msg-other{background:#F0F3F8;border:1px solid #E8EDF3}
+.msg-private{background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.15)}
+.msg-author{font-weight:600;font-size:12px;margin-bottom:4px}
+.msg-time{font-size:10px;color:#6B7F99;float:right}
+.msg-input{display:flex;gap:8px}
+.msg-input textarea{flex:1;background:#F7F9FC;border:1.5px solid #E8EDF3;border-radius:8px;padding:10px;font-family:'DM Sans',sans-serif;font-size:13px;resize:none;outline:none}
+.msg-input textarea:focus{border-color:#00C9A7}
+.msg-input button{padding:10px 16px;background:#00C9A7;color:#fff;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.admin-section{background:#fff;border:2px solid #8B5CF6;border-radius:12px;padding:20px;margin-bottom:16px}
+.admin-title{font-size:14px;font-weight:700;color:#8B5CF6;margin-bottom:12px}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.fl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#6B7F99}
+.fi{background:#F7F9FC;border:1.5px solid #E8EDF3;border-radius:8px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:13px;color:#1A2332;outline:none;width:100%}
+.fi:focus{border-color:#00C9A7}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn-save{padding:10px 20px;background:#8B5CF6;color:#fff;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="page">
+  <a href="litiges.html" class="back-link">← Retour aux litiges</a>
+  <div class="page-header">
+    <div class="page-title" id="page-title">Litige</div>
+    <span class="badge" id="statut-badge"></span>
+  </div>
+
+  <!-- A) Infos livraison -->
+  <div class="card">
+    <div class="card-title">Informations livraison</div>
+    <div class="info-grid" id="info-livraison"></div>
+  </div>
+
+  <!-- B) Détails litige -->
+  <div class="card">
+    <div class="card-title">Détails du litige</div>
+    <div class="info-grid" id="info-litige"></div>
+    <div id="note-interne-box" style="display:none;margin-top:12px;padding:10px;background:rgba(139,92,246,.06);border-radius:6px;font-size:12px">
+      <span class="info-label">Note interne NAMY</span>
+      <div id="note-interne" style="margin-top:4px"></div>
+    </div>
+  </div>
+
+  <!-- C) Photos -->
+  <div class="card">
+    <div class="card-title">Photos</div>
+    <div class="photos-grid" id="photos-grid"></div>
+    <div id="photos-empty" style="color:#6B7F99;font-size:13px;display:none">Aucune photo</div>
+    <div id="add-photo-box" style="margin-top:12px;display:none">
+      <input type="file" id="add-photo-input" accept="image/*" multiple onchange="uploadMorePhotos(this)" style="font-size:12px">
+    </div>
+  </div>
+
+  <!-- D) Messages -->
+  <div class="card">
+    <div class="card-title">Discussion</div>
+    <div class="msg-list" id="msg-list"></div>
+    <div id="msg-empty" style="color:#6B7F99;font-size:13px;text-align:center;padding:12px;display:none">Aucun message</div>
+    <div class="msg-input">
+      <textarea id="msg-text" rows="2" placeholder="Écrire un message..."></textarea>
+      <button onclick="sendMessage(false)">Envoyer</button>
+    </div>
+    <div id="msg-private-box" style="display:none;margin-top:6px">
+      <button onclick="sendMessage(true)" style="padding:6px 14px;background:#8B5CF6;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif">Envoyer en note privée NAMY</button>
+    </div>
+  </div>
+
+  <!-- E) Actions admin -->
+  <div class="admin-section" id="admin-section" style="display:none">
+    <div class="admin-title">Actions NAMY</div>
+    <div class="fr">
+      <div class="fg">
+        <label class="fl">Statut</label>
+        <select class="fi" id="adm-statut">
+          <option value="ouvert">Ouvert</option>
+          <option value="en_examen">En examen</option>
+          <option value="responsabilite_confirmee">Responsabilité confirmée</option>
+          <option value="rejete">Rejeté</option>
+          <option value="remboursement_accorde">Remboursement accordé</option>
+          <option value="cloture">Clôturé</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">Responsabilité</label>
+        <select class="fi" id="adm-responsabilite">
+          <option value="">Non définie</option>
+          <option value="namy">NAMY</option>
+          <option value="transporteur">Transporteur</option>
+          <option value="magasin">Magasin</option>
+          <option value="partage">Partagée</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg">
+        <label class="fl">Montant accordé (€)</label>
+        <input type="number" class="fi" id="adm-montant" min="0" step="0.01">
+      </div>
+      <div class="fg">
+        <label class="fl">Type de résolution</label>
+        <select class="fi" id="adm-resolution">
+          <option value="">Non défini</option>
+          <option value="remboursement_total">Remboursement total</option>
+          <option value="remboursement_partiel">Remboursement partiel</option>
+          <option value="geste_commercial">Geste commercial</option>
+          <option value="refus">Refus</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="fl">Note interne</label>
+      <textarea class="fi" id="adm-note" rows="2" placeholder="Note visible uniquement par NAMY"></textarea>
+    </div>
+    <button class="btn-save" onclick="saveAdminDecision()">Enregistrer la décision</button>
+  </div>
+</div>
+
+<div id="toast" class="toast" style="display:none"></div>
+
+<script>
+const CAT_LABELS = { casse:'Casse / Dommage', livraison_incomplete:'Livraison incomplète', colis_manquant:'Colis manquant', erreur_adresse:'Erreur adresse' };
+const STATUT_LABELS = { ouvert:'Ouvert', en_examen:'En examen', responsabilite_confirmee:'Resp. confirmée', rejete:'Rejeté', remboursement_accorde:'Remboursé', cloture:'Clôturé' };
+
+let sessionUser = null;
+let litigeData = null;
+let litigeId = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  sessionUser = getSessionUser();
+  if (!sessionUser) { window.location.href = 'login.html'; return; }
+
+  const params = new URLSearchParams(window.location.search);
+  litigeId = params.get('id');
+  if (!litigeId) return;
+
+  await loadLitige();
+  await loadPhotos();
+  await loadMessages();
+});
+
+async function loadLitige() {
+  try {
+    const { data, error } = await db.from('litiges').select('*').eq('id', litigeId).maybeSingle();
+    if (error || !data) { showToast('Litige introuvable', 'danger'); return; }
+    litigeData = data;
+
+    document.getElementById('page-title').textContent = 'Litige #' + (data.expedition_id || '').toString().slice(0, 8);
+    const badge = document.getElementById('statut-badge');
+    badge.className = 'badge b-' + data.statut;
+    badge.textContent = STATUT_LABELS[data.statut] || data.statut;
+
+    // Load expedition info
+    let expInfo = '';
+    if (data.expedition_id) {
+      const { data: exp } = await db.from('expeditions').select('*').eq('id', data.expedition_id).maybeSingle();
+      if (exp) {
+        const isAdmin = ['admin','dispatcher'].includes(sessionUser.role);
+        expInfo = `
+          <div><span class="info-label">N° expédition</span><div class="info-val">#${exp.id}</div></div>
+          <div><span class="info-label">Date</span><div class="info-val">${exp.date_livraison || '—'}</div></div>
+          <div><span class="info-label">Destinataire</span><div class="info-val">${exp.dest_nom || '—'}</div></div>
+          <div><span class="info-label">Adresse</span><div class="info-val">${exp.dest_adresse || ''} ${exp.dest_cp || ''} ${exp.dest_ville || ''}</div></div>
+        `;
+      }
+    }
+    document.getElementById('info-livraison').innerHTML = expInfo || '<div style="color:#6B7F99">Informations non disponibles</div>';
+
+    // Litige details
+    const isAdmin = ['admin','dispatcher'].includes(sessionUser.role);
+    const isMagasin = ['client','dirigeant','vendeur'].includes(sessionUser.role);
+    let litigeInfo = `
+      <div><span class="info-label">Catégorie</span><div class="info-val">${CAT_LABELS[data.categorie] || data.categorie || '—'}</div></div>
+      <div><span class="info-label">Ouvert par</span><div class="info-val">${data.ouvert_par_nom || '—'}</div></div>
+      <div><span class="info-label">Valeur vente</span><div class="info-val" style="font-family:'DM Mono',monospace">${data.valeur_vente ? data.valeur_vente.toFixed(2) + ' €' : '—'}</div></div>
+      <div><span class="info-label">Valeur achat</span><div class="info-val" style="font-family:'DM Mono',monospace">${data.valeur_achat ? data.valeur_achat.toFixed(2) + ' €' : '—'}</div></div>
+    `;
+    if (isAdmin || isMagasin) {
+      litigeInfo += `<div><span class="info-label">Montant accordé</span><div class="info-val" style="font-family:'DM Mono',monospace;color:#00A389">${data.montant_accorde ? data.montant_accorde.toFixed(2) + ' €' : '—'}</div></div>`;
+    }
+    if (data.responsabilite) {
+      litigeInfo += `<div><span class="info-label">Responsabilité</span><div class="info-val">${data.responsabilite}</div></div>`;
+    }
+    document.getElementById('info-litige').innerHTML = litigeInfo;
+
+    if (data.description) {
+      document.getElementById('info-litige').innerHTML += `<div style="grid-column:1/-1;margin-top:8px;padding:10px;background:#F0F3F8;border-radius:6px;font-size:13px">${data.description}</div>`;
+    }
+
+    // Note interne (admin only)
+    if (isAdmin && data.note_interne) {
+      document.getElementById('note-interne-box').style.display = 'block';
+      document.getElementById('note-interne').textContent = data.note_interne;
+    }
+
+    // Admin section
+    if (isAdmin) {
+      document.getElementById('admin-section').style.display = 'block';
+      document.getElementById('adm-statut').value = data.statut || 'ouvert';
+      document.getElementById('adm-responsabilite').value = data.responsabilite || '';
+      document.getElementById('adm-montant').value = data.montant_accorde || '';
+      document.getElementById('adm-resolution').value = data.resolution_type || '';
+      document.getElementById('adm-note').value = data.note_interne || '';
+      document.getElementById('msg-private-box').style.display = 'block';
+    }
+
+    // Add photo button
+    document.getElementById('add-photo-box').style.display = 'block';
+
+  } catch(e) { console.error('[loadLitige]', e); }
+}
+
+async function loadPhotos() {
+  try {
+    const { data } = await db.from('litiges_photos').select('*').eq('litige_id', litigeId).order('created_at');
+    const grid = document.getElementById('photos-grid');
+    const empty = document.getElementById('photos-empty');
+    if (!data || !data.length) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    grid.innerHTML = data.map(p => `<img src="${p.url}" title="${p.ajoute_par_role || ''}" onclick="window.open('${p.url}','_blank')">`).join('');
+  } catch(e) {}
+}
+
+async function loadMessages() {
+  try {
+    const { data } = await db.from('litiges_messages').select('*').eq('litige_id', litigeId).order('created_at');
+    const list = document.getElementById('msg-list');
+    const empty = document.getElementById('msg-empty');
+    if (!data || !data.length) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+
+    const isAdmin = ['admin','dispatcher'].includes(sessionUser.role);
+    const isMagasin = ['client','dirigeant','vendeur'].includes(sessionUser.role);
+    const isTransport = ['fournisseur','exploitant','livreur','chauffeur'].includes(sessionUser.role);
+
+    list.innerHTML = data.filter(m => {
+      if (isAdmin) return true;
+      if (isMagasin && !m.visible_magasin) return false;
+      if (isTransport && !m.visible_transporteur) return false;
+      return true;
+    }).map(m => {
+      const isMine = m.auteur_id === sessionUser.id;
+      const isPrivate = !m.visible_magasin && !m.visible_transporteur;
+      const cls = isPrivate ? 'msg-private' : isMine ? 'msg-mine' : 'msg-other';
+      return `<div class="msg-item ${cls}">
+        <div class="msg-author">${m.auteur_nom || '—'} <span style="color:#6B7F99;font-weight:400">(${m.auteur_role || ''})</span>
+          <span class="msg-time">${m.created_at ? new Date(m.created_at).toLocaleString('fr-FR') : ''}</span>
+          ${isPrivate ? '<span style="color:#8B5CF6;font-size:10px;margin-left:6px">Note privée</span>' : ''}
+        </div>
+        <div>${m.message}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {}
+}
+
+async function sendMessage(isPrivate) {
+  const text = document.getElementById('msg-text').value.trim();
+  if (!text) return;
+
+  try {
+    await db.from('litiges_messages').insert({
+      litige_id: litigeId,
+      auteur_id: sessionUser.id,
+      auteur_nom: (sessionUser.prenom || '') + ' ' + (sessionUser.nom || ''),
+      auteur_role: sessionUser.role,
+      message: text,
+      visible_magasin: !isPrivate,
+      visible_transporteur: !isPrivate,
+    });
+    document.getElementById('msg-text').value = '';
+    await loadMessages();
+  } catch(e) { showToast('Erreur: ' + e.message, 'danger'); }
+}
+
+async function saveAdminDecision() {
+  try {
+    const updates = {
+      statut: document.getElementById('adm-statut').value,
+      responsabilite: document.getElementById('adm-responsabilite').value || null,
+      montant_accorde: parseFloat(document.getElementById('adm-montant').value) || 0,
+      resolution_type: document.getElementById('adm-resolution').value || null,
+      note_interne: document.getElementById('adm-note').value || null,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await db.from('litiges').update(updates).eq('id', litigeId);
+    if (error) throw error;
+    showToast('Décision enregistrée');
+    await loadLitige();
+  } catch(e) { showToast('Erreur: ' + e.message, 'danger'); }
+}
+
+async function uploadMorePhotos(input) {
+  const files = [...input.files].slice(0, 5);
+  for (const file of files) {
+    const path = `${litigeId}/${Date.now()}_${file.name}`;
+    const { error: upErr } = await db.storage.from('litiges-photos').upload(path, file);
+    if (!upErr) {
+      const { data: urlData } = db.storage.from('litiges-photos').getPublicUrl(path);
+      await db.from('litiges_photos').insert({
+        litige_id: litigeId,
+        url: urlData.publicUrl,
+        ajoute_par_role: ['client','dirigeant','vendeur'].includes(sessionUser.role) ? 'magasin' : sessionUser.role === 'livreur' ? 'livreur' : 'namy',
+        ajoute_par_id: sessionUser.id,
+      });
+    }
+  }
+  await loadPhotos();
+  input.value = '';
+}
+</script>
+</body>
+</html>
