@@ -131,6 +131,7 @@
   <button class="main-tab active" onclick="switchMainTab('dashboard',this)">Tableau de bord</button>
   <button class="main-tab" onclick="switchMainTab('expeditions',this)">Expéditions</button>
   <button class="main-tab" onclick="switchMainTab('equipe',this)">Mon équipe</button>
+  <button class="main-tab" onclick="switchMainTab('messages',this)">&#128172; Messages <span id="msg-badge" style="display:none;background:#991B1B;color:#fff;padding:1px 6px;border-radius:10px;font-size:10px;margin-left:4px"></span></button>
   <button class="main-tab" onclick="switchMainTab('settings',this)">Paramètres</button>
 </nav>
 
@@ -332,6 +333,21 @@
         </table>
       </div>
       <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;display:none" id="team-empty">Aucun vendeur dans votre équipe</div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL MESSAGES -->
+<div class="tab-panel" id="panel-messages">
+  <div style="max-width:700px;margin:0 auto;padding:20px;display:flex;flex-direction:column;height:calc(100vh - 120px)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <h2 style="font-size:16px;font-weight:700;margin:0">Messages avec NAMY</h2>
+      <span style="font-size:12px;color:var(--text-muted)" id="msg-status">Chargement...</span>
+    </div>
+    <div id="client-messages" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:8px 0"></div>
+    <div style="display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--border)">
+      <input type="text" id="client-msg-input" class="form-control" placeholder="Tapez votre message..." style="flex:1;height:40px" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendClientMessage()}">
+      <button class="btn btn-accent" onclick="sendClientMessage()" style="height:40px">Envoyer</button>
     </div>
   </div>
 </div>
@@ -999,6 +1015,131 @@ function switchMainTab(tab, btn) {
   if (tab === 'equipe') loadTeam();
   if (tab === 'expeditions') loadExpeditionsTab();
   if (tab === 'settings') loadSettings();
+  if (tab === 'messages') loadClientMessages();
+}
+
+// ─── MESSAGES CLIENT ────────────────────────────────────────
+let clientConvId = null;
+let clientMessages = [];
+
+async function loadClientMessages() {
+  const statusEl = document.getElementById('msg-status');
+  if (statusEl) statusEl.textContent = 'Chargement...';
+
+  try {
+    // Trouver ou créer la conversation pour cette entreprise
+    let { data: conv } = await db.from('conversations')
+      .select('*').eq('entreprise_id', entrepriseId).limit(1).single();
+
+    if (!conv) {
+      const entNom = document.getElementById('entreprise-name')?.textContent || 'Client';
+      const { data: newConv } = await db.from('conversations').insert({
+        entreprise_id: entrepriseId,
+        entreprise_nom: entNom,
+        canal: 'namy'
+      }).select().single();
+      conv = newConv;
+    }
+
+    if (!conv) { if (statusEl) statusEl.textContent = 'Erreur'; return; }
+    clientConvId = conv.id;
+
+    // Marquer comme lus
+    await db.from('conversations').update({ non_lus_client: 0 }).eq('id', clientConvId);
+
+    // Charger les messages
+    const { data: msgs } = await db.from('messages').select('*')
+      .eq('conversation_id', clientConvId).order('created_at');
+    clientMessages = msgs || [];
+
+    if (statusEl) statusEl.textContent = clientMessages.length ? '' : 'Aucun message';
+    renderClientMessages();
+
+    // Realtime
+    db.channel('client-chat-' + clientConvId)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages',
+        filter: 'conversation_id=eq.' + clientConvId }, (payload) => {
+        clientMessages.push(payload.new);
+        renderClientMessages();
+      })
+      .subscribe();
+  } catch (e) {
+    console.warn('loadClientMessages error:', e);
+    if (statusEl) statusEl.textContent = 'Erreur de chargement';
+  }
+}
+
+function renderClientMessages() {
+  const el = document.getElementById('client-messages');
+  if (!el) return;
+
+  el.innerHTML = clientMessages.map(m => {
+    const isMe = m.auteur_role === 'client' || m.auteur_role === 'vendeur' || m.auteur_role === 'dirigeant';
+    const isIA = m.type === 'ia';
+    const time = m.created_at ? new Date(m.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+
+    const bubbleStyle = isMe
+      ? 'align-self:flex-end;background:var(--accent);color:#fff;border-radius:14px 14px 4px 14px'
+      : isIA
+        ? 'align-self:flex-start;background:linear-gradient(135deg,#7C3AED,#00C9A7);color:#fff;border-radius:14px 14px 14px 4px'
+        : 'align-self:flex-start;background:var(--bg-hover);color:var(--text-primary);border-radius:14px 14px 14px 4px';
+
+    const content = m.type === 'photo'
+      ? '<img src="' + m.contenu + '" style="max-width:200px;border-radius:8px">'
+      : m.contenu;
+
+    return '<div style="max-width:75%;padding:10px 14px;font-size:13px;line-height:1.5;' + bubbleStyle + '">'
+      + (isIA ? '<span style="background:#7C3AED;color:#fff;font-size:9px;padding:1px 6px;border-radius:10px;margin-right:4px">IA</span>' : '')
+      + content
+      + '<div style="font-size:10px;opacity:.7;margin-top:4px;text-align:right">' + (m.auteur_nom || '') + ' \u00b7 ' + time + '</div>'
+      + '</div>';
+  }).join('');
+
+  el.scrollTop = el.scrollHeight;
+
+  // Badge
+  updateMsgBadge();
+}
+
+async function sendClientMessage() {
+  const input = document.getElementById('client-msg-input');
+  const text = input.value.trim();
+  if (!text || !clientConvId) return;
+  input.value = '';
+
+  const user = getSessionUser();
+  try {
+    await db.from('messages').insert({
+      conversation_id: clientConvId,
+      auteur_id: user?.auth_id,
+      auteur_nom: user ? (user.prenom + ' ' + (user.nom || '')).trim() : 'Client',
+      auteur_role: user?.role || 'client',
+      contenu: text,
+      type: 'texte',
+      lu_par_client: true
+    });
+    await db.from('conversations').update({
+      dernier_message: text,
+      dernier_message_at: new Date().toISOString()
+    }).eq('id', clientConvId);
+  } catch (e) {
+    showToast('Erreur envoi message', 'warning');
+  }
+}
+
+async function updateMsgBadge() {
+  const badge = document.getElementById('msg-badge');
+  if (!badge) return;
+  try {
+    const { data } = await db.from('conversations')
+      .select('non_lus_client').eq('entreprise_id', entrepriseId).single();
+    if (data && data.non_lus_client > 0) {
+      badge.textContent = data.non_lus_client;
+      badge.style.display = 'inline';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch (e) {}
 }
 
 // ─── EXPEDITIONS TAB ─────────────────────────────────────────

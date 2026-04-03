@@ -14,7 +14,8 @@
       { href:'index.html',               label:'Expéditions' },
       { href:'formulaire-vendeur.html',  label:'+ Expédition' },
       { href:'dispatch.html',            label:'Dispatch' },
-      { href:'litiges.html',             label:'Litiges' },
+      { href:'chat.html',               label:'Chat' },
+      { href:'litiges.html',            label:'Litiges' },
       { href:'grilles-tarifaires.html',  label:'Grilles' },
       { href:'admin.html',               label:'Admin' },
       { href:'dashboard.html',           label:'Dashboard' },
@@ -23,17 +24,20 @@
       { href:'index.html',               label:'Expéditions' },
       { href:'formulaire-vendeur.html',  label:'+ Expédition' },
       { href:'dispatch.html',            label:'Dispatch' },
-      { href:'litiges.html',             label:'Litiges' },
+      { href:'chat.html',               label:'Chat' },
+      { href:'litiges.html',            label:'Litiges' },
       { href:'dashboard.html',           label:'Dashboard' },
     ],
     client:      [
       { href:'index.html',               label:'Expéditions' },
-      { href:'litiges.html',             label:'Litiges' },
+      { href:'chat.html',               label:'Messages' },
+      { href:'litiges.html',            label:'Litiges' },
       { href:'dashboard.html',           label:'Mon espace' },
     ],
     dirigeant:   [
       { href:'index.html',               label:'Expéditions' },
-      { href:'litiges.html',             label:'Litiges' },
+      { href:'chat.html',               label:'Messages' },
+      { href:'litiges.html',            label:'Litiges' },
       { href:'dashboard.html',           label:'Mon espace' },
     ],
     vendeur:     [
@@ -92,13 +96,13 @@
 
     document.body.insertBefore(nav, document.body.firstChild);
 
-    // Logout handler — appelle db.auth.signOut() puis redirige
+    // Logout handler
     document.getElementById('namy-logout-btn').addEventListener('click', async () => {
       try {
         if (typeof db !== 'undefined' && db.auth) {
           await db.auth.signOut();
         }
-      } catch(e) { /* ignore signOut errors */ }
+      } catch(e) {}
       sessionStorage.removeItem('namy_user');
       sessionStorage.removeItem('namy_role');
       window.location.href = 'login.html';

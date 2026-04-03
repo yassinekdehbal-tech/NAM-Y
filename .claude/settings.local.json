@@ -69,9 +69,13 @@
       "Bash(git add:*)",
       "Bash(git commit -m ':*)",
       "Bash(git:*)",
-      "Bash(clip.exe)",
-      "Bash(export SUPABASE_ACCESS_TOKEN=\"sbp_7fa44c8aee0ed4c437c96dd451cb46d812e32401\")",
-      "Bash(wc -l *.html)"
+      "Bash(grep:*)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//Users/wassila/Downloads/NAM-Y/**)",
+      "Bash(done)",
+      "Bash(for m:*)",
+      "Bash(do /tmp/supabase migration repair $m --status applied)"
     ]
   }
 }
