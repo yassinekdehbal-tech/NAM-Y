@@ -376,7 +376,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     ] = await Promise.allSettled([
       db.from('grilles_tarifaires').select('*').order('id'),
       db.from('lignes_tarifaires_poids').select('*').order('grille_id').order('poids_min'),
-      db.from('lignes_tarifaires_zone').select('*').order('grille_id').order('code'),
+      db.from('lignes_tarifaires_zone').select('*').order('grille_id').order('zone_code'),
       db.from('lignes_tarifaires_colis').select('*').order('grille_id').order('id'),
       db.from('options_livraison').select('*').order('grille_id').order('id'),
       db.from('clients_grilles').select('*').order('id'),
@@ -421,12 +421,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             .filter(z => z.grille_id == cfg.id)
             .map(z => ({
               id: z.id,
-              c: z.code,
-              lb: z.label,
-              t1: z.t1,
-              t2: z.t2,
-              t3: z.t3,
-              km: (z.km_t1 != null) ? { t1: z.km_t1, t2: z.km_t2, t3: z.km_t3 } : null
+              c: z.zone_code || z.code,
+              lb: z.zone_label || z.label,
+              t1: z.prix_t1 || z.t1,
+              t2: z.prix_t2 || z.t2,
+              t3: z.prix_t3 || z.t3,
+              km: (z.prix_km_t1 != null) ? { t1: z.prix_km_t1, t2: z.prix_km_t2, t3: z.prix_km_t3 } : null
             }));
         }
 
@@ -436,13 +436,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             .filter(c => c.grille_id == cfg.id)
             .map(c => ({
               id: c.id,
-              n: c.nom,
+              n: c.categorie || c.nom_categorie || c.nom,
               a: c.nb_min,
               b: c.nb_max,
               p: c.prix_base,
               s: c.prix_supp,
-              l: c.lieu,
-              ds: c.seuil_devis
+              l: c.lieu_livraison || c.lieu,
+              ds: c.devis_seuil || c.seuil_devis
             }));
           g.dist = []; // distance rules could be loaded separately
         }
@@ -1099,14 +1099,14 @@ async function duplicateGrille(id) {
       if (copy.zones && copy.zones.length) {
         await db.from('lignes_tarifaires_zone').insert(copy.zones.map(z => ({
           grille_id: copy.id,
-          code: z.c,
-          label: z.lb,
-          t1: z.t1,
-          t2: z.t2,
-          t3: z.t3,
-          km_t1: z.km ? z.km.t1 : null,
-          km_t2: z.km ? z.km.t2 : null,
-          km_t3: z.km ? z.km.t3 : null
+          zone_code: z.c,
+          zone_label: z.lb,
+          prix_t1: z.t1,
+          prix_t2: z.t2,
+          prix_t3: z.t3,
+          prix_km_t1: z.km ? z.km.t1 : null,
+          prix_km_t2: z.km ? z.km.t2 : null,
+          prix_km_t3: z.km ? z.km.t3 : null
         })));
       }
       if (copy.opts && copy.opts.length) {
@@ -1197,13 +1197,13 @@ async function addCategorieColis() {
   try {
     const { data, error } = await db.from('lignes_tarifaires_colis').insert({
       grille_id: activeGrilleId,
-      nom: nom,
+      categorie: nom,
       nb_min: nbMin,
       nb_max: nbMax,
       prix_base: prixBase,
       prix_supp: prixSupp,
-      lieu: lieu,
-      seuil_devis: seuilDevis
+      lieu_livraison: lieu,
+      devis_seuil: seuilDevis
     }).select().single();
 
     if (data && !error) {
