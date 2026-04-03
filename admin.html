@@ -249,22 +249,25 @@
       <button class="modal-close" onclick="closeModal('modal-create-ent')">&#10005;</button>
     </div>
     <div class="modal-body">
-      <div class="fg"><label class="fl">Nom *</label><input type="text" class="fi" id="ne-nom" placeholder="Nom de l'entreprise"></div>
+      <div class="fg"><label class="fl">Nom *</label><input type="text" class="fi" id="ne-nom" placeholder="Nom de l'entreprise" required><span class="ne-err" id="err-ne-nom" style="display:none;color:var(--danger);font-size:11px">Nom obligatoire</span></div>
       <div class="fg"><label class="fl">Type *</label>
-        <select class="fi" id="ne-type">
+        <select class="fi" id="ne-type" required>
           <option value="client">Client (enseigne)</option>
           <option value="fournisseur">Fournisseur (transporteur)</option>
           <option value="plateforme">Plateforme</option>
         </select>
       </div>
-      <div class="fr">
-        <div class="fg"><label class="fl">Adresse</label><input type="text" class="fi" id="ne-adresse"></div>
-        <div class="fg"><label class="fl">CP</label><input type="text" class="fi" id="ne-cp" maxlength="5"></div>
+      <div class="fg" style="position:relative">
+        <label class="fl">Adresse *</label>
+        <input type="text" class="fi" id="ne-adresse" placeholder="Commencez à taper l'adresse..." autocomplete="off" oninput="searchAdresseAdmin(this.value)" required>
+        <div id="ne-adresse-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:0 0 8px 8px;box-shadow:var(--shadow-lg);z-index:50;max-height:200px;overflow-y:auto"></div>
+        <span class="ne-err" id="err-ne-adresse" style="display:none;color:var(--danger);font-size:11px">Adresse obligatoire</span>
       </div>
       <div class="fr">
-        <div class="fg"><label class="fl">Ville</label><input type="text" class="fi" id="ne-ville"></div>
-        <div class="fg"><label class="fl">T&eacute;l&eacute;phone</label><input type="tel" class="fi" id="ne-tel"></div>
+        <div class="fg"><label class="fl">CP *</label><input type="text" class="fi" id="ne-cp" maxlength="5" required><span class="ne-err" id="err-ne-cp" style="display:none;color:var(--danger);font-size:11px">CP obligatoire</span></div>
+        <div class="fg"><label class="fl">Ville *</label><input type="text" class="fi" id="ne-ville" required><span class="ne-err" id="err-ne-ville" style="display:none;color:var(--danger);font-size:11px">Ville obligatoire</span></div>
       </div>
+      <div class="fg"><label class="fl">T&eacute;l&eacute;phone *</label><input type="tel" class="fi" id="ne-tel" placeholder="01 23 45 67 89" required><span class="ne-err" id="err-ne-tel" style="display:none;color:var(--danger);font-size:11px">Téléphone obligatoire</span></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-create-ent')">Annuler</button>
@@ -725,11 +728,72 @@ async function deleteUser(userId, authId) {
   showToast(`Compte ${user.prenom} ${user.nom} supprim\u00e9`);
 }
 
+// ─── AUTOCOMPLÉTION ADRESSE (BAN) ────────────────────────────
+let neAdresseTimeout = null;
+function searchAdresseAdmin(val) {
+  const list = document.getElementById('ne-adresse-suggestions');
+  if (val.trim().length < 3) { list.style.display = 'none'; return; }
+  clearTimeout(neAdresseTimeout);
+  neAdresseTimeout = setTimeout(async () => {
+    try {
+      const resp = await fetch('https://api-adresse.data.gouv.fr/search/?q=' + encodeURIComponent(val) + '&limit=6');
+      const json = await resp.json();
+      if (!json.features || !json.features.length) { list.style.display = 'none'; return; }
+      list.innerHTML = json.features.map(f => {
+        const p = f.properties;
+        return `<div style="padding:8px 12px;cursor:pointer;font-size:12.5px;border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''" onclick="selectAdresseAdmin('${p.name.replace(/'/g,"\\'")}','${p.postcode}','${(p.city||'').replace(/'/g,"\\'")}')">
+          <strong>${p.name}</strong> <span style="color:var(--text-muted)">${p.postcode} ${p.city}</span>
+        </div>`;
+      }).join('');
+      list.style.display = 'block';
+    } catch(e) { list.style.display = 'none'; }
+  }, 250);
+}
+
+function selectAdresseAdmin(adresse, cp, ville) {
+  document.getElementById('ne-adresse').value = adresse;
+  document.getElementById('ne-cp').value = cp;
+  document.getElementById('ne-ville').value = ville;
+  document.getElementById('ne-adresse-suggestions').style.display = 'none';
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#ne-adresse') && !e.target.closest('#ne-adresse-suggestions')) {
+    const el = document.getElementById('ne-adresse-suggestions');
+    if (el) el.style.display = 'none';
+  }
+});
+
+// ─── VALIDATION FORMULAIRE ENTREPRISE ────────────────────────
+function validateEntrepriseForm() {
+  const fields = [
+    { id: 'ne-nom', err: 'err-ne-nom' },
+    { id: 'ne-adresse', err: 'err-ne-adresse' },
+    { id: 'ne-cp', err: 'err-ne-cp' },
+    { id: 'ne-ville', err: 'err-ne-ville' },
+    { id: 'ne-tel', err: 'err-ne-tel' },
+  ];
+  let valid = true;
+  fields.forEach(f => {
+    const val = document.getElementById(f.id).value.trim();
+    const errEl = document.getElementById(f.err);
+    if (!val) {
+      errEl.style.display = 'block';
+      document.getElementById(f.id).style.borderColor = 'var(--danger)';
+      valid = false;
+    } else {
+      errEl.style.display = 'none';
+      document.getElementById(f.id).style.borderColor = '';
+    }
+  });
+  return valid;
+}
+
 // ─── CREATE ENTREPRISE ──────────────────────────────────────
 async function createEntreprise() {
+  if (!validateEntrepriseForm()) return;
   const nom = document.getElementById('ne-nom').value.trim();
   const type = document.getElementById('ne-type').value;
-  if (!nom) { showToast('Donnez un nom', 'warning'); return; }
 
   try {
     const { data, error } = await db.from('entreprises').insert({
@@ -737,7 +801,7 @@ async function createEntreprise() {
       adresse: document.getElementById('ne-adresse').value.trim(),
       cp: document.getElementById('ne-cp').value.trim(),
       ville: document.getElementById('ne-ville').value.trim(),
-      tel: document.getElementById('ne-tel').value.trim(),
+      telephone: document.getElementById('ne-tel').value.trim(),
     }).select().single();
     if (error) throw error;
     entreprises.push(data);
@@ -899,7 +963,7 @@ function editEntrepriseInfo(id) {
   document.getElementById('ne-adresse').value = e.adresse || '';
   document.getElementById('ne-cp').value = e.cp || '';
   document.getElementById('ne-ville').value = e.ville || '';
-  document.getElementById('ne-tel').value = e.tel || '';
+  document.getElementById('ne-tel').value = e.telephone || e.tel || '';
 
   const btn = document.getElementById('ne-btn');
   btn.textContent = 'Modifier';
@@ -909,9 +973,9 @@ function editEntrepriseInfo(id) {
 }
 
 async function updateEntreprise() {
+  if (!validateEntrepriseForm()) return;
   const nom = document.getElementById('ne-nom').value.trim();
   const type = document.getElementById('ne-type').value;
-  if (!nom) { showToast('Donnez un nom', 'warning'); return; }
 
   const btn = document.getElementById('ne-btn');
   btn.disabled = true;
@@ -923,7 +987,7 @@ async function updateEntreprise() {
       adresse: document.getElementById('ne-adresse').value.trim(),
       cp: document.getElementById('ne-cp').value.trim(),
       ville: document.getElementById('ne-ville').value.trim(),
-      tel: document.getElementById('ne-tel').value.trim(),
+      telephone: document.getElementById('ne-tel').value.trim(),
     }).eq('id', editingEntInfoId);
     if (error) throw error;
 
@@ -935,7 +999,7 @@ async function updateEntreprise() {
       entreprises[idx].adresse = document.getElementById('ne-adresse').value.trim();
       entreprises[idx].cp = document.getElementById('ne-cp').value.trim();
       entreprises[idx].ville = document.getElementById('ne-ville').value.trim();
-      entreprises[idx].tel = document.getElementById('ne-tel').value.trim();
+      entreprises[idx].telephone = document.getElementById('ne-tel').value.trim();
     }
     filteredEnts = [...entreprises];
 
