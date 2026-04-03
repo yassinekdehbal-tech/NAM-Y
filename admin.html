@@ -63,6 +63,9 @@
 .perm-item input{display:none}
 .info-box{background:var(--info-bg);border:1px solid rgba(30,64,175,.15);border-radius:var(--radius-md);padding:10px 14px;font-size:12px;color:var(--info);display:flex;gap:8px;align-items:flex-start}
 .section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-hint);padding-top:8px;border-top:1px solid var(--border)}
+.unit-toggle{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;flex-shrink:0}
+.ut-btn{padding:6px 10px;border:none;background:var(--bg-hover);color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-body);transition:all .15s}
+.ut-btn.on{background:#00C9A7;color:#fff}
 .ent-type{display:flex;gap:6px}
 .ent-type-btn{padding:6px 14px;border:1.5px solid var(--border-strong);border-radius:var(--radius-md);background:var(--bg-hover);color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
 .ent-type-btn:hover{border-color:var(--border-strong);color:var(--text-primary)}
@@ -298,18 +301,36 @@
 
       <div class="fr">
         <div class="fg">
-          <label class="fl">Majoration dim/f&eacute;ri&eacute;s (%)</label>
-          <input type="number" class="fi" id="ee-maj" value="20" min="0" step="1">
+          <label class="fl">Majoration dim/fériés</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="number" class="fi" id="ee-maj" value="20" min="0" step="1" style="flex:1">
+            <div class="unit-toggle" id="toggle-maj">
+              <button class="ut-btn on" onclick="setUnitType('maj','%',this)">%</button>
+              <button class="ut-btn" onclick="setUnitType('maj','€',this)">€</button>
+            </div>
+          </div>
         </div>
         <div class="fg">
-          <label class="fl">Co&ucirc;t &eacute;chec retrait (% course)</label>
-          <input type="number" class="fi" id="ee-echec-retrait" value="50" min="0" step="1">
+          <label class="fl">Coût échec retrait</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="number" class="fi" id="ee-echec-retrait" value="50" min="0" step="1" style="flex:1">
+            <div class="unit-toggle" id="toggle-echec-retrait">
+              <button class="ut-btn on" onclick="setUnitType('echec-retrait','%',this)">%</button>
+              <button class="ut-btn" onclick="setUnitType('echec-retrait','€',this)">€</button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="fr">
         <div class="fg">
-          <label class="fl">Co&ucirc;t &eacute;chec livraison (&euro; fixe)</label>
-          <input type="number" class="fi" id="ee-echec-livraison" value="0" min="0" step="0.01">
+          <label class="fl">Coût échec livraison</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="number" class="fi" id="ee-echec-livraison" value="0" min="0" step="0.01" style="flex:1">
+            <div class="unit-toggle" id="toggle-echec-livraison">
+              <button class="ut-btn" onclick="setUnitType('echec-livraison','%',this)">%</button>
+              <button class="ut-btn on" onclick="setUnitType('echec-livraison','€',this)">€</button>
+            </div>
+          </div>
         </div>
         <div class="fg">
           <label class="fl">Limite commandes/jour (0 = illimit&eacute;)</label>
@@ -1028,7 +1049,7 @@ async function editEntreprise(id) {
   // Charger les paramètres existants
   let params = {};
   try {
-    const { data } = await db.from('parametres_entreprise').select('*').eq('entreprise_id', id).single();
+    const { data } = await db.from('parametres_entreprise').select('*').eq('entreprise_id', id).maybeSingle();
     if (data) params = data;
   } catch (e) {}
 
@@ -1037,6 +1058,11 @@ async function editEntreprise(id) {
   document.getElementById('ee-echec-livraison').value = params.cout_echec_livraison ?? 0;
   document.getElementById('ee-limite').value = params.limite_commandes_jour ?? 0;
   document.getElementById('ee-delai').value = params.delai_annulation_heures ?? 24;
+
+  // Charger les types % / €
+  setUnitToggle('maj', params.majoration_dimferies_type || '%');
+  setUnitToggle('echec-retrait', params.cout_echec_retrait_type || '%');
+  setUnitToggle('echec-livraison', params.cout_echec_livraison_type || '€');
 
   // Charger les grilles tarifaires
   const grilleSel = document.getElementById('ee-grille');
@@ -1060,7 +1086,7 @@ async function editEntreprise(id) {
 
   // Charger l'assignation actuelle
   try {
-    const { data: assignment } = await db.from('clients_grilles').select('grille_id').eq('client_id', id).single();
+    const { data: assignment } = await db.from('clients_grilles').select('grille_id').eq('client_id', id).maybeSingle();
     if (assignment && assignment.grille_id) {
       grilleSel.value = assignment.grille_id;
     }
@@ -1098,6 +1124,9 @@ async function saveEntrepriseParams() {
     jours_service: jours,
     ouvert_dimanche: jours.includes('dimanche'),
     ouvert_feries: ouvertFeries,
+    majoration_dimferies_type: getUnitType('maj'),
+    cout_echec_retrait_type: getUnitType('echec-retrait'),
+    cout_echec_livraison_type: getUnitType('echec-livraison'),
   };
 
   try {
@@ -1123,6 +1152,33 @@ async function saveEntrepriseParams() {
   } catch (e) {
     showToast('Erreur: ' + e.message, 'warning');
   }
+}
+
+// ─── TOGGLE % / € ───────────────────────────────────────────
+const unitTypes = { 'maj': '%', 'echec-retrait': '%', 'echec-livraison': '€' };
+
+function setUnitType(field, type, btn) {
+  unitTypes[field] = type;
+  const toggle = document.getElementById('toggle-' + field);
+  if (toggle) {
+    toggle.querySelectorAll('.ut-btn').forEach(b => b.classList.remove('on'));
+    if (btn) btn.classList.add('on');
+    else toggle.querySelectorAll('.ut-btn').forEach(b => { if (b.textContent.trim() === type) b.classList.add('on'); });
+  }
+}
+
+function setUnitToggle(field, type) {
+  unitTypes[field] = type;
+  const toggle = document.getElementById('toggle-' + field);
+  if (toggle) {
+    toggle.querySelectorAll('.ut-btn').forEach(b => {
+      b.classList.toggle('on', b.textContent.trim() === type);
+    });
+  }
+}
+
+function getUnitType(field) {
+  return unitTypes[field] || '%';
 }
 </script>
 </body>
