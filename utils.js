@@ -49,3 +49,19 @@ function getSessionUser() {
 function getSessionRole() {
   return sessionStorage.getItem('namy_role') || null;
 }
+
+// ─── STATUS TRACKING ────────────────────────────────────────
+async function recordStatusChange(expId, statut, commentaire) {
+  if (typeof db === 'undefined') return;
+  const user = getSessionUser();
+  try {
+    await db.from('expedition_statuts').insert({
+      expedition_id: expId,
+      statut: statut,
+      changed_by_id: user?.auth_id || null,
+      changed_by_nom: user ? ((user.prenom || '') + ' ' + (user.nom || '')).trim() : null,
+      changed_by_role: user?.role || null,
+      commentaire: commentaire || null
+    });
+  } catch (e) { /* silencieux — non bloquant */ }
+}

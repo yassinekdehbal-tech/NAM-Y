@@ -859,6 +859,7 @@ async function acceptB2C(id) {
 
   try {
     await db.from('expeditions').update({ statut: 'en_attente' }).eq('id', id);
+    recordStatusChange(id, 'en_attente', 'B2C accepté');
     // TODO: Stripe capture via Edge Function
     // await db.functions.invoke('stripe-capture', { body: { payment_intent_id: c.stripe_payment_intent_id } });
   } catch (e) { console.warn('Accept B2C failed:', e); }
@@ -877,6 +878,7 @@ async function refuseB2C(id) {
 
   try {
     await db.from('expeditions').update({ statut: 'annule' }).eq('id', id);
+    recordStatusChange(id, 'annule', motif || 'B2C refusé');
     await db.from('historique_expeditions').insert({
       expedition_id: id, evenement: 'B2C Refuse', commentaire: motif || '', utilisateur: 'Dispatcher'
     });

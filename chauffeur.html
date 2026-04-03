@@ -1067,7 +1067,7 @@ async function saveSig() {
     if (isOnline()) {
       try {
         await db.from('tournee_stops').update({ statut: 'livre', signature_data: signatureData, livre_at: livreAt }).eq('id', s.id);
-        if (s.expedition_id) await db.from('expeditions').update({ statut: 'livre' }).eq('id', s.expedition_id);
+        if (s.expedition_id) { await db.from('expeditions').update({ statut: 'livre' }).eq('id', s.expedition_id); recordStatusChange(s.expedition_id, 'livre', 'Livré par ' + CHAUFFEUR.nom); }
       } catch(e) {
         queueOfflineAction({ type: 'status_update', stop_id: s.id, statut: 'livre', signature_data: signatureData, livre_at: livreAt, expedition_id: s.expedition_id, exp_statut: 'livre' });
       }
@@ -1096,7 +1096,7 @@ async function declareEchec(raison) {
     if (isOnline()) {
       try {
         await db.from('tournee_stops').update({ statut: 'echec', echec_raison: raison, echec_at: echecAt }).eq('id', s.id);
-        if (s.expedition_id) await db.from('expeditions').update({ statut: 'litige' }).eq('id', s.expedition_id);
+        if (s.expedition_id) { await db.from('expeditions').update({ statut: 'litige' }).eq('id', s.expedition_id); recordStatusChange(s.expedition_id, 'echec', raison); }
       } catch(e) {
         queueOfflineAction({ type: 'status_update', stop_id: s.id, statut: 'echec', echec_raison: raison, echec_at: echecAt, expedition_id: s.expedition_id, exp_statut: 'litige' });
       }

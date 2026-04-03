@@ -512,14 +512,20 @@ async function openDetail(id) {
   html += '<h4 style="font-size:13px;font-weight:600;margin-bottom:8px">Photos</h4>';
   html += '<div style="margin-bottom:8px"><span style="font-size:11px;color:var(--text-muted);text-transform:uppercase">Retrait</span>';
   if (photosRetrait.length) {
-    html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px">' + photosRetrait.map(u => '<img src="' + u + '" style="width:100%;height:80px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border)" onclick="window.open(\'' + u + '\')">').join('') + '</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px">' + photosRetrait.map(u => '<img src="' + u + '" style="width:100%;height:80px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border)" onclick="document.getElementById(\'lightbox-img\').src=\'' + u + '\';document.getElementById(\'lightbox\').style.display=\'flex\'">').join('') + '</div>';
   } else { html += '<div style="font-size:12px;color:var(--text-muted);margin-top:4px">Aucune photo</div>'; }
   html += '</div>';
   html += '<div><span style="font-size:11px;color:var(--text-muted);text-transform:uppercase">Livraison</span>';
   if (photosLivraison.length) {
-    html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px">' + photosLivraison.map(u => '<img src="' + u + '" style="width:100%;height:80px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border)" onclick="window.open(\'' + u + '\')">').join('') + '</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px">' + photosLivraison.map(u => '<img src="' + u + '" style="width:100%;height:80px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border)" onclick="document.getElementById(\'lightbox-img\').src=\'' + u + '\';document.getElementById(\'lightbox\').style.display=\'flex\'">').join('') + '</div>';
   } else { html += '<div style="font-size:12px;color:var(--text-muted);margin-top:4px">Aucune photo</div>'; }
   html += '</div></div>';
+
+  // Timeline historique statuts
+  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:8px">';
+  html += '<h4 style="font-size:13px;font-weight:600;margin-bottom:12px">Historique</h4>';
+  html += '<div id="detail-timeline" style="position:relative;padding-left:24px"><div style="font-size:12px;color:var(--text-muted)">Chargement...</div></div>';
+  html += '</div>';
 
   // Commentaires
   html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:8px">';
@@ -546,7 +552,8 @@ async function openDetail(id) {
   body.innerHTML = html;
   openModal('modal-detail');
 
-  // Load comments async
+  // Load timeline + comments async
+  loadDetailTimeline(e.id);
   loadDetailComments(e.id);
 }
 
@@ -578,6 +585,67 @@ async function addComment(expId) {
   } catch(e) { console.error('Comment error:', e); }
 }
 
+// ─── TIMELINE HISTORIQUE ────────────────────────────────────
+const STATUT_TIMELINE_CONFIG = {
+  en_attente_validation: { icon: '🔔', color: '#7C3AED', label: 'Reçue (B2C)' },
+  en_attente: { icon: '⏳', color: '#6B7280', label: 'En attente' },
+  accepte: { icon: '✅', color: '#00C9A7', label: 'Acceptée' },
+  planifie: { icon: '📋', color: '#1E40AF', label: 'Planifiée' },
+  en_cours: { icon: '🚚', color: '#F59E0B', label: 'En cours' },
+  collecte: { icon: '📦', color: '#1E40AF', label: 'Retirée' },
+  echec_retrait: { icon: '❌', color: '#991B1B', label: 'Échec retrait' },
+  livre: { icon: '✅', color: '#166534', label: 'Livrée' },
+  echec_livraison: { icon: '❌', color: '#991B1B', label: 'Échec livraison' },
+  echec: { icon: '❌', color: '#991B1B', label: 'Échec' },
+  retourne: { icon: '↩️', color: '#854D0E', label: 'Retournée' },
+  litige: { icon: '⚠️', color: '#991B1B', label: 'Litige ouvert' },
+  annule: { icon: '🚫', color: '#6B7280', label: 'Annulée' },
+};
+
+async function loadDetailTimeline(expId) {
+  const el = document.getElementById('detail-timeline');
+  if (!el) return;
+
+  try {
+    const { data } = await db.from('expedition_statuts').select('*')
+      .eq('expedition_id', expId).order('created_at');
+
+    if (!data || !data.length) {
+      el.innerHTML = '<div style="font-size:12px;color:var(--text-muted)">Aucun historique de statut</div>';
+      return;
+    }
+
+    el.innerHTML = '<div style="position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:var(--border)"></div>'
+      + data.map((s, i) => {
+        const cfg = STATUT_TIMELINE_CONFIG[s.statut] || { icon: '•', color: '#6B7280', label: s.statut };
+        const time = s.created_at ? new Date(s.created_at).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+        const isLast = i === data.length - 1;
+        return '<div style="position:relative;padding-bottom:' + (isLast ? '0' : '16px') + ';padding-left:16px">'
+          + '<div style="position:absolute;left:-5px;top:2px;width:16px;height:16px;border-radius:50%;background:' + cfg.color + ';display:flex;align-items:center;justify-content:center;font-size:9px;z-index:1;border:2px solid var(--bg-surface)">' + cfg.icon + '</div>'
+          + '<div style="font-size:13px;font-weight:600;color:' + cfg.color + '">' + cfg.label + '</div>'
+          + '<div style="font-size:11px;color:var(--text-muted)">' + time + (s.changed_by_nom ? ' — ' + s.changed_by_nom : '') + '</div>'
+          + (s.commentaire ? '<div style="font-size:12px;color:var(--text-secondary);margin-top:2px;font-style:italic">' + s.commentaire + '</div>' : '')
+          + '</div>';
+      }).join('');
+  } catch (e) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text-muted)">Erreur chargement historique</div>';
+  }
+}
+
+async function recordStatusChange(expId, statut, commentaire) {
+  const user = getSessionUser();
+  try {
+    await db.from('expedition_statuts').insert({
+      expedition_id: expId,
+      statut: statut,
+      changed_by_id: user?.auth_id || null,
+      changed_by_nom: user ? ((user.prenom || '') + ' ' + (user.nom || '')).trim() : null,
+      changed_by_role: user?.role || null,
+      commentaire: commentaire || null
+    });
+  } catch (e) { console.warn('recordStatusChange error:', e); }
+}
+
 // ─── STATUS CHANGE ──────────────────────────────────────────
 function openStatusModal(id) {
   const e = expeditions.find(x => String(x.id) == String(id));
@@ -607,7 +675,7 @@ async function confirmStatusChange() {
     const { error } = await db.from('expeditions').update({ statut: newStatus }).eq('id', id);
     if (error) throw error;
 
-    // Insert historique
+    // Insert historique + timeline statut
     const user = getSessionUser();
     await db.from('historique_expeditions').insert({
       expedition_id: id,
@@ -616,6 +684,7 @@ async function confirmStatusChange() {
       utilisateur: user ? (user.prenom || user.email || 'Utilisateur') : 'Utilisateur',
       date: new Date().toISOString()
     });
+    await recordStatusChange(id, newStatus, comment);
   } catch (err) {
     console.warn('[NAMY] Supabase update failed, updating locally:', err);
   }
