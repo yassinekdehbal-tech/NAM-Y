@@ -926,7 +926,7 @@ select {
       </div>
       <!-- STEP 2: Articles & Poids -->
       <div class="step-content" id="step-2">
-        <!-- Nb colis + Poids total on one line -->
+        <!-- Nb colis + Poids total -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div class="form-group">
             <label>Nombre de colis <span class="required">*</span></label>
@@ -938,24 +938,42 @@ select {
           </div>
         </div>
 
-        <!-- Dimensions (optional accordion) -->
-        <details style="margin-top:8px">
-          <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted);padding:8px 0">Dimensions (optionnel)</summary>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
-            <div class="form-group">
-              <label>Longueur (cm)</label>
-              <input type="number" id="dim-longueur" class="form-input" placeholder="L">
-            </div>
-            <div class="form-group">
-              <label>Largeur (cm)</label>
-              <input type="number" id="dim-largeur" class="form-input" placeholder="l">
-            </div>
-            <div class="form-group">
-              <label>Hauteur (cm)</label>
-              <input type="number" id="dim-hauteur" class="form-input" placeholder="H">
-            </div>
+        <!-- Poids max colis + Nb colis lourds -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
+          <div class="form-group">
+            <label>Poids du colis le plus lourd (kg) <span class="required">*</span></label>
+            <input type="number" id="poids-max-colis" class="form-input" min="0" step="0.1" placeholder="Ex: 45" oninput="updatePrix()">
           </div>
-        </details>
+          <div class="form-group">
+            <label>Nb colis lourds (&gt;90kg) <span class="required">*</span></label>
+            <input type="number" id="nb-colis-lourds" class="form-input" min="0" value="0" oninput="updatePrix()">
+          </div>
+        </div>
+
+        <!-- Dimensions -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
+          <div class="form-group">
+            <label>Longueur max (cm)</label>
+            <input type="number" id="dim-longueur" class="form-input" placeholder="L">
+          </div>
+          <div class="form-group">
+            <label>Largeur max (cm)</label>
+            <input type="number" id="dim-largeur" class="form-input" placeholder="l">
+          </div>
+          <div class="form-group">
+            <label>Hauteur max (cm) <span class="required">*</span></label>
+            <input type="number" id="dim-hauteur" class="form-input" placeholder="H" oninput="updatePrix()">
+          </div>
+        </div>
+
+        <!-- Distance km (lecture seule) -->
+        <div class="form-group" style="margin-top:8px">
+          <label>Distance magasin → client</label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="text" id="distance-km" class="form-input" readonly placeholder="Calcul auto..." style="flex:1;background:var(--bg-hover);cursor:default">
+            <span style="font-size:12px;color:var(--text-muted)">km</span>
+          </div>
+        </div>
 
         <!-- Description -->
         <div class="form-group" style="margin-top:8px">
@@ -972,6 +990,7 @@ select {
           <div style="font-size:11px;color:var(--text-muted);text-align:right">
             <div id="prix-live-grille">Grille : —</div>
             <div id="prix-live-tranche">Tranche : —</div>
+            <div id="prix-live-distance" style="display:none"></div>
           </div>
         </div>
       </div>
@@ -1321,8 +1340,19 @@ async function loadVendeurData() {
           OPTIONS_LIVRAISON = opts;
           renderOptionsLivraison();
         }
+
+        // 4. Charger le rayon de la grille
+        const { data: grilleConfig } = await db
+          .from('grilles_tarifaires')
+          .select('rayon_km')
+          .eq('id', assignment.grille_id)
+          .maybeSingle();
+        if (grilleConfig && grilleConfig.rayon_km) GRILLE_RAYON = grilleConfig.rayon_km;
       }
     }
+
+    // Géocoder le magasin pour le calcul de distance
+    geocodeMagasin();
 
     // Fallback : charger depuis l'ancienne table si pas d'assignation
     if (GRILLE.length === 4 && GRILLE[0].prix === 25) {
@@ -1725,6 +1755,9 @@ function handleAdresseInput(input) {
   }, 250);
 }
 
+let clientLat = null, clientLng = null;
+let magasinLat = null, magasinLng = null;
+
 function selectAdresseGouv(el) {
   const d = JSON.parse(el.dataset.addr);
   document.getElementById('client-adresse').value = d.label + ', ' + d.cp + ' ' + d.ville;
@@ -1736,8 +1769,11 @@ function selectAdresseGouv(el) {
   if (latEl) latEl.value = d.lat;
   const lngEl = document.getElementById('client-lng');
   if (lngEl) lngEl.value = d.lng;
+  clientLat = d.lat;
+  clientLng = d.lng;
   document.getElementById('adresse-suggestions').style.display = 'none';
   hideError('err-adresse', 'client-adresse');
+  calculateDistance();
   updateSidebar();
   updatePrix();
 }
@@ -1747,6 +1783,50 @@ document.addEventListener('click', e => {
     document.getElementById('adresse-suggestions').style.display = 'none';
   }
 });
+
+// ─── GÉOCODAGE MAGASIN + DISTANCE ────────────────────────────
+async function geocodeMagasin() {
+  if (magasinLat && magasinLng) return;
+  const addr = MAGASIN.adresse + ' ' + (MAGASIN.cp || '') + ' ' + (MAGASIN.ville || '');
+  if (!addr.trim()) return;
+  try {
+    const resp = await fetch('https://api-adresse.data.gouv.fr/search/?q=' + encodeURIComponent(addr) + '&limit=1');
+    const json = await resp.json();
+    if (json.features && json.features.length) {
+      const c = json.features[0].geometry.coordinates;
+      magasinLat = c[1]; magasinLng = c[0];
+      console.log('[Magasin] Géocodé:', magasinLat, magasinLng);
+    }
+  } catch(e) { console.warn('Géocodage magasin failed:', e); }
+}
+
+async function calculateDistance() {
+  if (!magasinLat || !magasinLng) await geocodeMagasin();
+  if (!magasinLat || !clientLat) {
+    document.getElementById('distance-km').value = '';
+    return;
+  }
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${magasinLng},${magasinLat};${clientLng},${clientLat}?overview=false`;
+    const resp = await fetch(url);
+    const json = await resp.json();
+    if (json.routes && json.routes.length) {
+      const km = (json.routes[0].distance / 1000).toFixed(1);
+      document.getElementById('distance-km').value = km;
+      console.log('[Distance] OSRM:', km, 'km');
+      updatePrix();
+    }
+  } catch(e) {
+    // Fallback haversine
+    const R = 6371;
+    const dLat = (clientLat - magasinLat) * Math.PI / 180;
+    const dLon = (clientLng - magasinLng) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(magasinLat*Math.PI/180) * Math.cos(clientLat*Math.PI/180) * Math.sin(dLon/2)**2;
+    const km = (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)) * 1.3).toFixed(1);
+    document.getElementById('distance-km').value = km;
+    updatePrix();
+  }
+}
 
 // ─── ARTICLES ────────────────────────────────────────────────
 function toggleMiniForm() {
@@ -1941,80 +2021,103 @@ function calculateOptionsTotal() {
 }
 
 function updatePrix() {
-  // Read from simplified form
+  const poids = parseFloat(document.getElementById('poids-total')?.value) || 0;
   const nbColis = parseInt(document.getElementById('nb-colis')?.value) || 0;
-  const poidsSimple = parseFloat(document.getElementById('poids-total')?.value) || 0;
+  const poidsMaxColis = parseFloat(document.getElementById('poids-max-colis')?.value) || 0;
+  const nbLourds = parseInt(document.getElementById('nb-colis-lourds')?.value) || 0;
+  const hauteur = parseFloat(document.getElementById('dim-hauteur')?.value) || 0;
+  const distKm = parseFloat(document.getElementById('distance-km')?.value) || 0;
 
-  // Find matching grille tranche
-  let prixSimple = 0;
-  let trancheSimple = null;
-  if (GRILLE && GRILLE.length && poidsSimple > 0) {
-    trancheSimple = GRILLE.find(g => poidsSimple <= g.poids_max) || GRILLE[GRILLE.length - 1];
-    if (trancheSimple) prixSimple = trancheSimple.prix || 0;
+  // Trouver la tranche dans la grille
+  let tranche = null;
+  let base = 0;
+  if (GRILLE && GRILLE.length && poids > 0) {
+    tranche = GRILLE.find(g => poids <= g.poids_max) || GRILLE[GRILLE.length - 1];
+    if (tranche) base = tranche.prix || 0;
   }
 
-  // Update live badge
-  const liveBadge = document.getElementById('prix-live-val');
-  if (liveBadge) liveBadge.textContent = prixSimple > 0 ? prixSimple.toFixed(2) + ' €' : '— €';
-  const grilleEl = document.getElementById('prix-live-grille');
-  if (grilleEl) grilleEl.textContent = 'Grille : ' + (MAGASIN.grille || 'Standard');
-  const trancheEl = document.getElementById('prix-live-tranche');
-  if (trancheEl) trancheEl.textContent = trancheSimple ? 'Tranche : 0-' + trancheSimple.poids_max + ' kg' : '';
-
-  const poids = articles.reduce((s, a) => s + a.poids, 0) || poidsSimple;
-  const longueurMax = Math.max(...articles.map(a => a.longueur || 0), 0);
-  const nbLourds = articles.filter(a => a.lourd).length;
-
-  if (poids === 0) {
-    document.getElementById('price-placeholder').style.display = 'block';
-    document.getElementById('price-lines').style.display = 'none';
-    return;
+  // Supplément colis lourds — depuis options_livraison si dispo
+  let suppLourd = 0;
+  if (nbLourds > 0) {
+    const optLourd = OPTIONS_LIVRAISON.find(o =>
+      o.seuil_declencheur && poidsMaxColis >= (o.seuil_declencheur || 90)
+    );
+    if (optLourd) {
+      suppLourd = (optLourd.prix_unitaire || optLourd.prix || 55) * nbLourds;
+    } else {
+      suppLourd = nbLourds * 55; // fallback
+    }
   }
 
-  let tarif = GRILLE.find(g => poids <= g.poids_max && longueurMax <= g.dim_max);
-
-  // Hors grille → devis requis
-  if (!tarif) {
-    document.getElementById('price-placeholder').innerHTML =
-      '<div class="ph-icon">💬</div><p style="font-weight:600;color:var(--warning)">Devis requis</p><p style="font-size:12px;color:var(--text-muted)">Poids ' + poids + 'kg / dim ' + longueurMax + 'cm dépasse la grille tarifaire.<br>La commande sera soumise en attente de validation.</p>';
-    document.getElementById('price-placeholder').style.display = 'block';
-    document.getElementById('price-lines').style.display = 'none';
-    updateEstimationBadge('Devis requis', true);
-    return;
+  // Majoration hors rayon
+  let suppDistance = 0;
+  const rayonGrille = GRILLE_RAYON || 30;
+  if (distKm > rayonGrille) {
+    const kmSupp = (distKm - rayonGrille) * 2; // aller-retour
+    suppDistance = kmSupp * 2.50; // 2.50€/km par défaut
+    // Chercher option hors rayon dans les options
+    const optKm = OPTIONS_LIVRAISON.find(o => (o.nom || '').toLowerCase().includes('km') || (o.nom || '').toLowerCase().includes('rayon'));
+    if (optKm && optKm.prix_unitaire) suppDistance = kmSupp * optKm.prix_unitaire;
   }
 
-  const base = tarif.prix;
-  const supplement = nbLourds * 55;
+  // Options dynamiques
+  let optionsTotal = 0;
+  const optionsLines = [];
+  if (typeof calculateOptionsTotal === 'function') {
+    try {
+      const r = calculateOptionsTotal();
+      optionsTotal = r.total || 0;
+      if (r.lines) r.lines.forEach(l => optionsLines.push(l));
+    } catch(e) {}
+  }
 
-  // Calcul des options dynamiques
-  const { total: optionsTotal, lines: optionsLines } = calculateOptionsTotal();
-
-  const ht = base + supplement + optionsTotal;
+  const ht = base + suppLourd + suppDistance + optionsTotal;
   const tva = ht * 0.2;
   const ttc = ht + tva;
 
-  document.getElementById('p-base').textContent = base.toFixed(2) + ' \u20ac';
-  document.getElementById('p-ht').textContent = ht.toFixed(2) + ' \u20ac';
-  document.getElementById('p-tva').textContent = tva.toFixed(2) + ' \u20ac';
-  document.getElementById('p-ttc').textContent = ttc.toFixed(2) + ' \u20ac';
-
-  if (supplement > 0) {
-    document.getElementById('p-lourd').textContent = supplement.toFixed(2) + ' \u20ac';
-    document.getElementById('p-lourd-line').style.display = 'flex';
-  } else {
-    document.getElementById('p-lourd-line').style.display = 'none';
+  // Update live badge
+  const liveBadge = document.getElementById('prix-live-val');
+  if (liveBadge) liveBadge.textContent = ht > 0 ? ttc.toFixed(2) + ' €' : '— €';
+  const grilleEl = document.getElementById('prix-live-grille');
+  if (grilleEl) grilleEl.textContent = 'Grille : ' + (MAGASIN.grille || 'Standard');
+  const trancheEl = document.getElementById('prix-live-tranche');
+  if (trancheEl) trancheEl.textContent = tranche ? 'Tranche : 0-' + tranche.poids_max + ' kg' : '';
+  const distEl = document.getElementById('prix-live-distance');
+  if (distEl) {
+    if (suppDistance > 0) { distEl.textContent = 'Hors rayon : +' + suppDistance.toFixed(2) + ' €'; distEl.style.display = 'block'; }
+    else { distEl.style.display = 'none'; }
   }
 
-  // Lignes options
-  const optLinesEl = document.getElementById('p-options-lines');
-  optLinesEl.innerHTML = optionsLines.map(l =>
-    `<div class="price-line"><span>${l.label}</span><span style="font-family:'DM Mono',monospace">${l.prix.toFixed(2)} \u20ac</span></div>`
-  ).join('');
+  // Update sidebar price if elements exist
+  const pBaseEl = document.getElementById('p-base');
+  if (pBaseEl) {
+    pBaseEl.textContent = base.toFixed(2) + ' €';
+    document.getElementById('p-ht').textContent = ht.toFixed(2) + ' €';
+    document.getElementById('p-tva').textContent = tva.toFixed(2) + ' €';
+    document.getElementById('p-ttc').textContent = ttc.toFixed(2) + ' €';
+    const pLourdLine = document.getElementById('p-lourd-line');
+    if (pLourdLine) {
+      if (suppLourd > 0) { document.getElementById('p-lourd').textContent = suppLourd.toFixed(2) + ' €'; pLourdLine.style.display = 'flex'; }
+      else { pLourdLine.style.display = 'none'; }
+    }
+    const optLinesEl = document.getElementById('p-options-lines');
+    if (optLinesEl) {
+      let allLines = [...optionsLines];
+      if (suppDistance > 0) allLines.push({ label: 'Hors rayon (' + ((distKm - rayonGrille) * 2).toFixed(0) + 'km A+R)', prix: suppDistance });
+      optLinesEl.innerHTML = allLines.map(l => `<div class="price-line"><span>${l.label}</span><span style="font-family:'DM Mono',monospace">${l.prix.toFixed(2)} €</span></div>`).join('');
+    }
+    const placeholderEl = document.getElementById('price-placeholder');
+    const priceLines = document.getElementById('price-lines');
+    if (placeholderEl && priceLines) {
+      if (poids === 0) { placeholderEl.style.display = 'block'; priceLines.style.display = 'none'; }
+      else { placeholderEl.style.display = 'none'; priceLines.style.display = 'flex'; }
+    }
+  }
 
-  document.getElementById('price-placeholder').style.display = 'none';
-  document.getElementById('price-lines').style.display = 'flex';
-  updateEstimationBadge(ht.toFixed(2) + ' \u20ac HT', false);
+  if (typeof updateEstimationBadge === 'function' && ht > 0) updateEstimationBadge(ht.toFixed(2) + ' € HT', false);
 }
+
+let GRILLE_RAYON = 30; // Mis à jour depuis la grille Supabase
 
 // ─── ESTIMATION BADGE (flottant) ────────────────────────────
 function updateEstimationBadge(text, isDevis) {
@@ -2074,13 +2177,59 @@ function buildRecap() {
 }
 
 // ─── SUBMIT ──────────────────────────────────────────────────
-function submitExpedition() {
-  const orderNum = 12200 + Math.floor(Math.random() * 100);
-  document.getElementById('success-order-num').textContent = orderNum;
-  document.getElementById('recap-body').style.display = 'none';
-  document.getElementById('confirm-nav').style.display = 'none';
-  document.getElementById('success-screen').classList.add('show');
-  updateStepUI();
+async function submitExpedition() {
+  const user = typeof getSessionUser === 'function' ? getSessionUser() : null;
+  const btn = document.querySelector('.btn-submit');
+  if (btn) { btn.disabled = true; btn.textContent = 'Envoi...'; }
+
+  try {
+    const body = {
+      entreprise_id: user?.entreprise_id || null,
+      created_by: user?.id || null,
+      exp_nom: MAGASIN.nom,
+      exp_adresse: MAGASIN.adresse,
+      exp_cp: MAGASIN.cp,
+      exp_ville: MAGASIN.ville,
+      dest_nom: (document.getElementById('client-prenom')?.value || '') + ' ' + (document.getElementById('client-nom')?.value || ''),
+      dest_adresse: document.getElementById('client-adresse')?.value || '',
+      dest_cp: document.getElementById('client-cp')?.value || '',
+      dest_ville: document.getElementById('client-ville')?.value || '',
+      dest_telephone: document.getElementById('client-tel')?.value || '',
+      dest_email: document.getElementById('client-email')?.value || '',
+      date_livraison: document.getElementById('livraison-date')?.value || null,
+      creneau: selectedCreneau,
+      option_livraison: selectedLieu,
+      nb_colis: parseInt(document.getElementById('nb-colis')?.value) || 1,
+      poids_total: parseFloat(document.getElementById('poids-total')?.value) || 0,
+      poids_max_colis: parseFloat(document.getElementById('poids-max-colis')?.value) || 0,
+      nb_colis_lourds: parseInt(document.getElementById('nb-colis-lourds')?.value) || 0,
+      distance_km: parseFloat(document.getElementById('distance-km')?.value) || 0,
+      description: document.getElementById('description-marchandise')?.value || '',
+      prix_ht: parseFloat(document.getElementById('prix-live-val')?.textContent) || 0,
+      prix_ttc: parseFloat(document.getElementById('prix-live-val')?.textContent) || 0,
+      statut: 'en_attente',
+      lat: clientLat,
+      lng: clientLng,
+    };
+
+    console.log('[submitExpedition] body:', JSON.stringify(body));
+    const { data, error } = await db.from('expeditions').insert(body).select().single();
+    if (error) throw error;
+
+    const orderNum = data?.id || (12200 + Math.floor(Math.random() * 100));
+    document.getElementById('success-order-num').textContent = orderNum;
+    document.getElementById('recap-body').style.display = 'none';
+    const confirmNav = document.getElementById('confirm-nav');
+    if (confirmNav) confirmNav.style.display = 'none';
+    document.getElementById('success-screen').classList.add('show');
+    updateStepUI();
+  } catch(e) {
+    console.error('[submitExpedition] ERROR:', e);
+    if (typeof showToast === 'function') showToast('Erreur : ' + (e.message || e), 'danger');
+    else alert('Erreur : ' + (e.message || e));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '✓ Valider l\'expédition'; }
+  }
 }
 
 function resetForm() {
