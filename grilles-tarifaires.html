@@ -396,8 +396,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           id: cfg.id,
           nom: cfg.nom,
           type: cfg.type,
-          rayon: cfg.rayon,
-          maj: cfg.maj
+          rayon: cfg.rayon_km || cfg.rayon || 30,
+          maj: cfg.majoration_ferie || cfg.maj || 20
         };
 
         // Attach lignes (poids)
@@ -408,10 +408,10 @@ document.addEventListener('DOMContentLoaded', async () => {
               id: l.id,
               poidsMin: l.poids_min,
               poidsMax: l.poids_max,
-              colisMax: l.colis_max,
-              dimMax: l.dim_max,
-              prixPiedCamion: l.prix_pied_camion,
-              prixLieuChoix: l.prix_lieu_choix
+              colisMax: l.colis_max_kg || l.colis_max,
+              dimMax: l.dim_max_cm || l.dim_max,
+              prixPiedCamion: l.prix_pied || l.prix_pied_camion,
+              prixLieuChoix: l.prix_lieu || l.prix_lieu_choix
             }));
         }
 
@@ -1077,8 +1077,8 @@ async function duplicateGrille(id) {
     const { data, error } = await db.from('grilles_tarifaires').insert({
       nom: copy.nom,
       type: copy.type,
-      rayon: copy.rayon,
-      maj: copy.maj
+      rayon_km: copy.rayon || 30,
+      majoration_ferie: copy.maj || 20
     }).select().single();
 
     if (data && !error) {
@@ -1090,10 +1090,10 @@ async function duplicateGrille(id) {
           grille_id: copy.id,
           poids_min: l.poidsMin,
           poids_max: l.poidsMax,
-          colis_max: l.colisMax,
-          dim_max: l.dimMax,
-          prix_pied_camion: l.prixPiedCamion,
-          prix_lieu_choix: l.prixLieuChoix
+          colis_max_kg: l.colisMax,
+          dim_max_cm: l.dimMax,
+          prix_pied: l.prixPiedCamion,
+          prix_lieu: l.prixLieuChoix
         })));
       }
       if (copy.zones && copy.zones.length) {
@@ -1152,10 +1152,10 @@ async function addLignePoids() {
       grille_id: activeGrilleId,
       poids_min: poidsMin,
       poids_max: poidsMax,
-      colis_max: colisMax,
-      dim_max: dimMax,
-      prix_pied_camion: prixPiedCamion,
-      prix_lieu_choix: prixLieuChoix
+      colis_max_kg: colisMax,
+      dim_max_cm: dimMax,
+      prix_pied: prixPiedCamion,
+      prix_lieu: prixLieuChoix
     }).select().single();
 
     if (data && !error) {
@@ -1325,8 +1325,8 @@ async function createGrille() {
     const { data, error } = await db.from('grilles_tarifaires').insert({
       nom: nom,
       type: type,
-      rayon: rayon,
-      maj: maj
+      rayon_km: rayon,
+      majoration_ferie: maj
     }).select().single();
 
     if (data && !error) {
