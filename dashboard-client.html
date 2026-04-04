@@ -12,7 +12,7 @@
 <script src="supabase-client.js"></script>
 <script src="utils.js"></script>
 <script src="nav.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 /* HEADER */
 .hdr{background:var(--bg-surface);border-bottom:1px solid var(--border);height:52px;display:flex;align-items:center;padding:0 20px;gap:12px;position:sticky;top:0;z-index:100}
@@ -519,7 +519,7 @@ async function checkAlerts() {
 
     // 4. Devis en attente > 48h
     const twoDaysAgo = new Date(now); twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-    const { data: oldDevis } = await db.from('expeditions').select('id, destinataire')
+    const { data: oldDevis } = await db.from('expeditions').select('id, dest_nom')
       .eq('entreprise_id', entrepriseId).eq('statut', 'en_attente')
       .lte('created_at', twoDaysAgo.toISOString()).limit(5);
     if (oldDevis && oldDevis.length) {

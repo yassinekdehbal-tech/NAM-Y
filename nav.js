@@ -376,7 +376,7 @@
     let expeditions = [];
     if (conv?.entreprise_id) {
       try {
-        const { data } = await db.from('expeditions').select('id, destinataire, statut, date, creneau')
+        const { data } = await db.from('expeditions').select('id, dest_nom, statut, date_livraison, creneau')
           .eq('entreprise_id', conv.entreprise_id).order('created_at', { ascending: false }).limit(5);
         expeditions = data || [];
       } catch(e) {}
