@@ -29,26 +29,27 @@
     client:      [
       { href:'index.html',               label:'Expéditions' },
       { href:'litiges.html',             label:'Litiges' },
-      { href:'dashboard.html',           label:'Mon espace' },
+      { href:'dashboard-client.html',    label:'Mon espace' },
     ],
     dirigeant:   [
       { href:'index.html',               label:'Expéditions' },
       { href:'litiges.html',             label:'Litiges' },
-      { href:'dashboard.html',           label:'Mon espace' },
+      { href:'dashboard-client.html',    label:'Mon espace' },
     ],
     vendeur:     [
       { href:'index.html',               label:'Expéditions' },
       { href:'formulaire-vendeur.html',  label:'+ Expédition' },
+      { href:'dashboard-client.html',    label:'Mon espace' },
     ],
     fournisseur: [
       { href:'index.html',               label:'Expéditions' },
       { href:'litiges.html',             label:'Litiges' },
-      { href:'dashboard.html',           label:'Mon espace' },
+      { href:'dashboard-transporteur.html', label:'Mon espace' },
     ],
     exploitant:  [
       { href:'index.html',               label:'Expéditions' },
       { href:'litiges.html',             label:'Litiges' },
-      { href:'dashboard.html',           label:'Mon espace' },
+      { href:'dashboard-transporteur.html', label:'Mon espace' },
     ],
   };
 

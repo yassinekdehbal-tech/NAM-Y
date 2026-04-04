@@ -33,6 +33,20 @@ function loadSession() {
     return;
   }
 
+  // Rediriger vers le bon dashboard selon le rôle
+  if (['client','dirigeant'].includes(role)) {
+    window.location.href = 'dashboard-client.html';
+    return;
+  }
+  if (['fournisseur','exploitant'].includes(role)) {
+    window.location.href = 'dashboard-transporteur.html';
+    return;
+  }
+  if (role === 'livreur') {
+    window.location.href = 'chauffeur.html';
+    return;
+  }
+
   // Afficher nom + rôle
   const nameEl = document.getElementById('user-name');
   const roleEl = document.getElementById('user-role');
