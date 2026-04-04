@@ -1201,12 +1201,24 @@ function renderExpTable(data) {
 
 // ─── TEAM (MON EQUIPE) ──────────────────────────────────────
 async function loadTeam() {
+  console.log('[loadTeam] entrepriseId =', entrepriseId);
+  if (!entrepriseId) {
+    // Tentative de récupération dynamique
+    try {
+      const { data: { session } } = await db.auth.getSession();
+      if (session?.user?.id) {
+        const { data: profil } = await db.from('utilisateurs').select('entreprise_id').eq('auth_id', session.user.id).single();
+        if (profil?.entreprise_id) { entrepriseId = profil.entreprise_id; console.log('[loadTeam] entrepriseId récupéré:', entrepriseId); }
+      }
+    } catch(e) {}
+  }
   try {
     const { data, error } = await db.from('utilisateurs')
       .select('id,prenom,nom,email,actif,permissions,statut')
       .eq('role', 'vendeur')
       .eq('entreprise_id', entrepriseId)
       .order('prenom');
+    console.log('[loadTeam] résultat:', data?.length, 'vendeurs, error:', error);
     if (error) throw error;
     renderTeam(data || []);
   } catch(e) {
