@@ -316,7 +316,7 @@ async function loadDashboardData() {
           const { count } = await db.from('expeditions')
             .select('*', { count: 'exact', head: true })
             .eq('entreprise_id', p.entreprise_id)
-            .eq('date', todayStr);
+            .eq('date_livraison', todayStr);
           if (count >= p.limite_commandes_jour * 0.8) prochesLimite++;
         }
 

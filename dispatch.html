@@ -439,12 +439,12 @@ async function loadData() {
   try {
     // Expeditions
     let q = db.from('expeditions').select('*').order('id',{ascending:false});
-    if (!allMode) q = q.eq('date', date);
+    if (!allMode) q = q.eq('date_livraison', date);
     const { data: exps } = await q;
 
     // Tournees
-    let tq = db.from('tournees').select('*').order('heure');
-    if (!allMode) tq = tq.eq('date', date);
+    let tq = db.from('tournees').select('*').order('heure_depart');
+    if (!allMode) tq = tq.eq('date_tournee', date);
     const { data: tours } = await tq;
 
     // Dropdowns
@@ -478,16 +478,16 @@ async function loadData() {
 
 function mapExpedition(e) {
   return {
-    id: e.id, expediteur: e.expediteur||'', dest: e.destinataire||'',
+    id: e.id, expediteur: e.exp_nom||'', dest: e.dest_nom||'',
     adresse: e.dest_adresse||'', dest_adresse: e.dest_adresse||'',
     cp: e.dest_cp||'', dest_cp: e.dest_cp||'',
     ville: e.dest_ville||'', dest_ville: e.dest_ville||'',
     lat: e.lat||48.85, lng: e.lng||2.35, creneau: e.creneau||'',
-    option: e.lieu||'Piece du choix', poids: e.poids||0,
-    tournee_id: e.tournee_id||null, statut: e.statut||'en_attente', date: e.date,
+    option: e.option_livraison||'Piece du choix', poids: e.poids_total||0,
+    tournee_id: e.tournee_id||null, statut: e.statut||'en_attente', date: e.date_livraison,
     type_prestation: e.type_prestation, prix_ttc: e.prix_ttc, prix_ht: e.prix_ht,
     stripe_payment_intent_id: e.stripe_payment_intent_id, source: e.source||'namy',
-    expediteur_ville: e.expediteur_ville||'',
+    exp_ville: e.exp_ville||'',
   };
 }
 
@@ -585,7 +585,7 @@ function renderTimeline() {
   tournees.forEach(t => {
     const stops = commandes.filter(c => c.tournee_id == t.id);
     const livres = stops.filter(s => s.statut === 'livre').length;
-    const heureDepart = t.heure || '08:00';
+    const heureDepart = t.heure_depart || '08:00';
 
     // Status badge
     let statutBadge = '<span class="tl-badge" style="background:var(--bg-hover);color:var(--text-muted)">' + (t.statut || 'brouillon') + '</span>';
@@ -597,7 +597,7 @@ function renderTimeline() {
     if (t.statut === 'en_cours' || t.statut === 'publie') {
       const now = new Date();
       const today = now.toISOString().split('T')[0];
-      if (t.date === today) {
+      if (t.date_tournee === today) {
         const [dh, dm] = (heureDepart).split(':').map(Number);
         const expectedEnd = dh * 60 + dm + stops.length * 35;
         const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -706,7 +706,7 @@ function openSidePanel(tourneeId) {
   const stops = commandes.filter(c => c.tournee_id == t.id);
   const livres = stops.filter(s => s.statut === 'livre').length;
   const restants = stops.length - livres;
-  const heureDepart = t.heure || '08:00';
+  const heureDepart = t.heure_depart || '08:00';
 
   // Next stop
   const nextStop = stops.find(s => s.statut !== 'livre' && s.statut !== 'echec');
@@ -835,8 +835,8 @@ function renderB2CValidation() {
       </div>
       ${pending.map(c => {
         const typeLabel = TYPE_LABELS[c.type_prestation] || c.type_prestation || 'Standard';
-        const from = c.expediteur || c.expediteur_ville || '?';
-        const to = c.dest || c.destinataire || '?';
+        const from = c.exp_nom || c.exp_ville || '?';
+        const to = c.dest || c.dest_nom || '?';
         const toVille = c.ville || c.dest_ville || '';
         return `<div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px;font-size:12px">
           <span style="background:var(--warning-bg);color:var(--warning);padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;white-space:nowrap">${typeLabel}</span>
@@ -941,7 +941,7 @@ function renderEditorDetail(tourneeId) {
   const t = tournees.find(x => String(x.id) === String(tourneeId));
   if (!t) return;
   const stops = commandes.filter(c => c.tournee_id == t.id);
-  const heureDepart = t.heure || '08:00';
+  const heureDepart = t.heure_depart || '08:00';
   const el = document.getElementById('editor-detail');
   if (!el) return;
 
@@ -1243,7 +1243,7 @@ function openAssign(cmdId) {
         + '<div class="assign-color" style="background:' + t.couleur + '"></div>'
         + '<div>'
         + '<div class="assign-name">' + t.nom + '</div>'
-        + '<div class="assign-meta">' + (t.chauffeur || 'Non assigne') + ' - ' + (t.heure || '') + '</div>'
+        + '<div class="assign-meta">' + (t.chauffeur || 'Non assigne') + ' - ' + (t.heure_depart || '') + '</div>'
         + '</div>'
         + '<div class="assign-count">' + stopCount + ' stop' + (stopCount > 1 ? 's' : '') + '</div>'
         + '</div>';
@@ -1468,12 +1468,12 @@ async function autoDispatchIA() {
       const newId = 'ia_' + Date.now() + '_' + tourneeIdx;
       const cIdx = tourneeIdx % chauffeurs.length;
       const color = TOURNEE_COLORS[tourneeIdx % TOURNEE_COLORS.length];
-      t = { id:newId, nom:'IA_' + key.replace(/:/g,''), couleur:color, date:selectedDate, heure:'08:00', chauffeur:chauffeurs[cIdx], vehicule:'Fourgon 12m3', statut:'brouillon', stops:[] };
+      t = { id:newId, nom:'IA_' + key.replace(/:/g,''), couleur:color, date_tournee:selectedDate, heure_depart:'08:00', chauffeur:chauffeurs[cIdx], vehicule:'Fourgon 12m3', statut:'brouillon', stops:[] };
       tournees.push(t);
 
       try {
         const { data, error } = await db.from('tournees').insert({
-          nom:t.nom, date:t.date, heure:t.heure, chauffeur:t.chauffeur,
+          nom:t.nom, date_tournee:t.date_tournee, heure_depart:t.heure_depart, chauffeur:t.chauffeur,
           vehicule:t.vehicule, couleur:t.couleur, statut:'brouillon'
         }).select().single();
         if (!error && data) t.id = data.id;
@@ -1518,11 +1518,11 @@ async function loadDayData() {
 
   try {
     let expQ = db.from('expeditions').select('*').order('id',{ascending:false});
-    if (!allDatesMode) expQ = expQ.eq('date', date);
+    if (!allDatesMode) expQ = expQ.eq('date_livraison', date);
     const { data: expData } = await expQ;
 
-    let tourQ = db.from('tournees').select('*').order('heure');
-    if (!allDatesMode) tourQ = tourQ.eq('date', date);
+    let tourQ = db.from('tournees').select('*').order('heure_depart');
+    if (!allDatesMode) tourQ = tourQ.eq('date_tournee', date);
     const { data: tourData } = await tourQ;
 
     commandes = (expData && expData.length) ? expData.map(mapExpedition) : filterByDate(FALLBACK_COMMANDES, date, allDatesMode);

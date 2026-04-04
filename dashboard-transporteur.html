@@ -454,9 +454,9 @@ async function loadData() {
     const since = new Date(Date.now() - periodDays * 864e5).toISOString().slice(0, 10);
     const { data: tournees, error: tErr } = await db
       .from('tournees')
-      .select('id, chauffeur_id, date')
+      .select('id, chauffeur_id, date_tournee')
       .in('chauffeur_id', chauffeurIds)
-      .gte('date', since);
+      .gte('date_tournee', since);
     if (tErr) throw new Error('tournees error');
 
     if (tournees && tournees.length > 0) {
@@ -476,12 +476,12 @@ async function loadData() {
 
       stops = (stData || []).map(s => {
         const t = tourneeMap[s.tournee_id] || {};
-        const d = new Date(t.date || Date.now());
+        const d = new Date(t.date_tournee || Date.now());
         return {
           ...s,
           chauffeur_id: t.chauffeur_id,
           chauffeur_nom: chauffeurMap[t.chauffeur_id] || '?',
-          date: (t.date || new Date().toISOString()).slice(0, 10),
+          date: (t.date_tournee || new Date().toISOString()).slice(0, 10),
           day_of_week: d.getDay()
         };
       });
@@ -860,7 +860,7 @@ async function loadTodayTab() {
   const today = new Date().toISOString().split('T')[0];
   try {
     const { data } = await db.from('tournees').select('*')
-      .eq('date', today).order('heure');
+      .eq('date_tournee', today).order('heure_depart');
     // Filter by our chauffeurs if we have them
     const rows = data || [];
     document.getElementById('today-count').textContent = rows.length + ' tournée(s)';
@@ -884,8 +884,8 @@ async function loadUpcomingTab() {
   const today = new Date().toISOString().split('T')[0];
   try {
     const { data } = await db.from('expeditions').select('*')
-      .gt('date', today).in('statut', ['en_attente','planifie'])
-      .order('date').limit(100);
+      .gt('date_livraison', today).in('statut', ['en_attente','planifie'])
+      .order('date_livraison').limit(100);
     const rows = data || [];
     document.getElementById('upcoming-count').textContent = rows.length + ' expédition(s)';
     const tbody = document.getElementById('upcoming-tbody');
@@ -893,11 +893,11 @@ async function loadUpcomingTab() {
     if (!rows.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
     empty.style.display = 'none';
     tbody.innerHTML = rows.map(e => `<tr style="border-bottom:1px solid var(--border)">
-      <td style="padding:8px 12px">${e.date || ''}</td>
-      <td style="padding:8px 12px;font-weight:600">${e.destinataire || ''}</td>
+      <td style="padding:8px 12px">${e.date_livraison || ''}</td>
+      <td style="padding:8px 12px;font-weight:600">${e.dest_nom || ''}</td>
       <td style="padding:8px 12px;color:var(--text-muted)">${e.dest_ville || ''}</td>
       <td style="padding:8px 12px;font-size:11px">${e.creneau || ''}</td>
-      <td style="padding:8px 12px;font-family:var(--font-mono)">${e.poids ? e.poids + ' kg' : '—'}</td>
+      <td style="padding:8px 12px;font-family:var(--font-mono)">${e.poids_total ? e.poids_total + ' kg' : '—'}</td>
       <td style="padding:8px 12px"><span style="padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#3B82F622;color:#3B82F6">${e.statut}</span></td>
     </tr>`).join('');
   } catch(e) { console.warn('Upcoming tab error:', e); }
@@ -908,8 +908,8 @@ async function loadHistoryTab() {
   const today = new Date().toISOString().split('T')[0];
   try {
     const { data } = await db.from('expeditions').select('*')
-      .lt('date', today)
-      .order('date', { ascending: false }).limit(200);
+      .lt('date_livraison', today)
+      .order('date_livraison', { ascending: false }).limit(200);
     const rows = data || [];
     document.getElementById('history-count').textContent = rows.length + ' expédition(s)';
     const tbody = document.getElementById('history-tbody');
@@ -918,8 +918,8 @@ async function loadHistoryTab() {
     empty.style.display = 'none';
     const SC = { en_attente:'#6B7280', planifie:'#3B82F6', en_cours:'#F59E0B', livre:'#10B981', echec:'#EF4444', litige:'#DC2626', annule:'#9CA3AF' };
     tbody.innerHTML = rows.map(e => `<tr style="border-bottom:1px solid var(--border)">
-      <td style="padding:8px 12px">${e.date || ''}</td>
-      <td style="padding:8px 12px;font-weight:600">${e.destinataire || ''}</td>
+      <td style="padding:8px 12px">${e.date_livraison || ''}</td>
+      <td style="padding:8px 12px;font-weight:600">${e.dest_nom || ''}</td>
       <td style="padding:8px 12px;color:var(--text-muted)">${e.dest_ville || ''}</td>
       <td style="padding:8px 12px"><span style="padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${SC[e.statut]||'#6B7280'}22;color:${SC[e.statut]||'#6B7280'}">${e.statut}</span></td>
       <td style="padding:8px 12px;font-family:var(--font-mono)">${e.prix_ttc ? e.prix_ttc.toLocaleString('fr-FR') + ' €' : '—'}</td>

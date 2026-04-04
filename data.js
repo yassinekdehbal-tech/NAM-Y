@@ -44,75 +44,75 @@ const FALLBACK_GRILLES_TARIFAIRES = [
 ];
 
 const FALLBACK_TOURNEES = [
-  { id: 104, nom: 'TAREK',      couleur: '#076460', date: '2026-03-29', heure: '08:00', chauffeur: 'TAREK MAKNI',        statut: 'Planifiée', nb_courses: 10 },
-  { id: 123, nom: 'GORE 29/03', couleur: '#dc2626', date: '2026-03-29', heure: '08:00', chauffeur: 'Goré GREENCHARGEUR', statut: 'Planifiée', nb_courses: 7, vehicule: 'ES105XL' },
+  { id: 104, nom: 'TAREK',      couleur: '#076460', date_tournee: '2026-03-29', heure_depart: '08:00', chauffeur: 'TAREK MAKNI',        statut: 'Planifiée', nb_courses: 10 },
+  { id: 123, nom: 'GORE 29/03', couleur: '#dc2626', date_tournee: '2026-03-29', heure_depart: '08:00', chauffeur: 'Goré GREENCHARGEUR', statut: 'Planifiée', nb_courses: 7, vehicule: 'ES105XL' },
 ];
 
 const FALLBACK_EXPEDITIONS = [
   {
-    id: 12125, tournee_id: null, expediteur: 'TRUFFAUT PLAISIR', expediteur_adresse: 'Avenue de Sainte-Apolline', expediteur_cp: '78370', expediteur_ville: 'Plaisir',
-    destinataire: 'Pochet Caroline', dest_adresse: '33 Rue Louis Siou', dest_cp: '78890', dest_ville: 'Garancières', dest_tel: '0786979772', dest_email: 'pochet.c@orange.fr',
-    date: '2026-04-20', creneau: '15:00-18:00', poids: 250, poids_lourd: 40, taille: 180, nb_colis: 34, lieu: 'Pièce du choix',
+    id: 12125, tournee_id: null, exp_nom: 'TRUFFAUT PLAISIR', exp_adresse: 'Avenue de Sainte-Apolline', exp_cp: '78370', exp_ville: 'Plaisir',
+    dest_nom: 'Pochet Caroline', dest_adresse: '33 Rue Louis Siou', dest_cp: '78890', dest_ville: 'Garancières', dest_telephone: '0786979772', dest_email: 'pochet.c@orange.fr',
+    date_livraison: '2026-04-20', creneau: '15:00-18:00', poids_total: 250, poids_lourd: 40, taille: 180, nb_colis: 34, option_livraison: 'Pièce du choix',
     description: 'plantes et 4 sacs tereaux', prix_ht: 103.20/1.2, prix_ttc: 103.20, statut: 'en_attente', type_prix: 'Poids'
   },
   {
-    id: 12124, tournee_id: null, expediteur: 'TRUFFAUT CHATENAY', expediteur_adresse: 'Route de Paris', expediteur_cp: '92290', expediteur_ville: 'Châtenay-Malabry',
-    destinataire: 'MAGRANS', dest_adresse: '12 Rue des Fleurs', dest_cp: '91440', dest_ville: 'Bures-sur-Yvette', dest_tel: '0612345678', dest_email: 'magrans@mail.fr',
-    date: '2026-04-11', creneau: '10:00-13:00', poids: 70, poids_lourd: 40, taille: 220, nb_colis: 5, lieu: 'Pièce du choix',
+    id: 12124, tournee_id: null, exp_nom: 'TRUFFAUT CHATENAY', exp_adresse: 'Route de Paris', exp_cp: '92290', exp_ville: 'Châtenay-Malabry',
+    dest_nom: 'MAGRANS', dest_adresse: '12 Rue des Fleurs', dest_cp: '91440', dest_ville: 'Bures-sur-Yvette', dest_telephone: '0612345678', dest_email: 'magrans@mail.fr',
+    date_livraison: '2026-04-11', creneau: '10:00-13:00', poids_total: 70, poids_lourd: 40, taille: 220, nb_colis: 5, option_livraison: 'Pièce du choix',
     description: 'mobilier jardin', prix_ht: 60/1.2, prix_ttc: 60, statut: 'en_attente', type_prix: 'Poids'
   },
   {
-    id: 12158, tournee_id: null, expediteur: 'TRUFFAUT LE CHESNAY', expediteur_adresse: 'Centre commercial Parly 2', expediteur_cp: '78150', expediteur_ville: 'Le Chesnay',
-    destinataire: 'REEB Frederique', dest_adresse: '5 Allée des Roses', dest_cp: '78160', dest_ville: 'Marly-le-Roi', dest_tel: '0698765432', dest_email: 'reeb.f@gmail.com',
-    date: '2026-04-11', creneau: '09:00-13:00', poids: 200, poids_lourd: 90, taille: 310, nb_colis: 12, lieu: 'Pièce du choix',
+    id: 12158, tournee_id: null, exp_nom: 'TRUFFAUT LE CHESNAY', exp_adresse: 'Centre commercial Parly 2', exp_cp: '78150', exp_ville: 'Le Chesnay',
+    dest_nom: 'REEB Frederique', dest_adresse: '5 Allée des Roses', dest_cp: '78160', dest_ville: 'Marly-le-Roi', dest_telephone: '0698765432', dest_email: 'reeb.f@gmail.com',
+    date_livraison: '2026-04-11', creneau: '09:00-13:00', poids_total: 200, poids_lourd: 90, taille: 310, nb_colis: 12, option_livraison: 'Pièce du choix',
     description: 'canapé + table basse', prix_ht: 169.20/1.2, prix_ttc: 169.20, statut: 'en_attente', type_prix: 'Poids'
   },
   {
-    id: 12094, tournee_id: null, expediteur: 'TRUFFAUT PLAISIR', expediteur_adresse: 'Avenue de Sainte-Apolline', expediteur_cp: '78370', expediteur_ville: 'Plaisir',
-    destinataire: 'Brigant', dest_adresse: '14 Rue du Moulin', dest_cp: '78960', dest_ville: 'Voisins-le-Bretonneux', dest_tel: '0677889900', dest_email: 'brigant@wanadoo.fr',
-    date: '2026-04-07', creneau: '09:00-13:00', poids: 30, poids_lourd: 10, taille: 120, nb_colis: 3, lieu: 'Pièce du choix',
+    id: 12094, tournee_id: null, exp_nom: 'TRUFFAUT PLAISIR', exp_adresse: 'Avenue de Sainte-Apolline', exp_cp: '78370', exp_ville: 'Plaisir',
+    dest_nom: 'Brigant', dest_adresse: '14 Rue du Moulin', dest_cp: '78960', dest_ville: 'Voisins-le-Bretonneux', dest_telephone: '0677889900', dest_email: 'brigant@wanadoo.fr',
+    date_livraison: '2026-04-07', creneau: '09:00-13:00', poids_total: 30, poids_lourd: 10, taille: 120, nb_colis: 3, option_livraison: 'Pièce du choix',
     description: 'bacs à fleurs', prix_ht: 60/1.2, prix_ttc: 60, statut: 'en_attente', type_prix: 'Poids'
   },
   {
-    id: 12035, tournee_id: null, expediteur: 'TRUFFAUT PARIS RIVE GAUCHE', expediteur_adresse: '85 Quai de la Gare', expediteur_cp: '75013', expediteur_ville: 'Paris',
-    destinataire: 'M. VIALAY François', dest_adresse: '8 Impasse des Lilas', dest_cp: '94120', dest_ville: 'Fontenay-sous-Bois', dest_tel: '0655443322', dest_email: 'vialay.f@free.fr',
-    date: '2026-04-04', creneau: '13:00-17:00', poids: 139, poids_lourd: 70, taille: 220, nb_colis: 8, lieu: 'Pièce du choix',
+    id: 12035, tournee_id: null, exp_nom: 'TRUFFAUT PARIS RIVE GAUCHE', exp_adresse: '85 Quai de la Gare', exp_cp: '75013', exp_ville: 'Paris',
+    dest_nom: 'M. VIALAY François', dest_adresse: '8 Impasse des Lilas', dest_cp: '94120', dest_ville: 'Fontenay-sous-Bois', dest_telephone: '0655443322', dest_email: 'vialay.f@free.fr',
+    date_livraison: '2026-04-04', creneau: '13:00-17:00', poids_total: 139, poids_lourd: 70, taille: 220, nb_colis: 8, option_livraison: 'Pièce du choix',
     description: 'étagères bois', prix_ht: 60/1.2, prix_ttc: 60, statut: 'en_attente', type_prix: 'Poids'
   },
   {
-    id: 12074, tournee_id: null, expediteur: 'TRUFFAUT PARIS RIVE GAUCHE', expediteur_adresse: '85 Quai de la Gare', expediteur_cp: '75013', expediteur_ville: 'Paris',
-    destinataire: 'Houist Anne-Laure', dest_adresse: '22 Rue Volta', dest_cp: '75003', dest_ville: 'Paris', dest_tel: '0611223344', dest_email: 'houist.al@gmail.com',
-    date: '2026-04-04', creneau: '13:00-16:00', poids: 64, poids_lourd: 8, taille: 180, nb_colis: 4, lieu: 'Pièce du choix',
+    id: 12074, tournee_id: null, exp_nom: 'TRUFFAUT PARIS RIVE GAUCHE', exp_adresse: '85 Quai de la Gare', exp_cp: '75013', exp_ville: 'Paris',
+    dest_nom: 'Houist Anne-Laure', dest_adresse: '22 Rue Volta', dest_cp: '75003', dest_ville: 'Paris', dest_telephone: '0611223344', dest_email: 'houist.al@gmail.com',
+    date_livraison: '2026-04-04', creneau: '13:00-16:00', poids_total: 64, poids_lourd: 8, taille: 180, nb_colis: 4, option_livraison: 'Pièce du choix',
     description: 'jardinières', prix_ht: 60/1.2, prix_ttc: 60, statut: 'planifie', type_prix: 'Poids'
   },
   {
-    id: 12080, tournee_id: 104, expediteur: 'TRUFFAUT PARIS RIVE GAUCHE', expediteur_adresse: '85 Quai de la Gare', expediteur_cp: '75013', expediteur_ville: 'Paris',
-    destinataire: 'Almorin', dest_adresse: '3 Avenue Foch', dest_cp: '75116', dest_ville: 'Paris', dest_tel: '0699887766', dest_email: 'almorin@gmail.com',
-    date: '2026-04-04', creneau: '13:00-17:00', poids: 70, poids_lourd: 20, taille: 139, nb_colis: 5, lieu: 'Pièce du choix',
+    id: 12080, tournee_id: 104, exp_nom: 'TRUFFAUT PARIS RIVE GAUCHE', exp_adresse: '85 Quai de la Gare', exp_cp: '75013', exp_ville: 'Paris',
+    dest_nom: 'Almorin', dest_adresse: '3 Avenue Foch', dest_cp: '75116', dest_ville: 'Paris', dest_telephone: '0699887766', dest_email: 'almorin@gmail.com',
+    date_livraison: '2026-04-04', creneau: '13:00-17:00', poids_total: 70, poids_lourd: 20, taille: 139, nb_colis: 5, option_livraison: 'Pièce du choix',
     description: 'mobilier salon', prix_ht: 30/1.2, prix_ttc: 30, statut: 'planifie', type_prix: 'Poids'
   },
   {
-    id: 12156, tournee_id: null, expediteur: 'TRUFFAUT PARIS RIVE GAUCHE', expediteur_adresse: '85 Quai de la Gare', expediteur_cp: '75013', expediteur_ville: 'Paris',
-    destinataire: 'MAKAROFF', dest_adresse: '45 Rue de la Paix', dest_cp: '93200', dest_ville: 'Saint-Denis', dest_tel: '0677665544', dest_email: 'makaroff@orange.fr',
-    date: '2026-04-04', creneau: '09:00-13:00', poids: 105, poids_lourd: 18, taille: 100, nb_colis: 6, lieu: 'Pièce du choix',
+    id: 12156, tournee_id: null, exp_nom: 'TRUFFAUT PARIS RIVE GAUCHE', exp_adresse: '85 Quai de la Gare', exp_cp: '75013', exp_ville: 'Paris',
+    dest_nom: 'MAKAROFF', dest_adresse: '45 Rue de la Paix', dest_cp: '93200', dest_ville: 'Saint-Denis', dest_telephone: '0677665544', dest_email: 'makaroff@orange.fr',
+    date_livraison: '2026-04-04', creneau: '09:00-13:00', poids_total: 105, poids_lourd: 18, taille: 100, nb_colis: 6, option_livraison: 'Pièce du choix',
     description: 'table + chaises', prix_ht: 30/1.2, prix_ttc: 30, statut: 'en_attente', type_prix: 'Poids'
   },
   {
-    id: 12141, tournee_id: null, expediteur: 'TRUFFAUT PARIS RIVE GAUCHE', expediteur_adresse: '85 Quai de la Gare', expediteur_cp: '75013', expediteur_ville: 'Paris',
-    destinataire: 'Pinsac Denis', dest_adresse: '10 Rue des Écoles', dest_cp: '94100', dest_ville: 'Saint-Maur-des-Fossés', dest_tel: '0644332211', dest_email: 'pinsac.d@yahoo.fr',
-    date: '2026-04-03', creneau: '13:00-16:00', poids: 30, poids_lourd: 7, taille: 100, nb_colis: 2, lieu: 'Pièce du choix',
+    id: 12141, tournee_id: null, exp_nom: 'TRUFFAUT PARIS RIVE GAUCHE', exp_adresse: '85 Quai de la Gare', exp_cp: '75013', exp_ville: 'Paris',
+    dest_nom: 'Pinsac Denis', dest_adresse: '10 Rue des Écoles', dest_cp: '94100', dest_ville: 'Saint-Maur-des-Fossés', dest_telephone: '0644332211', dest_email: 'pinsac.d@yahoo.fr',
+    date_livraison: '2026-04-03', creneau: '13:00-16:00', poids_total: 30, poids_lourd: 7, taille: 100, nb_colis: 2, option_livraison: 'Pièce du choix',
     description: 'chaises pliantes', prix_ht: 30/1.2, prix_ttc: 30, statut: 'en_attente', type_prix: 'Poids'
   },
   {
-    id: 12143, tournee_id: null, expediteur: 'TRUFFAUT CHATENAY', expediteur_adresse: 'Route de Paris', expediteur_cp: '92290', expediteur_ville: 'Châtenay-Malabry',
-    destinataire: 'KARA', dest_adresse: '7 Rue Victor Hugo', dest_cp: '92140', dest_ville: 'Clamart', dest_tel: '0633221100', dest_email: 'kara@hotmail.fr',
-    date: '2026-04-03', creneau: '10:00-13:00', poids: 128, poids_lourd: 128, taille: 120, nb_colis: 8, lieu: 'Pièce du choix',
+    id: 12143, tournee_id: null, exp_nom: 'TRUFFAUT CHATENAY', exp_adresse: 'Route de Paris', exp_cp: '92290', exp_ville: 'Châtenay-Malabry',
+    dest_nom: 'KARA', dest_adresse: '7 Rue Victor Hugo', dest_cp: '92140', dest_ville: 'Clamart', dest_telephone: '0633221100', dest_email: 'kara@hotmail.fr',
+    date_livraison: '2026-04-03', creneau: '10:00-13:00', poids_total: 128, poids_lourd: 128, taille: 120, nb_colis: 8, option_livraison: 'Pièce du choix',
     description: 'dalle terrasse', prix_ht: 126/1.2, prix_ttc: 126, statut: 'en_attente', type_prix: 'Poids'
   },
   {
-    id: 11784, tournee_id: 123, expediteur: 'TRUFFAUT GRIGNY', expediteur_adresse: 'N7', expediteur_cp: '91350', expediteur_ville: 'Grigny',
-    destinataire: 'DARONA Geoffrey', dest_adresse: '36 Rue de Lozère', dest_cp: '91400', dest_ville: 'Orsay', dest_tel: '0688050188', dest_email: 'g.darona@gmail.com',
-    date: '2026-03-18', creneau: '09:00-14:00', poids: 60, poids_lourd: 30, taille: 220, nb_colis: 2, lieu: 'Pièce du choix',
+    id: 11784, tournee_id: 123, exp_nom: 'TRUFFAUT GRIGNY', exp_adresse: 'N7', exp_cp: '91350', exp_ville: 'Grigny',
+    dest_nom: 'DARONA Geoffrey', dest_adresse: '36 Rue de Lozère', dest_cp: '91400', dest_ville: 'Orsay', dest_telephone: '0688050188', dest_email: 'g.darona@gmail.com',
+    date_livraison: '2026-03-18', creneau: '09:00-14:00', poids_total: 60, poids_lourd: 30, taille: 220, nb_colis: 2, option_livraison: 'Pièce du choix',
     description: 'fruitier', prix_ht: 63/1.2, prix_ttc: 63, statut: 'livre', type_prix: 'Poids',
     historique: [
       { evenement: 'Collecté', date: '18/03/2026 10:14', commentaire: '', utilisateur: 'Walid' },
@@ -121,9 +121,9 @@ const FALLBACK_EXPEDITIONS = [
     ]
   },
   {
-    id: 12119, tournee_id: 104, expediteur: 'TRUFFAUT PARIS RIVE GAUCHE', expediteur_adresse: '85 Quai de la Gare', expediteur_cp: '75013', expediteur_ville: 'Paris',
-    destinataire: 'Pluntz Sophie', dest_adresse: '15 Rue des Roses', dest_cp: '94200', dest_ville: 'Ivry-sur-Seine', dest_tel: '0678901234', dest_email: 'pluntz.s@gmail.com',
-    date: '2026-03-29', creneau: '09:00-13:00', poids: 80, poids_lourd: 30, taille: 200, nb_colis: 5, lieu: 'Pièce du choix',
+    id: 12119, tournee_id: 104, exp_nom: 'TRUFFAUT PARIS RIVE GAUCHE', exp_adresse: '85 Quai de la Gare', exp_cp: '75013', exp_ville: 'Paris',
+    dest_nom: 'Pluntz Sophie', dest_adresse: '15 Rue des Roses', dest_cp: '94200', dest_ville: 'Ivry-sur-Seine', dest_telephone: '0678901234', dest_email: 'pluntz.s@gmail.com',
+    date_livraison: '2026-03-29', creneau: '09:00-13:00', poids_total: 80, poids_lourd: 30, taille: 200, nb_colis: 5, option_livraison: 'Pièce du choix',
     description: 'arbustes', prix_ht: 86/1.2, prix_ttc: 86, statut: 'en_cours', type_prix: 'Poids'
   },
 ];
@@ -177,7 +177,7 @@ async function loadFromSupabase() {
       db.from('chauffeurs').select('*').order('id'),
       db.from('entreprises').select('*').order('nom'),
       db.from('grilles_tarifaires').select('*').order('id'),
-      db.from('tournees').select('*').order('date', { ascending: false }),
+      db.from('tournees').select('*').order('date_tournee', { ascending: false }),
       db.from('expeditions').select('*').order('id', { ascending: false }),
       Promise.resolve({ value: { data: [] } }),  // planning_dispo → pas de table, fallback
       Promise.resolve({ value: { data: [] } }),  // stats_magasins → calculé depuis expeditions

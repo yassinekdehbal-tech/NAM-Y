@@ -5,7 +5,7 @@ let expeditions = [];
 let filteredExpeditions = [];
 let currentPage = 1;
 const PAGE_SIZE = 20;
-let sortColumn = 'date';
+let sortColumn = 'date_livraison';
 let sortDir = 'desc';
 let chauffeurs = [];
 let entreprises = [];
@@ -109,7 +109,7 @@ function populateFilters() {
   // Magasin select
   const magasinSel = document.getElementById('filter-magasin');
   if (magasinSel) {
-    const noms = [...new Set(expeditions.map(e => e.expediteur))].sort();
+    const noms = [...new Set(expeditions.map(e => e.exp_nom))].sort();
     noms.forEach(nom => {
       const opt = document.createElement('option');
       opt.value = nom;
@@ -193,7 +193,7 @@ function applyFilters() {
   filteredExpeditions = expeditions.filter(e => {
     // Date filter
     if (startDate || endDate) {
-      const eDate = new Date(e.date || e.date);
+      const eDate = new Date(e.date_livraison);
       if (startDate && eDate < startDate) return false;
       if (endDate && eDate > endDate) return false;
     }
@@ -202,7 +202,7 @@ function applyFilters() {
     if (activeStatuts.length > 0 && !activeStatuts.includes(e.statut)) return false;
 
     // Magasin filter
-    if (magasin && e.expediteur != magasin) return false;
+    if (magasin && e.exp_nom != magasin) return false;
 
     // Chauffeur filter
     if (chauffeurId) {
@@ -218,10 +218,10 @@ function applyFilters() {
     if (search) {
       const haystack = [
         String(e.id),
-        e.destinataire || '',
+        e.dest_nom || '',
         e.dest_adresse || '',
         e.dest_ville || '',
-        e.expediteur || ''
+        e.exp_nom || ''
       ].join(' ').toLowerCase();
       if (!haystack.includes(search)) return false;
     }
@@ -307,18 +307,18 @@ function doSort() {
   filteredExpeditions.sort((a, b) => {
     let valA, valB;
 
-    if (sortColumn == 'date') {
-      valA = new Date(a.date).getTime();
-      valB = new Date(b.date).getTime();
+    if (sortColumn == 'date_livraison') {
+      valA = new Date(a.date_livraison).getTime();
+      valB = new Date(b.date_livraison).getTime();
     } else if (sortColumn == 'id') {
       valA = a.id;
       valB = b.id;
-    } else if (sortColumn == 'expediteur') {
-      valA = (a.expediteur || '').toLowerCase();
-      valB = (b.expediteur || '').toLowerCase();
-    } else if (sortColumn == 'destinataire') {
-      valA = (a.destinataire || '').toLowerCase();
-      valB = (b.destinataire || '').toLowerCase();
+    } else if (sortColumn == 'exp_nom') {
+      valA = (a.exp_nom || '').toLowerCase();
+      valB = (b.exp_nom || '').toLowerCase();
+    } else if (sortColumn == 'dest_nom') {
+      valA = (a.dest_nom || '').toLowerCase();
+      valB = (b.dest_nom || '').toLowerCase();
     } else if (sortColumn == 'prix_ttc') {
       valA = a.prix_ttc || 0;
       valB = b.prix_ttc || 0;
@@ -389,10 +389,10 @@ function renderTable() {
     const canDelete = e.statut == 'en_attente';
 
     return '<tr>' +
-      '<td style="white-space:nowrap">' + formatDateFR(e.date || e.date) + '</td>' +
+      '<td style="white-space:nowrap">' + formatDateFR(e.date_livraison) + '</td>' +
       '<td><span style="font-family:\'DM Mono\',monospace;font-size:13px">' + e.id + '</span></td>' +
-      '<td>' + (e.expediteur || '—') + '</td>' +
-      '<td>' + (e.destinataire || '—') + '<br><span style="color:var(--text-muted);font-size:12px">' + (e.dest_ville || '') + '</span></td>' +
+      '<td>' + (e.exp_nom || '—') + '</td>' +
+      '<td>' + (e.dest_nom || '—') + '<br><span style="color:var(--text-muted);font-size:12px">' + (e.dest_ville || '') + '</span></td>' +
       '<td>' + renderStatutBadge(e.statut) + '</td>' +
       '<td>' + (chauffeurName ? chauffeurName : '<span style="color:var(--text-muted)">—</span>') + '</td>' +
       '<td style="font-family:\'DM Mono\',monospace;font-weight:600;white-space:nowrap">' + (e.prix_ttc != null ? Number(e.prix_ttc).toFixed(2) + ' \u20ac' : '—') + '</td>' +
@@ -481,9 +481,9 @@ async function openDetail(id) {
   // General info
   html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:8px">';
   html += '<div class="detail-info-row"><strong>Numéro</strong> #' + e.id + '</div>';
-  html += '<div class="detail-info-row"><strong>Date</strong> ' + formatDateFR(e.date || e.date) + '</div>';
+  html += '<div class="detail-info-row"><strong>Date</strong> ' + formatDateFR(e.date_livraison) + '</div>';
   html += '<div class="detail-info-row"><strong>Créneau</strong> ' + (e.creneau || '—') + '</div>';
-  html += '<div class="detail-info-row"><strong>Option</strong> ' + (e.option_livraison || e.lieu || '—') + '</div>';
+  html += '<div class="detail-info-row"><strong>Option</strong> ' + (e.option_livraison || '—') + '</div>';
   html += '<div class="detail-info-row"><strong>Statut</strong> ' + renderStatutBadge(e.statut) + '</div>';
   if (!isMagasin && tourName) html += '<div class="detail-info-row"><strong>Livreur</strong> ' + tourName + '</div>';
   html += '</div>';
@@ -491,18 +491,18 @@ async function openDetail(id) {
   // Cards
   html += '<div class="detail-cards">';
   html += '<div class="detail-card"><h4>Enlèvement</h4>';
-  html += '<p><strong>' + (e.expediteur || '') + '</strong></p>';
+  html += '<p><strong>' + (e.exp_nom || '') + '</strong></p>';
   html += '<p>' + (e.exp_adresse || '') + '</p>';
   html += '<p>' + (e.exp_cp || '') + ' ' + (e.exp_ville || '') + '</p>';
   html += '</div>';
   html += '<div class="detail-card"><h4>Livraison</h4>';
-  html += '<p><strong>' + (e.destinataire || '') + '</strong></p>';
+  html += '<p><strong>' + (e.dest_nom || '') + '</strong></p>';
   html += '<p>' + (e.dest_adresse || '') + '</p>';
   html += '<p>' + (e.dest_cp || '') + ' ' + (e.dest_ville || '') + '</p>';
-  html += '<p>' + (e.dest_tel || '') + '</p>';
+  html += '<p>' + (e.dest_telephone || '') + '</p>';
   html += '</div>';
   html += '<div class="detail-card"><h4>Marchandises</h4>';
-  html += '<p>Poids : <strong>' + (e.poids || 0) + ' kg</strong></p>';
+  html += '<p>Poids : <strong>' + (e.poids_total || 0) + ' kg</strong></p>';
   html += '<p>Nb colis : <strong>' + (e.nb_colis || 0) + '</strong></p>';
   if (e.poids_max_colis) html += '<p>Colis max : <strong>' + e.poids_max_colis + ' kg</strong></p>';
   if (e.distance_km) html += '<p>Distance : <strong>' + e.distance_km + ' km</strong></p>';
@@ -552,7 +552,7 @@ async function openDetail(id) {
   const litigeStatuts = ['livre','echec_livraison','retourne'];
   const litigeRoles = ['admin','dispatcher','client','dirigeant','vendeur'];
   if (litigeStatuts.includes(e.statut) && litigeRoles.includes(role)) {
-    const livDate = e.date ? new Date(e.date) : null;
+    const livDate = e.date_livraison ? new Date(e.date_livraison) : null;
     const expired = livDate && (new Date() - livDate) / 86400000 > 7;
     html += '<div style="margin-top:8px;text-align:center">';
     if (expired) {
@@ -756,15 +756,15 @@ function exportCSV() {
     const prixTTC = e.prix_ttc != null ? Number(e.prix_ttc).toFixed(2) : '';
     return [
       e.id,
-      e.date || e.date || '',
-      e.expediteur || '',
-      e.destinataire || '',
+      e.date_livraison || '',
+      e.exp_nom || '',
+      e.dest_nom || '',
       e.dest_ville || '',
       e.dest_adresse || '',
       e.dest_cp || '',
       e.statut || '',
       chauffeur,
-      e.poids || '',
+      e.poids_total || '',
       e.nb_colis || '',
       prixHT,
       prixTTC

@@ -834,12 +834,12 @@ async function loadChauffeurData() {
       let tourneeData = null;
       // Try by ID first
       const { data: byId } = await db.from('tournees').select('*')
-        .eq('chauffeur_id', CHAUFFEUR.id).eq('date', today).eq('statut', 'publie').limit(1).single();
+        .eq('chauffeur_id', CHAUFFEUR.id).eq('date_tournee', today).eq('statut', 'publie').limit(1).single();
       if (byId) tourneeData = byId;
       else {
         // Fallback to name match
         const { data: byName } = await db.from('tournees').select('*')
-          .eq('chauffeur', CHAUFFEUR.nom).eq('date', today).limit(1).single();
+          .eq('chauffeur', CHAUFFEUR.nom).eq('date_tournee', today).limit(1).single();
         if (byName) tourneeData = byName;
       }
 
@@ -1179,8 +1179,8 @@ async function renderPlanning() {
     const today = new Date().toISOString().split('T')[0];
     const { data } = await db.from('tournees').select('*')
       .or(`chauffeur_id.eq.${CHAUFFEUR.id},chauffeur.eq.${CHAUFFEUR.nom}`)
-      .gte('date', today)
-      .order('date')
+      .gte('date_tournee', today)
+      .order('date_tournee')
       .limit(5);
 
     if (data && data.length) {
@@ -1188,11 +1188,11 @@ async function renderPlanning() {
         id: t.id,
         nom: t.nom,
         couleur: t.couleur || '#4f7cff',
-        date: t.date === today ? `Aujourd'hui · ${new Date(t.date).toLocaleDateString('fr-FR', {day:'numeric', month:'long'})}` :
-              `${new Date(t.date).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'})}`,
-        heure: t.heure || '08:00',
+        date: t.date_tournee === today ? `Aujourd'hui · ${new Date(t.date_tournee).toLocaleDateString('fr-FR', {day:'numeric', month:'long'})}` :
+              `${new Date(t.date_tournee).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'})}`,
+        heure: t.heure_depart || '08:00',
         vehicule: t.vehicule || '',
-        statut: t.date === today ? 'today' : 'next',
+        statut: t.date_tournee === today ? 'today' : 'next',
         nb_stops: t.nb_courses || 0,
         stops: []
       }));

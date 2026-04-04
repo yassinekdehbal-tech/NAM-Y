@@ -443,10 +443,10 @@ const DEMO_EXPEDITIONS = (() => {
     d.setDate(d.getDate() - Math.floor(Math.random() * 400));
     data.push({
       id: i + 1,
-      date: d.toISOString().split('T')[0],
+      date_livraison: d.toISOString().split('T')[0],
       statut: statuts[Math.floor(Math.random() * statuts.length)],
       prix: Math.floor(Math.random() * 300) + 20,
-      lieu: lieux[Math.floor(Math.random() * lieux.length)],
+      option_livraison: lieux[Math.floor(Math.random() * lieux.length)],
       description: descriptions[Math.floor(Math.random() * descriptions.length)],
       created_by: 'vendor-' + Math.floor(Math.random() * 4),
       _vendeur_nom: vendeurs[Math.floor(Math.random() * 4)],
@@ -483,7 +483,7 @@ async function checkAlerts() {
   try {
     // 1. Taux d'echec > 10% sur 7 jours
     const { data: recent } = await db.from('expeditions').select('statut')
-      .eq('entreprise_id', entrepriseId).gte('date', weekStr);
+      .eq('entreprise_id', entrepriseId).gte('date_livraison', weekStr);
     if (recent && recent.length > 5) {
       const echecs = recent.filter(e => e.statut === 'echec' || e.statut === 'litige').length;
       const taux = (echecs / recent.length * 100).toFixed(1);
@@ -493,11 +493,11 @@ async function checkAlerts() {
     }
 
     // 2. Meme destinataire echoue 2x cette semaine
-    const { data: echecs7j } = await db.from('expeditions').select('destinataire')
-      .eq('entreprise_id', entrepriseId).gte('date', weekStr).in('statut', ['echec', 'litige']);
+    const { data: echecs7j } = await db.from('expeditions').select('dest_nom')
+      .eq('entreprise_id', entrepriseId).gte('date_livraison', weekStr).in('statut', ['echec', 'litige']);
     if (echecs7j) {
       const counts = {};
-      echecs7j.forEach(e => { counts[e.destinataire] = (counts[e.destinataire] || 0) + 1; });
+      echecs7j.forEach(e => { counts[e.dest_nom] = (counts[e.dest_nom] || 0) + 1; });
       const repeat = Object.entries(counts).filter(([_, c]) => c >= 2);
       repeat.forEach(([name, c]) => {
         alerts.push({ type: 'orange', icon: '\ud83d\udd01', text: `<strong>${name}</strong> : ${c} \u00e9checs cette semaine` });
@@ -510,7 +510,7 @@ async function checkAlerts() {
     if (params && params.limite_commandes_jour > 0) {
       const todayStr = now.toISOString().split('T')[0];
       const { count } = await db.from('expeditions').select('*', { count: 'exact', head: true })
-        .eq('entreprise_id', entrepriseId).eq('date', todayStr);
+        .eq('entreprise_id', entrepriseId).eq('date_livraison', todayStr);
       const pct = (count / params.limite_commandes_jour * 100).toFixed(0);
       if (pct >= 80) {
         alerts.push({ type: 'yellow', icon: '\u26a1', text: `<strong>Limite quotidienne \u00e0 ${pct}%</strong> (${count}/${params.limite_commandes_jour} commandes aujourd'hui)` });
@@ -644,23 +644,23 @@ async function loadExpeditions() {
   try {
     const { data, error } = await db.from('expeditions').select('*')
       .eq('entreprise_id', entrepriseId)
-      .gte('date', range.start)
-      .lte('date', range.end)
-      .order('date');
+      .gte('date_livraison', range.start)
+      .lte('date_livraison', range.end)
+      .order('date_livraison');
     if (error) throw error;
     current = data || [];
 
     const { data: prev } = await db.from('expeditions').select('*')
       .eq('entreprise_id', entrepriseId)
-      .gte('date', prevRange.start)
-      .lte('date', prevRange.end)
-      .order('date');
+      .gte('date_livraison', prevRange.start)
+      .lte('date_livraison', prevRange.end)
+      .order('date_livraison');
     previous = prev || [];
   } catch(e) {
     console.warn('Supabase fallback, using demo data:', e);
     const range2 = getDateRange(currentDays);
-    current = DEMO_EXPEDITIONS.filter(x => x.date >= range2.start && x.date <= range2.end);
-    previous = DEMO_EXPEDITIONS.filter(x => x.date >= range2.prevStart && x.date < range2.start);
+    current = DEMO_EXPEDITIONS.filter(x => x.date_livraison >= range2.start && x.date_livraison <= range2.end);
+    previous = DEMO_EXPEDITIONS.filter(x => x.date_livraison >= range2.prevStart && x.date_livraison < range2.start);
     showToast('Mode démo — données simulées', 'warning');
   }
 
@@ -673,14 +673,14 @@ async function loadSixMonthData() {
   const start = new Date();
   start.setMonth(start.getMonth() - 6);
   try {
-    const { data, error } = await db.from('expeditions').select('date,statut')
+    const { data, error } = await db.from('expeditions').select('date_livraison,statut')
       .eq('entreprise_id', entrepriseId)
-      .gte('date', start.toISOString().split('T')[0])
-      .order('date');
+      .gte('date_livraison', start.toISOString().split('T')[0])
+      .order('date_livraison');
     if (error) throw error;
     return data || [];
   } catch(e) {
-    return DEMO_EXPEDITIONS.filter(x => x.date >= start.toISOString().split('T')[0]);
+    return DEMO_EXPEDITIONS.filter(x => x.date_livraison >= start.toISOString().split('T')[0]);
   }
 }
 
@@ -807,7 +807,7 @@ function renderChartLivraisons(current, previous) {
   function toBuckets(data, refStart) {
     const arr = new Array(buckets).fill(0);
     data.forEach(e => {
-      const d = Math.floor((new Date(e.date) - refStart) / 86400000);
+      const d = Math.floor((new Date(e.date_livraison) - refStart) / 86400000);
       const idx = Math.min(Math.floor(d / bucketSize), buckets - 1);
       if (idx >= 0) arr[idx]++;
     });
@@ -927,7 +927,7 @@ function renderChartOptions(data) {
   destroyChart('options');
   const groups = {};
   data.forEach(e => {
-    const opt = e.lieu || 'Non spécifié';
+    const opt = e.option_livraison || 'Non spécifié';
     groups[opt] = (groups[opt] || 0) + 1;
   });
   const sorted = Object.entries(groups).sort((a, b) => b[1] - a[1]).slice(0, 8);
@@ -968,7 +968,7 @@ function renderChartTaux(data) {
     months[key] = { livre: 0, total: 0 };
   }
   data.forEach(e => {
-    const key = (e.date || '').slice(0, 7);
+    const key = (e.date_livraison || '').slice(0, 7);
     if (months[key] && ['livre', 'echec', 'litige'].includes(e.statut)) {
       months[key].total++;
       if (e.statut === 'livre') months[key].livre++;
@@ -1156,10 +1156,10 @@ async function loadExpeditionsTab() {
   document.getElementById('exp-tab-title').textContent = titles[expTabMode];
 
   let query = db.from('expeditions').select('*').eq('entreprise_id', entrepriseId);
-  if (expTabMode === 'today') query = query.eq('date', today);
-  else if (expTabMode === 'upcoming') query = query.gt('date', today);
-  else query = query.lt('date', today);
-  query = query.order('date', { ascending: expTabMode !== 'history' });
+  if (expTabMode === 'today') query = query.eq('date_livraison', today);
+  else if (expTabMode === 'upcoming') query = query.gt('date_livraison', today);
+  else query = query.lt('date_livraison', today);
+  query = query.order('date_livraison', { ascending: expTabMode !== 'history' });
 
   const vendeur = document.getElementById('exp-f-vendeur').value;
   const statut = document.getElementById('exp-f-statut').value;
@@ -1190,8 +1190,8 @@ function renderExpTable(data) {
   empty.style.display = 'none';
   tbody.innerHTML = data.map(e => `<tr style="border-bottom:1px solid var(--border)">
     <td style="padding:8px 12px;font-family:var(--font-mono);font-size:11px">#${e.id}</td>
-    <td style="padding:8px 12px">${e.date || ''}</td>
-    <td style="padding:8px 12px;font-weight:600">${e.destinataire || ''}</td>
+    <td style="padding:8px 12px">${e.date_livraison || ''}</td>
+    <td style="padding:8px 12px;font-weight:600">${e.dest_nom || ''}</td>
     <td style="padding:8px 12px;color:var(--text-muted)">${e.dest_ville || ''}</td>
     <td style="padding:8px 12px;font-size:11px">${e.creneau || ''}</td>
     <td style="padding:8px 12px"><span style="padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${STATUT_COLORS[e.statut] || '#6B7280'}22;color:${STATUT_COLORS[e.statut] || '#6B7280'}">${e.statut || ''}</span></td>

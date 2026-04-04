@@ -1194,8 +1194,8 @@ async function searchDestinataires(query) {
   destSearchTimeout = setTimeout(async () => {
     try {
       const { data } = await db.from('expeditions')
-        .select('destinataire, dest_adresse, dest_cp, dest_ville, dest_tel, dest_email')
-        .ilike('destinataire', '%' + query + '%')
+        .select('dest_nom, dest_adresse, dest_cp, dest_ville, dest_telephone, dest_email')
+        .ilike('dest_nom', '%' + query + '%')
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -1204,7 +1204,7 @@ async function searchDestinataires(query) {
       // Dédupliquer par nom
       const seen = new Set();
       const unique = data.filter(d => {
-        const key = (d.destinataire || '').toLowerCase();
+        const key = (d.dest_nom || '').toLowerCase();
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
@@ -1212,7 +1212,7 @@ async function searchDestinataires(query) {
 
       list.innerHTML = unique.map(d => `
         <div class="autocomplete-item" onclick="selectDestinataire(${JSON.stringify(d).replace(/"/g, '&quot;')})">
-          <strong>${d.destinataire}</strong>
+          <strong>${d.dest_nom}</strong>
           <span style="font-size:11px;color:var(--text-muted)">${d.dest_adresse || ''} ${d.dest_cp || ''} ${d.dest_ville || ''}</span>
         </div>
       `).join('');
@@ -1226,7 +1226,7 @@ async function searchDestinataires(query) {
 
 function selectDestinataire(d) {
   // Séparer prénom/nom (heuristique : premier mot = prénom)
-  const parts = (d.destinataire || '').split(' ');
+  const parts = (d.dest_nom || '').split(' ');
   const prenom = parts[0] || '';
   const nom = parts.slice(1).join(' ') || '';
 
@@ -1242,9 +1242,9 @@ function selectDestinataire(d) {
   if (d.dest_cp && cpEl) cpEl.value = d.dest_cp;
   const villeEl = document.getElementById('client-ville');
   if (d.dest_ville && villeEl) villeEl.value = d.dest_ville;
-  if (d.dest_tel) {
+  if (d.dest_telephone) {
     const telEl = document.getElementById('client-tel');
-    if (telEl) telEl.value = d.dest_tel;
+    if (telEl) telEl.value = d.dest_telephone;
   }
   if (d.dest_email) {
     const emailEl = document.getElementById('client-email');
@@ -1632,7 +1632,7 @@ async function onDateChange() {
   if (limiteJour > 0 && sessionUser && sessionUser.entreprise_id) {
     try {
       const { count } = await db.from('expeditions').select('*', { count: 'exact', head: true })
-        .eq('entreprise_id', sessionUser.entreprise_id).eq('date', dateStr);
+        .eq('entreprise_id', sessionUser.entreprise_id).eq('date_livraison', dateStr);
       if (count >= limiteJour) {
         warning.style.display = 'block';
         warning.textContent = 'Ce jour est complet (' + count + '/' + limiteJour + ' livraisons)';
@@ -1677,7 +1677,7 @@ async function renderAvailableCreneaux(dateStr) {
       try {
         const { count } = await db.from('expeditions').select('*', { count: 'exact', head: true })
           .eq('entreprise_id', sessionUser.entreprise_id)
-          .eq('date', dateStr)
+          .eq('date_livraison', dateStr)
           .eq('creneau', value);
         if (count >= c.limite_colis) {
           disabled = true;
@@ -2186,21 +2186,21 @@ async function submitExpedition() {
     const body = {
       entreprise_id: user?.entreprise_id || null,
       created_by: user?.id || null,
-      expediteur: MAGASIN.nom,
+      exp_nom: MAGASIN.nom,
       exp_adresse: MAGASIN.adresse,
       exp_cp: MAGASIN.cp,
       exp_ville: MAGASIN.ville,
-      destinataire: (document.getElementById('client-prenom')?.value || '') + ' ' + (document.getElementById('client-nom')?.value || ''),
+      dest_nom: (document.getElementById('client-prenom')?.value || '') + ' ' + (document.getElementById('client-nom')?.value || ''),
       dest_adresse: document.getElementById('client-adresse')?.value || '',
       dest_cp: document.getElementById('client-cp')?.value || '',
       dest_ville: document.getElementById('client-ville')?.value || '',
-      dest_tel: document.getElementById('client-tel')?.value || '',
+      dest_telephone: document.getElementById('client-tel')?.value || '',
       dest_email: document.getElementById('client-email')?.value || '',
-      date: document.getElementById('livraison-date')?.value || null,
+      date_livraison: document.getElementById('livraison-date')?.value || null,
       creneau: selectedCreneau,
       option_livraison: selectedLieu,
       nb_colis: parseInt(document.getElementById('nb-colis')?.value) || 1,
-      poids: parseFloat(document.getElementById('poids-total')?.value) || 0,
+      poids_total: parseFloat(document.getElementById('poids-total')?.value) || 0,
       poids_max_colis: parseFloat(document.getElementById('poids-max-colis')?.value) || 0,
       nb_colis_lourds: parseInt(document.getElementById('nb-colis-lourds')?.value) || 0,
       distance_km: parseFloat(document.getElementById('distance-km')?.value) || 0,
@@ -2299,7 +2299,7 @@ async function loadSuiviData() {
   try {
     // Aujourd'hui
     const { data: todayData } = await db.from('expeditions').select('*')
-      .eq('entreprise_id', sessionUser.entreprise_id).eq('date', today)
+      .eq('entreprise_id', sessionUser.entreprise_id).eq('date_livraison', today)
       .order('created_at', { ascending: false });
 
     const todayEl = document.getElementById('suivi-today');
@@ -2307,7 +2307,7 @@ async function loadSuiviData() {
       todayEl.innerHTML = todayData.map(e => `
         <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-md)">
           <div style="flex:1">
-            <div style="font-weight:600;font-size:13px">${e.destinataire || ''}</div>
+            <div style="font-weight:600;font-size:13px">${e.dest_nom || ''}</div>
             <div style="font-size:12px;color:var(--text-muted)">${e.dest_adresse || ''} ${e.dest_cp || ''} ${e.dest_ville || ''}</div>
           </div>
           ${STATUT_BADGE[e.statut] || STATUT_BADGE.en_attente}
@@ -2319,14 +2319,14 @@ async function loadSuiviData() {
 
     // Cette semaine
     const { data: weekData } = await db.from('expeditions').select('*')
-      .eq('entreprise_id', sessionUser.entreprise_id).gte('date', weekStr).lte('date', today)
-      .order('date', { ascending: false }).limit(50);
+      .eq('entreprise_id', sessionUser.entreprise_id).gte('date_livraison', weekStr).lte('date_livraison', today)
+      .order('date_livraison', { ascending: false }).limit(50);
 
     const weekTbody = document.getElementById('suivi-week-tbody');
     if (weekData && weekData.length) {
       weekTbody.innerHTML = weekData.map(e => `<tr>
-        <td class="mono" style="font-size:12px">${formatDate(e.date)}</td>
-        <td><strong>${e.destinataire || ''}</strong></td>
+        <td class="mono" style="font-size:12px">${formatDate(e.date_livraison)}</td>
+        <td><strong>${e.dest_nom || ''}</strong></td>
         <td style="font-size:12px;color:var(--text-muted)">${e.dest_cp || ''} ${e.dest_ville || ''}</td>
         <td>${STATUT_BADGE[e.statut] || ''}</td>
         <td class="mono" style="font-size:12px">${e.prix_ttc ? e.prix_ttc.toFixed(2) + ' \u20ac' : '\u2014'}</td>

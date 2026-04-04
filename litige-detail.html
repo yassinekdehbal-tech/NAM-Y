@@ -195,8 +195,8 @@ async function loadLitige() {
         const isAdmin = ['admin','dispatcher'].includes(sessionUser.role);
         expInfo = `
           <div><span class="info-label">N° expédition</span><div class="info-val">#${exp.id}</div></div>
-          <div><span class="info-label">Date</span><div class="info-val">${exp.date || '—'}</div></div>
-          <div><span class="info-label">Destinataire</span><div class="info-val">${exp.destinataire || '—'}</div></div>
+          <div><span class="info-label">Date</span><div class="info-val">${exp.date_livraison || '—'}</div></div>
+          <div><span class="info-label">Destinataire</span><div class="info-val">${exp.dest_nom || '—'}</div></div>
           <div><span class="info-label">Adresse</span><div class="info-val">${exp.dest_adresse || ''} ${exp.dest_cp || ''} ${exp.dest_ville || ''}</div></div>
         `;
       }
