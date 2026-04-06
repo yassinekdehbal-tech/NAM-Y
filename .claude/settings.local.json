@@ -82,7 +82,10 @@
       "Bash(echo '=== Accès propriétés JS potentiellement faux ===' grep -rn e.date[^_] --include=*.js /Users/wassila/Downloads/NAM-Y/)",
       "Bash(echo '=== Vérification finale ===' grep -rn \"expediteur_adresse\\\\|expediteur_cp\\\\|expediteur_ville\\\\|\\\\.expediteur[^_]\\\\|\\\\.destinataire\\\\|\\\\.dest_tel[^e]\\\\|e\\\\.poids[^_m]\\\\b\\\\|''''date''''\\\\|\\\\.eq.*''''date''''\" --include=*.js --include=*.html /Users/wassila/Downloads/NAM-Y/)",
       "Bash(echo '=== Colonnes erronées restantes ===' grep -rn \"\\\\.expediteur[^_]\\\\|\\\\.destinataire\\\\b\\\\|\\\\.dest_tel[^e]\\\\|expediteur_adresse\\\\|expediteur_cp\\\\|expediteur_ville\" --include=*.js --include=*.html /Users/wassila/Downloads/NAM-Y/)",
-      "Read(//<script>/,/<\\\\/**)"
+      "Read(//<script>/,/<\\\\/**)",
+      "Bash(APIKEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3YnZmb2hpemR4d2htY29xdmdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NjQ2MDksImV4cCI6MjA5MDQ0MDYwOX0.gOt8J2k7OV5W4SPtKrEV1sL6-C9eLE2hG3DuMzuaMKg\")",
+      "Bash(BASE=\"https://gwbvfohizdxwhmcoqvgh.supabase.co/rest/v1\")",
+      "Bash(__NEW_LINE_7a496e1413b0d3b2__ echo:*)"
     ]
   }
 }

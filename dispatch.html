@@ -387,8 +387,17 @@ async function loadData() {
     const { data: tours } = await tq;
     tournees = tours || [];
 
-    const { data: ch } = await db.from('chauffeurs').select('*').eq('actif', true).order('prenom');
-    chauffeursList = ch || [];
+    // Chauffeurs = utilisateurs livreurs + infos véhicule depuis table chauffeurs
+    const { data: livreurs } = await db.from('utilisateurs').select('id, auth_id, prenom, nom, entreprise_id').eq('role', 'livreur').order('prenom');
+    const { data: chInfo } = await db.from('chauffeurs').select('id, utilisateur_id, type_vehicule, immatriculation, tel');
+    const chMap = {};
+    (chInfo || []).forEach(c => { if (c.utilisateur_id) chMap[c.utilisateur_id] = c; });
+    chauffeursList = (livreurs || []).map(u => ({
+      id: u.id, prenom: u.prenom, nom: u.nom, entreprise_id: u.entreprise_id,
+      type_vehicule: chMap[u.id]?.type_vehicule || '',
+      immatriculation: chMap[u.id]?.immatriculation || '',
+      chauffeur_table_id: chMap[u.id]?.id || null,
+    }));
   } catch (e) {
     console.warn('Load failed:', e);
     showToast('Mode hors ligne', 'warning');

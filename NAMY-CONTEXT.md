@@ -67,7 +67,9 @@ entreprises             → Magasins, plateforme, fournisseurs (type enum)
 utilisateurs            → Profils liés à auth.users (rôle + permissions JSONB)
 parametres_entreprise   → Config par entreprise (jours ouvrés, rayon max, fermetures)
 vehicules               → ⚠️ DÉPRÉCIÉE — ne plus utiliser (migration douce)
-chauffeurs              → Livreurs (+ type_vehicule, immatriculation depuis migration)
+chauffeurs              → Véhicules livreurs (id, tel, utilisateur_id, type_vehicule, immatriculation) — PAS de prenom/nom/actif
+parametres_dispatch     → Configuration génération tournées (singleton, 16 paramètres)
+tournee_analytics       → Collecte données pour apprentissage futur
 expeditions             → Commandes de livraison (table centrale)
 tournees                → Regroupement livraisons par livreur/jour
 tournee_stops           → Étapes d'une tournée (statut, signature, photo)
