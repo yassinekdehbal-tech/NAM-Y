@@ -46,7 +46,7 @@
 | `login.html` | Authentification — redirige selon rôle | ✅ Branché |
 | `dashboard.html` | Dashboard unifié "Mon espace" adaptatif (admin/client/fournisseur) avec sidebar | ✅ Branché |
 | `admin.html` | Administration : Fiche entreprise (point d'entrée), calendrier NAMY, grilles, comptes internes | ✅ Branché |
-| `dispatch.html` | Dispatch 3 vues : Timeline (axe temps) + Éditeur tournées (drag&drop) + Carte temps réel | ✅ Branché |
+| `dispatch.html` | Dispatch : Carte (■ retrait + ● livraison) + colonne tournées + table livraisons drag&drop | ✅ Branché |
 | `nav.js` | Navigation universelle partagée (topbar dynamique par rôle) | — |
 | `formulaire-vendeur.html` | Saisie expédition vendeur (3 étapes) | ✅ Branché |
 | `grilles-tarifaires.html` | 3 types de grilles (poids/zone/colis) | ✅ Branché |
