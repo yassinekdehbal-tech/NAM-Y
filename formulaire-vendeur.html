@@ -2727,7 +2727,7 @@ function selectAdminClient(index) {
 
 async function prefillExpFromEntreprise(entrepriseId) {
   try {
-    const { data: ent } = await db.from('entreprises').select('nom, adresse, cp, ville, tel').eq('id', entrepriseId).single();
+    const { data: ent } = await db.from('entreprises').select('nom, adresse, cp, ville, telephone').eq('id', entrepriseId).single();
     if (!ent) return;
 
     // Afficher la carte lecture seule et masquer les inputs
@@ -2736,7 +2736,7 @@ async function prefillExpFromEntreprise(entrepriseId) {
     if (card) {
       document.getElementById('admin-exp-card-name').textContent = ent.nom || '';
       document.getElementById('admin-exp-card-address').textContent = (ent.adresse || '') + ' · ' + (ent.cp || '') + ' ' + (ent.ville || '');
-      document.getElementById('admin-exp-card-tel').textContent = ent.tel ? '📞 ' + ent.tel : '';
+      document.getElementById('admin-exp-card-tel').textContent = ent.telephone ? '📞 ' + ent.telephone : '';
       card.classList.add('visible');
       card.style.display = 'block';
     }
@@ -2749,7 +2749,7 @@ async function prefillExpFromEntreprise(entrepriseId) {
     const c = document.getElementById('admin-exp-cp');
     const v = document.getElementById('admin-exp-ville');
     if (n) n.value = ent.nom || '';
-    if (t) t.value = ent.tel || '';
+    if (t) t.value = ent.telephone || '';
     if (a) a.value = ent.adresse || '';
     if (c) c.value = ent.cp || '';
     if (v) v.value = ent.ville || '';
