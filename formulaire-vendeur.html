@@ -952,7 +952,22 @@ select {
           <span class="error-msg" id="err-admin-client">Veuillez sélectionner un client ou une enseigne</span>
         </div>
 
-        <!-- ADMIN: Expéditeur libre -->
+        <!-- ADMIN: Expéditeur carte (lecture seule, quand client sélectionné) -->
+        <div class="admin-only" id="admin-exp-card" style="display:none">
+          <div style="background:linear-gradient(135deg,rgba(0,201,167,.06),rgba(0,201,167,.02));border:1px solid rgba(0,201,167,.2);border-radius:14px;padding:16px;display:flex;align-items:center;gap:12px">
+            <div style="width:44px;height:44px;background:var(--accent-light);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🏪</div>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:700;color:var(--accent-dark)" id="admin-exp-card-name">—</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:2px" id="admin-exp-card-address">—</div>
+              <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:4px">
+                <span style="font-size:12px;color:var(--accent);font-weight:600" id="admin-exp-card-tel"></span>
+              </div>
+            </div>
+            <span style="background:var(--accent-light);color:var(--accent-dark);padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px">EXPÉDITEUR</span>
+          </div>
+        </div>
+
+        <!-- ADMIN: Expéditeur libre (quand PAS de client sélectionné) -->
         <div class="admin-only admin-expediteur-section" id="admin-exp-block">
           <div class="form-card-header" style="padding:0;border:none;margin-bottom:10px">
             <div class="form-card-icon">📤</div>
@@ -2714,6 +2729,20 @@ async function prefillExpFromEntreprise(entrepriseId) {
   try {
     const { data: ent } = await db.from('entreprises').select('nom, adresse, cp, ville, tel').eq('id', entrepriseId).single();
     if (!ent) return;
+
+    // Afficher la carte lecture seule et masquer les inputs
+    const card = document.getElementById('admin-exp-card');
+    const inputs = document.getElementById('admin-exp-block');
+    if (card) {
+      document.getElementById('admin-exp-card-name').textContent = ent.nom || '';
+      document.getElementById('admin-exp-card-address').textContent = (ent.adresse || '') + ' · ' + (ent.cp || '') + ' ' + (ent.ville || '');
+      document.getElementById('admin-exp-card-tel').textContent = ent.tel ? '📞 ' + ent.tel : '';
+      card.classList.add('visible');
+      card.style.display = 'block';
+    }
+    if (inputs) inputs.style.display = 'none';
+
+    // Remplir aussi les champs cachés (utilisés à la soumission)
     const n = document.getElementById('admin-exp-nom');
     const t = document.getElementById('admin-exp-tel');
     const a = document.getElementById('admin-exp-adresse');
@@ -2745,6 +2774,12 @@ function clearAdminClient() {
   document.getElementById('admin-client-input').style.display = '';
   document.getElementById('admin-client-input').value = '';
   document.getElementById('admin-selected-client').style.display = 'none';
+
+  // Masquer la carte expéditeur, ré-afficher les inputs
+  const card = document.getElementById('admin-exp-card');
+  const inputs = document.getElementById('admin-exp-block');
+  if (card) { card.style.display = 'none'; card.classList.remove('visible'); }
+  if (inputs) { inputs.classList.add('visible'); inputs.style.display = 'block'; }
 
   // Vider les champs expéditeur
   ['admin-exp-nom','admin-exp-tel','admin-exp-adresse','admin-exp-cp','admin-exp-ville'].forEach(id => {
