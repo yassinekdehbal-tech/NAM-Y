@@ -416,7 +416,7 @@
 
   // ─── REALTIME ─────────────────────────────────────────────
   function initChatRealtime(user, role) {
-    if (typeof db === 'undefined' || !db.channel) return;
+    if (typeof db === 'undefined' || !db.channel || !window.supabase) return;
     try {
       db.channel('nav-chat-messages')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {

@@ -85,7 +85,12 @@
       "Read(//<script>/,/<\\\\/**)",
       "Bash(APIKEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3YnZmb2hpemR4d2htY29xdmdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NjQ2MDksImV4cCI6MjA5MDQ0MDYwOX0.gOt8J2k7OV5W4SPtKrEV1sL6-C9eLE2hG3DuMzuaMKg\")",
       "Bash(BASE=\"https://gwbvfohizdxwhmcoqvgh.supabase.co/rest/v1\")",
-      "Bash(__NEW_LINE_7a496e1413b0d3b2__ echo:*)"
+      "Bash(__NEW_LINE_7a496e1413b0d3b2__ echo:*)",
+      "Bash(OLD_SENTRY='<script src=\"\"https://js-de.sentry-cdn.com/d0ac5289e4a58c4925307922a7ca7df5.min.js\"\" crossorigin=\"\"anonymous\"\"></script>:*)",
+      "Bash(__NEW_LINE_e43591b29720837f__ NEW_SENTRY='<script src=\"\"https://browser.sentry-cdn.com/8.51.0/bundle.min.js\"\" crossorigin=\"\"anonymous\"\"></script>:*)",
+      "Bash(__NEW_LINE_e43591b29720837f__ for:*)",
+      "Bash(do)",
+      "Bash(if grep:*)"
     ]
   }
 }
