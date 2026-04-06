@@ -1068,37 +1068,40 @@ select {
           <span class="error-msg" id="err-lieu">Choisissez une option</span>
         </div>
 
-        <!-- Adresse destinataire -->
-        <div class="form-group">
-          <label>Adresse de livraison <span class="required">*</span></label>
-          <input type="text" id="client-adresse" class="form-input" placeholder="Commencez à taper l'adresse..." autocomplete="off" oninput="onAdresseInput(this.value)">
-          <div id="adresse-suggestions" class="suggestions-list" style="display:none"></div>
-          <span class="error-msg" id="err-adresse">Adresse requise</span>
-        </div>
+        <!-- Bloc destinataire standard (masqué en mode admin sans client) -->
+        <div id="standard-dest-block">
+          <!-- Adresse destinataire -->
+          <div class="form-group">
+            <label>Adresse de livraison <span class="required">*</span></label>
+            <input type="text" id="client-adresse" class="form-input" placeholder="Commencez à taper l'adresse..." autocomplete="off" oninput="onAdresseInput(this.value)">
+            <div id="adresse-suggestions" class="suggestions-list" style="display:none"></div>
+            <span class="error-msg" id="err-adresse">Adresse requise</span>
+          </div>
 
-        <!-- Prénom + Nom + Téléphone on one line -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-          <div class="form-group">
-            <label>Prénom <span class="required">*</span></label>
-            <input type="text" id="client-prenom" class="form-input" placeholder="Prénom">
-            <span class="error-msg" id="err-prenom">Requis</span>
+          <!-- Prénom + Nom + Téléphone on one line -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <div class="form-group">
+              <label>Prénom <span class="required">*</span></label>
+              <input type="text" id="client-prenom" class="form-input" placeholder="Prénom">
+              <span class="error-msg" id="err-prenom">Requis</span>
+            </div>
+            <div class="form-group">
+              <label>Nom <span class="required">*</span></label>
+              <input type="text" id="client-nom" class="form-input" placeholder="Nom">
+              <span class="error-msg" id="err-nom">Requis</span>
+            </div>
+            <div class="form-group">
+              <label>Téléphone <span class="required">*</span></label>
+              <input type="tel" id="client-tel" class="form-input" placeholder="06 12 34 56 78">
+              <span class="error-msg" id="err-tel">Requis</span>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Nom <span class="required">*</span></label>
-            <input type="text" id="client-nom" class="form-input" placeholder="Nom">
-            <span class="error-msg" id="err-nom">Requis</span>
-          </div>
-          <div class="form-group">
-            <label>Téléphone <span class="required">*</span></label>
-            <input type="tel" id="client-tel" class="form-input" placeholder="06 12 34 56 78">
-            <span class="error-msg" id="err-tel">Requis</span>
-          </div>
-        </div>
 
-        <!-- Instructions (optional, compact) -->
-        <div class="form-group">
-          <label>Instructions livraison <span style="color:var(--text-muted);font-weight:400">(optionnel)</span></label>
-          <textarea id="client-instructions" class="form-input" rows="2" placeholder="Bâtiment B, 3ème étage, code 1234..." style="resize:none"></textarea>
+          <!-- Instructions (optional, compact) -->
+          <div class="form-group">
+            <label>Instructions livraison <span style="color:var(--text-muted);font-weight:400">(optionnel)</span></label>
+            <textarea id="client-instructions" class="form-input" rows="2" placeholder="Bâtiment B, 3ème étage, code 1234..." style="resize:none"></textarea>
+          </div>
         </div>
       </div>
 
@@ -2714,9 +2717,8 @@ function selectAdminClient(index) {
   const err = document.getElementById('err-admin-client');
   if (err) err.classList.remove('show');
 
-  // Masquer le bloc destinataire libre (le formulaire client normal prend le relais)
-  const destBlock = document.getElementById('admin-dest-block');
-  if (destBlock) destBlock.style.display = 'none';
+  // Gérer visibilité des blocs destinataire
+  updateAdminDestBlock();
 
   // Pré-remplir l'expéditeur avec les infos du client sélectionné
   if (adminSelectedClient.type === 'entreprise') {
@@ -2754,18 +2756,22 @@ async function prefillExpFromEntreprise(entrepriseId) {
     if (c) c.value = ent.cp || '';
     if (v) v.value = ent.ville || '';
 
-    // Charger les créneaux de cette entreprise
+    // Charger les créneaux de cette entreprise (table creneaux_client)
     try {
-      const { data: creneaux } = await db.from('creneaux_livraison').select('*').eq('entreprise_id', entrepriseId).order('heure_debut');
-      if (creneaux && creneaux.length) {
-        const container = document.getElementById('creneau-buttons');
-        if (container) {
-          container.innerHTML = creneaux.map(cr =>
-            '<button class="creneau-btn" onclick="selectCreneau(this,\'' + cr.heure_debut + '-' + cr.heure_fin + '\')">' + cr.heure_debut + ' - ' + cr.heure_fin + '</button>'
-          ).join('');
-        }
+      const { data: creneaux } = await db.from('creneaux_client').select('*').eq('entreprise_id', entrepriseId).eq('actif', true).order('heure_debut');
+      const container = document.getElementById('creneaux-container');
+      if (container && creneaux && creneaux.length) {
+        const JOUR_SHORT = { lundi:'Lun', mardi:'Mar', mercredi:'Mer', jeudi:'Jeu', vendredi:'Ven', samedi:'Sam', dimanche:'Dim' };
+        container.innerHTML = creneaux.map(cr => {
+          const jours = (cr.jours || []).map(j => JOUR_SHORT[j] || j).join('-');
+          const label = jours + ' ' + (cr.heure_debut || '').slice(0,5) + '-' + (cr.heure_fin || '').slice(0,5);
+          const val = (cr.heure_debut || '').slice(0,5) + '-' + (cr.heure_fin || '').slice(0,5);
+          return '<button class="creneau-btn" onclick="selectCreneau(this,\'' + val + '\')">' + label + '</button>';
+        }).join('');
+      } else if (container) {
+        container.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:8px">Aucun cr\u00e9neau configur\u00e9 pour ce client</div>';
       }
-    } catch(e) { console.warn('Creneaux load failed:', e); }
+    } catch(e) { console.warn('Creneaux client load failed:', e); }
   } catch(e) { console.warn('Prefill exp failed:', e); }
 }
 
@@ -2794,14 +2800,16 @@ function clearAdminClient() {
 function updateAdminDestBlock() {
   if (!isAdmin) return;
   const destBlock = document.getElementById('admin-dest-block');
-  if (!destBlock) return;
+  const stdBlock = document.getElementById('standard-dest-block');
+
   if (adminSelectedClient) {
-    // Client sélectionné → masquer dest libre (le formulaire standard est utilisé)
-    destBlock.style.display = 'none';
+    // Client sélectionné → masquer dest admin libre, afficher formulaire standard
+    if (destBlock) { destBlock.style.display = 'none'; destBlock.classList.remove('visible'); }
+    if (stdBlock) stdBlock.style.display = '';
   } else {
-    // Pas de client → afficher dest libre
-    destBlock.classList.add('visible');
-    destBlock.style.display = 'block';
+    // Pas de client → afficher dest admin libre, masquer formulaire standard
+    if (destBlock) { destBlock.classList.add('visible'); destBlock.style.display = 'block'; }
+    if (stdBlock) stdBlock.style.display = 'none';
   }
 }
 
