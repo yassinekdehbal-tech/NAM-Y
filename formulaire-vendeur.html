@@ -774,7 +774,8 @@ select {
 }
 
 /* ── ADMIN: Client Search ── */
-.admin-only { display: none; }
+.admin-only { display: none !important; }
+.admin-only.visible { display: block !important; }
 .admin-client-search {
   background: linear-gradient(135deg, rgba(0,163,137,.06), rgba(0,163,137,.02));
   border: 1.5px solid rgba(0,163,137,.25);
@@ -2538,17 +2539,34 @@ let adminSelectedClient = null; // { type: 'entreprise'|'utilisateur', id, nom, 
 let adminClientSearchTimeout = null;
 
 function initAdminMode() {
-  const user = typeof getSessionUser === 'function' ? getSessionUser() : null;
-  console.log('[initAdminMode] user:', user?.prenom, user?.nom, '| role:', user?.role);
-  if (!user || !['admin', 'dispatcher'].includes(user.role)) {
-    console.log('[initAdminMode] Pas admin/dispatcher → mode vendeur');
+  // Lire le rôle depuis sessionStorage directement (plus fiable que getSessionUser)
+  const role = sessionStorage.getItem('namy_role');
+  let user = null;
+  try { user = JSON.parse(sessionStorage.getItem('namy_user') || 'null'); } catch(e) {}
+  console.log('[initAdminMode] role from sessionStorage:', role, '| user:', user?.prenom, user?.nom);
+
+  if (!['admin', 'dispatcher'].includes(role)) {
+    console.log('[initAdminMode] Pas admin/dispatcher (' + role + ') → mode vendeur');
     return;
   }
   isAdmin = true;
-  console.log('[initAdminMode] Mode admin activé — affichage des blocs admin-only');
+  console.log('[initAdminMode] Mode admin activé');
 
-  // Afficher les blocs admin (forcer display:block pour écraser le CSS .admin-only { display:none })
-  document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+  // Afficher les blocs admin via classe CSS (avec !important)
+  function showAdminBlocks() {
+    const blocks = document.querySelectorAll('.admin-only');
+    console.log('[initAdminMode] Blocs .admin-only trouvés:', blocks.length);
+    blocks.forEach(el => el.classList.add('visible'));
+  }
+
+  // Exécuter immédiatement + en backup après DOMContentLoaded
+  showAdminBlocks();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', showAdminBlocks);
+  } else {
+    // DOM déjà prêt — retry en cas de timing
+    setTimeout(showAdminBlocks, 100);
+  }
 
   // Header : mode admin
   const mn = document.getElementById('magasin-name');
