@@ -987,6 +987,42 @@ select {
           </div>
         </div>
 
+        <!-- ADMIN: Destinataire libre (quand pas de client sélectionné) -->
+        <div class="admin-only" id="admin-dest-block" style="display:none">
+          <div class="form-card-header" style="padding:0;border:none;margin-bottom:10px">
+            <div class="form-card-icon">📥</div>
+            <div>
+              <div class="form-card-title" style="font-size:14px">Destinataire <span class="admin-badge">ADMIN</span></div>
+              <div class="form-card-subtitle">Informations du destinataire</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="form-group">
+              <label>Nom destinataire <span class="required">*</span></label>
+              <input type="text" id="admin-dest-nom" class="form-input" placeholder="Nom complet">
+            </div>
+            <div class="form-group">
+              <label>Téléphone</label>
+              <input type="tel" id="admin-dest-tel" class="form-input" placeholder="06 12 34 56 78">
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:6px">
+            <label>Adresse <span class="required">*</span></label>
+            <input type="text" id="admin-dest-adresse" class="form-input" placeholder="Adresse de livraison" oninput="handleAdminDestAdresse(this)">
+            <div class="autocomplete-list" id="admin-dest-suggestions" style="display:none"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
+            <div class="form-group">
+              <label>Code postal <span class="required">*</span></label>
+              <input type="text" id="admin-dest-cp" class="form-input" placeholder="75000">
+            </div>
+            <div class="form-group">
+              <label>Ville <span class="required">*</span></label>
+              <input type="text" id="admin-dest-ville" class="form-input" placeholder="Paris">
+            </div>
+          </div>
+        </div>
+
         <!-- Date + Créneau on one line -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div class="form-group">
@@ -2565,7 +2601,7 @@ function initAdminMode() {
     document.addEventListener('DOMContentLoaded', showAdminBlocks);
   } else {
     // DOM déjà prêt — retry en cas de timing
-    setTimeout(showAdminBlocks, 100);
+    setTimeout(() => { showAdminBlocks(); updateAdminDestBlock(); }, 100);
   }
 
   // Header : mode admin
@@ -2663,10 +2699,45 @@ function selectAdminClient(index) {
   const err = document.getElementById('err-admin-client');
   if (err) err.classList.remove('show');
 
-  // Si c'est une entreprise, charger sa grille tarifaire
+  // Masquer le bloc destinataire libre (le formulaire client normal prend le relais)
+  const destBlock = document.getElementById('admin-dest-block');
+  if (destBlock) destBlock.style.display = 'none';
+
+  // Pré-remplir l'expéditeur avec les infos du client sélectionné
   if (adminSelectedClient.type === 'entreprise') {
     loadGrilleForEntreprise(adminSelectedClient.id);
+    prefillExpFromEntreprise(adminSelectedClient.id);
   }
+}
+
+async function prefillExpFromEntreprise(entrepriseId) {
+  try {
+    const { data: ent } = await db.from('entreprises').select('nom, adresse, cp, ville, tel').eq('id', entrepriseId).single();
+    if (!ent) return;
+    const n = document.getElementById('admin-exp-nom');
+    const t = document.getElementById('admin-exp-tel');
+    const a = document.getElementById('admin-exp-adresse');
+    const c = document.getElementById('admin-exp-cp');
+    const v = document.getElementById('admin-exp-ville');
+    if (n) n.value = ent.nom || '';
+    if (t) t.value = ent.tel || '';
+    if (a) a.value = ent.adresse || '';
+    if (c) c.value = ent.cp || '';
+    if (v) v.value = ent.ville || '';
+
+    // Charger les créneaux de cette entreprise
+    try {
+      const { data: creneaux } = await db.from('creneaux_livraison').select('*').eq('entreprise_id', entrepriseId).order('heure_debut');
+      if (creneaux && creneaux.length) {
+        const container = document.getElementById('creneau-buttons');
+        if (container) {
+          container.innerHTML = creneaux.map(cr =>
+            '<button class="creneau-btn" onclick="selectCreneau(this,\'' + cr.heure_debut + '-' + cr.heure_fin + '\')">' + cr.heure_debut + ' - ' + cr.heure_fin + '</button>'
+          ).join('');
+        }
+      }
+    } catch(e) { console.warn('Creneaux load failed:', e); }
+  } catch(e) { console.warn('Prefill exp failed:', e); }
 }
 
 function clearAdminClient() {
@@ -2674,6 +2745,58 @@ function clearAdminClient() {
   document.getElementById('admin-client-input').style.display = '';
   document.getElementById('admin-client-input').value = '';
   document.getElementById('admin-selected-client').style.display = 'none';
+
+  // Vider les champs expéditeur
+  ['admin-exp-nom','admin-exp-tel','admin-exp-adresse','admin-exp-cp','admin-exp-ville'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
+  // Afficher le bloc destinataire libre
+  updateAdminDestBlock();
+}
+
+function updateAdminDestBlock() {
+  if (!isAdmin) return;
+  const destBlock = document.getElementById('admin-dest-block');
+  if (!destBlock) return;
+  if (adminSelectedClient) {
+    // Client sélectionné → masquer dest libre (le formulaire standard est utilisé)
+    destBlock.style.display = 'none';
+  } else {
+    // Pas de client → afficher dest libre
+    destBlock.classList.add('visible');
+    destBlock.style.display = 'block';
+  }
+}
+
+// Autocomplétion adresse destinataire admin (réutilise l'API BAN)
+let adminDestSearchTimeout = null;
+function handleAdminDestAdresse(input) {
+  const val = input.value.trim();
+  const list = document.getElementById('admin-dest-suggestions');
+  if (val.length < 3) { if (list) list.style.display = 'none'; return; }
+  clearTimeout(adminDestSearchTimeout);
+  adminDestSearchTimeout = setTimeout(async () => {
+    try {
+      const resp = await fetch('https://api-adresse.data.gouv.fr/search/?q=' + encodeURIComponent(val) + '&limit=5');
+      const json = await resp.json();
+      if (!json.features || !json.features.length) { list.style.display = 'none'; return; }
+      list.innerHTML = json.features.map(f => {
+        const p = f.properties;
+        return '<div class="autocomplete-item" onclick="selectAdminDestAdresse(\'' + (p.name||'').replace(/'/g,"\\'") + '\',\'' + (p.postcode||'') + '\',\'' + (p.city||'').replace(/'/g,"\\'") + '\')">' +
+          '<strong>' + p.name + '</strong> <span>' + p.postcode + ' ' + p.city + '</span></div>';
+      }).join('');
+      list.style.display = 'block';
+    } catch(e) { if (list) list.style.display = 'none'; }
+  }, 250);
+}
+
+function selectAdminDestAdresse(adresse, cp, ville) {
+  document.getElementById('admin-dest-adresse').value = adresse;
+  document.getElementById('admin-dest-cp').value = cp;
+  document.getElementById('admin-dest-ville').value = ville;
+  document.getElementById('admin-dest-suggestions').style.display = 'none';
 }
 
 async function loadGrilleForEntreprise(entrepriseId) {
