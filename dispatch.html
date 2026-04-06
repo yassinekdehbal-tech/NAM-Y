@@ -265,6 +265,31 @@
   </div>
 </div>
 
+<!-- PUBLISH TOURNEE MODAL -->
+<div class="modal-overlay" id="modalPublish" style="display:none">
+  <div class="modal-box" style="max-width:480px">
+    <h3>Publier la tourn&eacute;e</h3>
+    <div class="modal-field">
+      <label>Nom de la tourn&eacute;e</label>
+      <input type="text" id="pubName">
+    </div>
+    <div class="modal-field">
+      <label>Livreur</label>
+      <select id="pubChauffeur"></select>
+    </div>
+    <div class="modal-field">
+      <label>Heure de d&eacute;part *</label>
+      <input type="time" id="pubHeure" value="08:00">
+    </div>
+    <div id="pubSummary" style="background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 16px;margin-top:8px;font-size:13px"></div>
+    <div id="pubETADetail" style="max-height:200px;overflow-y:auto;margin-top:8px;font-size:12px"></div>
+    <div class="modal-actions">
+      <button class="btn-sm btn-outline" onclick="closeModal('modalPublish')">Annuler</button>
+      <button class="btn-sm btn-accent" onclick="confirmPublish()">PUBLIER</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -596,6 +621,18 @@ function renderLivraisons() {
 
   document.getElementById('livraisonsCount').textContent = filtered.length + ' expedition' + (filtered.length > 1 ? 's' : '');
 
+  // Calculer ETAs si tournée sélectionnée avec heure_depart
+  if (selectedTourneeId) {
+    const t = tournees.find(x => x.id == selectedTourneeId);
+    if (t && t.heure_depart && filtered.length) {
+      const { etas } = calculateETAs(filtered, t.heure_depart);
+      etas.forEach(e => {
+        const cmd = filtered.find(c => c.id == e.id);
+        if (cmd) cmd._eta = e.eta;
+      });
+    }
+  }
+
   const tbody = document.getElementById('livraisonsBody');
   let html = '';
 
@@ -611,7 +648,9 @@ function renderLivraisons() {
     html += '<td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">' + (idx + 1) + '</td>';
     html += '<td>' + (cmd.exp_nom || '-') + '</td>';
     html += '<td><strong>' + (cmd.dest_nom || '-') + '</strong><br><span style="font-size:11px;color:var(--text-muted)">' + (cmd.dest_ville || '') + '</span></td>';
-    html += '<td>' + dateDisplay + '<br><span style="font-size:11px;color:var(--text-muted)">' + (cmd.creneau || '') + '</span></td>';
+    html += '<td>' + dateDisplay + '<br><span style="font-size:11px;color:var(--text-muted)">' + (cmd.creneau || '') + '</span>';
+    if (cmd._eta) html += '<br><span style="font-size:10px;font-family:var(--font-mono);color:var(--accent-dark);font-weight:600">ETA ' + cmd._eta + '</span>';
+    html += '</td>';
     html += '<td>' + (cmd.poids_total ? cmd.poids_total + ' kg' : '-') + '</td>';
     html += '<td>' + (cmd.option_livraison || '-') + '</td>';
     html += '<td style="font-family:var(--font-mono);font-size:11px">' + prixDisplay + '</td>';
@@ -711,22 +750,167 @@ async function massAssign() {
 // ═══════════════════════════════════════════════════════
 //  PUBLISH TOURNEE
 // ═══════════════════════════════════════════════════════
-async function publierTournee() {
-  if (!selectedTourneeId) return;
+// ═══════════════════════════════════════════════════════
+//  HAVERSINE + ETA
+// ═══════════════════════════════════════════════════════
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
 
-  // Update tournee status
-  await db.from('tournees').update({ statut: 'publie' }).eq('id', selectedTourneeId);
+function calculateETAs(stops, heureDepart) {
+  const VITESSE = 30; // km/h paramétrable
+  const COEFF_ROUTE = 1.3;
+  const [h, m] = (heureDepart || '08:00').split(':').map(Number);
+  let minutes = h * 60 + m;
+  let totalDistKm = 0;
+  const etas = [];
 
-  // Update all expeditions in this tournee
-  const exps = commandes.filter(c => c.tournee_id == selectedTourneeId);
-  for (const exp of exps) {
-    await db.from('expeditions').update({ statut: 'planifie' }).eq('id', exp.id);
-    await recordStatusChange(exp.id, 'planifie', 'Tournee publiee');
+  for (let i = 0; i < stops.length; i++) {
+    // Temps de chargement
+    if (i === 0) minutes += 20;
+    else if (i < 5) minutes += 7;
+    else minutes += 4;
+
+    // Temps de route (depuis le stop précédent)
+    if (i > 0) {
+      const prev = stops[i-1];
+      const curr = stops[i];
+      const distKm = haversine(prev.lat||48.85, prev.lng||2.35, curr.lat||48.85, curr.lng||2.35) * COEFF_ROUTE;
+      totalDistKm += distKm;
+      minutes += (distKm / VITESSE) * 60;
+    }
+
+    // ETA arrivée
+    const etaH = Math.floor(minutes / 60);
+    const etaM = Math.round(minutes % 60);
+    const eta = String(etaH).padStart(2,'0') + ':' + String(etaM).padStart(2,'0');
+
+    // Temps de livraison
+    const option = (stops[i].option_livraison || '').toLowerCase();
+    const tempsLivraison = option.includes('trottoir') ? 7 : 15;
+    minutes += tempsLivraison;
+
+    etas.push({ ...stops[i], eta, stopIndex: i + 1 });
   }
 
-  await loadData();
-  renderAll();
-  showToast('Tournee publiee (' + exps.length + ' expeditions)', 'success');
+  const totalMinutes = minutes - (h * 60 + m);
+  return { etas, totalDistKm, totalMinutes };
+}
+
+// ═══════════════════════════════════════════════════════
+//  PUBLISH TOURNEE
+// ═══════════════════════════════════════════════════════
+function publierTournee() {
+  if (!selectedTourneeId) return;
+  const t = tournees.find(x => x.id == selectedTourneeId);
+  if (!t) return;
+  const stops = commandes.filter(c => c.tournee_id == selectedTourneeId);
+  if (!stops.length) { showToast('Aucune livraison dans cette tournee', 'warning'); return; }
+
+  // Pré-remplir le modal
+  document.getElementById('pubName').value = t.nom || '';
+  document.getElementById('pubHeure').value = t.heure_depart || '08:00';
+
+  // Chauffeur select
+  const sel = document.getElementById('pubChauffeur');
+  sel.innerHTML = '<option value="">-- Aucun --</option>' +
+    chauffeursList.map(c => '<option value="' + c.id + '"' + (c.id == t.chauffeur_id ? ' selected' : '') + '>' + c.prenom + ' ' + c.nom + '</option>').join('');
+
+  // Calcul ETA preview
+  updatePublishPreview();
+
+  // Listeners pour recalcul en direct
+  document.getElementById('pubHeure').onchange = updatePublishPreview;
+
+  openModal('modalPublish');
+}
+
+function updatePublishPreview() {
+  const stops = commandes.filter(c => c.tournee_id == selectedTourneeId);
+  const heure = document.getElementById('pubHeure').value || '08:00';
+  const { etas, totalDistKm, totalMinutes } = calculateETAs(stops, heure);
+
+  const dureeH = Math.floor(totalMinutes / 60);
+  const dureeM = Math.round(totalMinutes % 60);
+
+  document.getElementById('pubSummary').innerHTML =
+    '<div style="display:flex;gap:16px;flex-wrap:wrap">' +
+    '<span><strong>' + stops.length + '</strong> stops</span>' +
+    '<span>Distance : <strong>' + totalDistKm.toFixed(1) + ' km</strong></span>' +
+    '<span>Dur\u00e9e : <strong>' + dureeH + 'h' + String(dureeM).padStart(2,'0') + '</strong></span>' +
+    '<span>Fin estim\u00e9e : <strong>' + etas[etas.length-1]?.eta + '</strong></span>' +
+    '</div>';
+
+  document.getElementById('pubETADetail').innerHTML =
+    '<table style="width:100%;border-collapse:collapse">' +
+    '<tr style="font-size:11px;color:var(--text-muted);text-transform:uppercase"><td style="padding:4px 8px">N\u00b0</td><td>Destinataire</td><td>ETA</td><td>Option</td></tr>' +
+    etas.map(e =>
+      '<tr style="border-top:1px solid var(--border);font-size:12px">' +
+      '<td style="padding:4px 8px;color:var(--text-muted)">' + e.stopIndex + '</td>' +
+      '<td style="font-weight:500">' + (e.dest_nom || '') + '</td>' +
+      '<td style="font-family:var(--font-mono);color:var(--accent-dark)">' + e.eta + '</td>' +
+      '<td style="color:var(--text-muted)">' + (e.option_livraison || '') + '</td>' +
+      '</tr>'
+    ).join('') +
+    '</table>';
+}
+
+async function confirmPublish() {
+  if (!selectedTourneeId) return;
+  const t = tournees.find(x => x.id == selectedTourneeId);
+  if (!t) return;
+
+  const newName = document.getElementById('pubName').value.trim() || t.nom;
+  const newChauffeur = document.getElementById('pubChauffeur').value || t.chauffeur_id;
+  const newHeure = document.getElementById('pubHeure').value || '08:00';
+
+  // Calcul ETA final
+  const stops = commandes.filter(c => c.tournee_id == selectedTourneeId);
+  const { etas } = calculateETAs(stops, newHeure);
+
+  try {
+    // Update tournee
+    await db.from('tournees').update({
+      statut: 'publie', nom: newName, chauffeur_id: newChauffeur || null, heure_depart: newHeure
+    }).eq('id', selectedTourneeId);
+
+    // Update each expedition + save ETA
+    for (const e of etas) {
+      await db.from('expeditions').update({ statut: 'planifie' }).eq('id', e.id);
+      await recordStatusChange(e.id, 'planifie', 'Tournee publiee — ETA ' + e.eta);
+
+      // Save ETA in tournee_stops if exists, or just in expedition
+      try {
+        await db.from('tournee_stops').upsert({
+          tournee_id: selectedTourneeId,
+          expedition_id: e.id,
+          ordre: e.stopIndex,
+          eta: e.eta,
+          nom: e.dest_nom,
+          adresse: e.dest_adresse,
+          cp: e.dest_cp,
+          ville: e.dest_ville,
+          lat: e.lat,
+          lng: e.lng,
+          creneau: e.creneau,
+          option: e.option_livraison,
+          poids: e.poids_total,
+          tel: e.dest_telephone,
+        }, { onConflict: 'tournee_id,expedition_id' });
+      } catch(err) { console.warn('ETA save failed:', err); }
+    }
+
+    closeModal('modalPublish');
+    await loadData();
+    renderAll();
+    showToast('Tournee "' + newName + '" publiee — ' + etas.length + ' stops avec ETA');
+  } catch(e) {
+    showToast('Erreur publication: ' + (e.message || e), 'warning');
+  }
 }
 
 // ═══════════════════════════════════════════════════════
