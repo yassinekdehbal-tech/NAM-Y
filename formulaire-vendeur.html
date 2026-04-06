@@ -772,6 +772,102 @@ select {
   .form-row, .form-row-3 { grid-template-columns: 1fr; }
   .mini-form-row { grid-template-columns: 1fr; }
 }
+
+/* ── ADMIN: Client Search ── */
+.admin-only { display: none; }
+.admin-client-search {
+  background: linear-gradient(135deg, rgba(0,163,137,.06), rgba(0,163,137,.02));
+  border: 1.5px solid rgba(0,163,137,.25);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  position: relative;
+}
+.admin-client-search label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  display: block;
+}
+.admin-badge {
+  display: inline-block;
+  background: var(--accent, #00A389);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-left: 8px;
+  vertical-align: middle;
+  letter-spacing: .04em;
+}
+#admin-client-results {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: 100%;
+  z-index: 200;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  max-height: 260px;
+  overflow-y: auto;
+  display: none;
+}
+#admin-client-results .acr-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  transition: background .1s;
+}
+#admin-client-results .acr-item:last-child { border-bottom: none; }
+#admin-client-results .acr-item:hover { background: var(--bg-hover); }
+#admin-client-results .acr-type {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.acr-type-enseigne { background: #E8F5E9; color: #2E7D32; }
+.acr-type-particulier { background: #E3F2FD; color: #1565C0; }
+#admin-selected-client {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+}
+#admin-selected-client .asc-name { font-weight: 600; }
+#admin-selected-client .asc-clear {
+  margin-left: auto;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 16px;
+}
+#admin-selected-client .asc-clear:hover { color: var(--danger); }
+
+/* ── ADMIN: Expéditeur libre ── */
+.admin-expediteur-section {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 14px;
+}
+.admin-expediteur-section .form-card-header {
+  margin-bottom: 12px;
+}
 </style>
 </head>
 <body>
@@ -840,6 +936,56 @@ select {
       </div>
       <!-- STEP 1: Client & Livraison -->
       <div class="step-content" id="step-1">
+
+        <!-- ADMIN: Sélection client / enseigne -->
+        <div class="admin-only admin-client-search" id="admin-client-block">
+          <label>Client / Enseigne <span class="required">*</span><span class="admin-badge">ADMIN</span></label>
+          <input type="text" id="admin-client-input" class="form-input" placeholder="Rechercher un client ou une enseigne..." autocomplete="off" oninput="onAdminClientSearch(this.value)">
+          <div id="admin-client-results"></div>
+          <div id="admin-selected-client">
+            <span class="acr-type" id="asc-type-badge"></span>
+            <span class="asc-name" id="asc-name"></span>
+            <span style="color:var(--text-muted);font-size:12px" id="asc-email"></span>
+            <span class="asc-clear" onclick="clearAdminClient()" title="Retirer">&times;</span>
+          </div>
+          <span class="error-msg" id="err-admin-client">Veuillez sélectionner un client ou une enseigne</span>
+        </div>
+
+        <!-- ADMIN: Expéditeur libre -->
+        <div class="admin-only admin-expediteur-section" id="admin-exp-block">
+          <div class="form-card-header" style="padding:0;border:none;margin-bottom:10px">
+            <div class="form-card-icon">📤</div>
+            <div>
+              <div class="form-card-title" style="font-size:14px">Expéditeur <span class="admin-badge">ADMIN</span></div>
+              <div class="form-card-subtitle">Informations de l'expéditeur</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="form-group">
+              <label>Nom expéditeur</label>
+              <input type="text" id="admin-exp-nom" class="form-input" placeholder="Nom de l'expéditeur">
+            </div>
+            <div class="form-group">
+              <label>Téléphone expéditeur</label>
+              <input type="tel" id="admin-exp-tel" class="form-input" placeholder="01 23 45 67 89">
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:6px">
+            <label>Adresse expéditeur</label>
+            <input type="text" id="admin-exp-adresse" class="form-input" placeholder="Adresse complète">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
+            <div class="form-group">
+              <label>Code postal</label>
+              <input type="text" id="admin-exp-cp" class="form-input" placeholder="75000">
+            </div>
+            <div class="form-group">
+              <label>Ville</label>
+              <input type="text" id="admin-exp-ville" class="form-input" placeholder="Paris">
+            </div>
+          </div>
+        </div>
+
         <!-- Date + Créneau on one line -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div class="form-group">
@@ -1267,7 +1413,8 @@ document.addEventListener('click', (e) => {
 async function loadVendeurData() {
   try {
     const sessionUser = JSON.parse(sessionStorage.getItem('namy_user') || 'null');
-    if (sessionUser && sessionUser.entreprise_id) {
+    // Admin n'a pas forcément d'entreprise — skip le chargement magasin
+    if (sessionUser && sessionUser.entreprise_id && (!isAdmin || sessionUser.entreprise_id)) {
       const { data: entreprise } = await db
         .from('entreprises')
         .select('*')
@@ -1469,9 +1616,19 @@ function updateStepUI() {
 function validateStep1() {
   let ok = true;
 
+  // Admin : client obligatoire
+  if (isAdmin && !adminSelectedClient) {
+    const err = document.getElementById('err-admin-client');
+    if (err) err.classList.add('show');
+    ok = false;
+  } else {
+    const err = document.getElementById('err-admin-client');
+    if (err) err.classList.remove('show');
+  }
+
   // Date
   const date = document.getElementById('livraison-date') ? document.getElementById('livraison-date').value : '';
-  
+
   // Créneau
   if (!selectedCreneau) {
     const errCreneau = document.getElementById('err-creneau');
@@ -2183,13 +2340,39 @@ async function submitExpedition() {
   if (btn) { btn.disabled = true; btn.textContent = 'Envoi...'; }
 
   try {
+    // Admin : expéditeur libre + rattachement client
+    let expNom, expAdresse, expCp, expVille;
+    let bodyEntrepriseId = user?.entreprise_id || null;
+    let bodyCreatedBy = user?.id || null;
+
+    if (isAdmin) {
+      expNom = document.getElementById('admin-exp-nom')?.value || '';
+      expAdresse = document.getElementById('admin-exp-adresse')?.value || '';
+      expCp = document.getElementById('admin-exp-cp')?.value || '';
+      expVille = document.getElementById('admin-exp-ville')?.value || '';
+      // Rattacher au client sélectionné
+      if (adminSelectedClient) {
+        if (adminSelectedClient.type === 'entreprise') {
+          bodyEntrepriseId = adminSelectedClient.id;
+        } else {
+          bodyCreatedBy = adminSelectedClient.id;
+          bodyEntrepriseId = null;
+        }
+      }
+    } else {
+      expNom = MAGASIN.nom;
+      expAdresse = MAGASIN.adresse;
+      expCp = MAGASIN.cp;
+      expVille = MAGASIN.ville;
+    }
+
     const body = {
-      entreprise_id: user?.entreprise_id || null,
-      created_by: user?.id || null,
-      exp_nom: MAGASIN.nom,
-      exp_adresse: MAGASIN.adresse,
-      exp_cp: MAGASIN.cp,
-      exp_ville: MAGASIN.ville,
+      entreprise_id: bodyEntrepriseId,
+      created_by: bodyCreatedBy,
+      exp_nom: expNom,
+      exp_adresse: expAdresse,
+      exp_cp: expCp,
+      exp_ville: expVille,
       dest_nom: (document.getElementById('client-prenom')?.value || '') + ' ' + (document.getElementById('client-nom')?.value || ''),
       dest_adresse: document.getElementById('client-adresse')?.value || '',
       dest_cp: document.getElementById('client-cp')?.value || '',
@@ -2233,6 +2416,8 @@ async function submitExpedition() {
 }
 
 function resetForm() {
+  // Reset admin fields
+  if (isAdmin) clearAdminClient();
   // Reset all fields
   articles = [];
   selectedCreneau = null;
@@ -2347,6 +2532,172 @@ async function loadSuiviData() {
   }
 }
 
+// ─── ADMIN: RÔLE & CLIENT SEARCH ────────────────────────────
+let isAdmin = false;
+let adminSelectedClient = null; // { type: 'entreprise'|'utilisateur', id, nom, email }
+let adminClientSearchTimeout = null;
+
+function initAdminMode() {
+  const user = typeof getSessionUser === 'function' ? getSessionUser() : null;
+  console.log('[initAdminMode] user:', user?.prenom, user?.nom, '| role:', user?.role);
+  if (!user || !['admin', 'dispatcher'].includes(user.role)) {
+    console.log('[initAdminMode] Pas admin/dispatcher → mode vendeur');
+    return;
+  }
+  isAdmin = true;
+  console.log('[initAdminMode] Mode admin activé — affichage des blocs admin-only');
+
+  // Afficher les blocs admin (forcer display:block pour écraser le CSS .admin-only { display:none })
+  document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+
+  // Header : mode admin
+  const mn = document.getElementById('magasin-name');
+  if (mn) mn.textContent = 'Mode Administrateur';
+
+  // Fermer dropdown si clic extérieur
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#admin-client-block')) {
+      const res = document.getElementById('admin-client-results');
+      if (res) res.style.display = 'none';
+    }
+  });
+}
+
+async function onAdminClientSearch(query) {
+  const results = document.getElementById('admin-client-results');
+  if (!query || query.length < 2) { results.style.display = 'none'; return; }
+
+  clearTimeout(adminClientSearchTimeout);
+  adminClientSearchTimeout = setTimeout(async () => {
+    try {
+      const items = [];
+
+      // Recherche entreprises
+      const { data: entreprises } = await db.from('entreprises')
+        .select('id, nom, email')
+        .ilike('nom', '%' + query + '%')
+        .limit(5);
+      if (entreprises) {
+        entreprises.forEach(e => items.push({
+          type: 'entreprise', id: e.id,
+          nom: e.nom, email: e.email || '',
+          label: 'Enseigne'
+        }));
+      }
+
+      // Recherche utilisateurs (particuliers)
+      const { data: utilisateurs } = await db.from('utilisateurs')
+        .select('id, prenom, nom, email')
+        .or('prenom.ilike.%' + query + '%,nom.ilike.%' + query + '%')
+        .limit(5);
+      if (utilisateurs) {
+        utilisateurs.forEach(u => items.push({
+          type: 'utilisateur', id: u.id,
+          nom: (u.prenom || '') + ' ' + (u.nom || ''),
+          email: u.email || '',
+          label: 'Particulier'
+        }));
+      }
+
+      if (!items.length) {
+        results.innerHTML = '<div style="padding:14px;text-align:center;color:var(--text-muted);font-size:12px">Aucun résultat</div>';
+      } else {
+        results.innerHTML = items.map((it, i) => {
+          const typeClass = it.type === 'entreprise' ? 'acr-type-enseigne' : 'acr-type-particulier';
+          return `<div class="acr-item" onclick="selectAdminClient(${i})">
+            <span class="acr-type ${typeClass}">${it.label}</span>
+            <div style="flex:1">
+              <div style="font-weight:600">${it.nom}</div>
+              <div style="font-size:11px;color:var(--text-muted)">${it.email}</div>
+            </div>
+          </div>`;
+        }).join('');
+        // Stocker temporairement pour la sélection
+        results._items = items;
+      }
+      results.style.display = 'block';
+    } catch (e) {
+      console.warn('Admin client search error:', e);
+      results.style.display = 'none';
+    }
+  }, 300);
+}
+
+function selectAdminClient(index) {
+  const results = document.getElementById('admin-client-results');
+  const items = results._items;
+  if (!items || !items[index]) return;
+
+  adminSelectedClient = items[index];
+  results.style.display = 'none';
+  document.getElementById('admin-client-input').style.display = 'none';
+
+  // Afficher la sélection
+  const sel = document.getElementById('admin-selected-client');
+  const badge = document.getElementById('asc-type-badge');
+  badge.textContent = adminSelectedClient.label;
+  badge.className = 'acr-type ' + (adminSelectedClient.type === 'entreprise' ? 'acr-type-enseigne' : 'acr-type-particulier');
+  document.getElementById('asc-name').textContent = adminSelectedClient.nom;
+  document.getElementById('asc-email').textContent = adminSelectedClient.email;
+  sel.style.display = 'flex';
+
+  // Effacer erreur
+  const err = document.getElementById('err-admin-client');
+  if (err) err.classList.remove('show');
+
+  // Si c'est une entreprise, charger sa grille tarifaire
+  if (adminSelectedClient.type === 'entreprise') {
+    loadGrilleForEntreprise(adminSelectedClient.id);
+  }
+}
+
+function clearAdminClient() {
+  adminSelectedClient = null;
+  document.getElementById('admin-client-input').style.display = '';
+  document.getElementById('admin-client-input').value = '';
+  document.getElementById('admin-selected-client').style.display = 'none';
+}
+
+async function loadGrilleForEntreprise(entrepriseId) {
+  try {
+    const { data: assignments } = await db.from('clients_grilles')
+      .select('grille_id')
+      .eq('client_id', entrepriseId)
+      .limit(1);
+    const assignment = assignments && assignments.length ? assignments[0] : null;
+    if (assignment && assignment.grille_id) {
+      const { data: lignes } = await db.from('lignes_tarifaires_poids')
+        .select('*')
+        .eq('grille_id', assignment.grille_id)
+        .order('poids_min');
+      if (lignes && lignes.length) {
+        GRILLE = lignes.map(l => ({
+          poids_max: l.poids_max,
+          dim_max: l.dim_max_cm || l.dim_max,
+          colis_max: l.colis_max_kg || l.colis_max,
+          prix: l.prix_lieu || l.prix_lieu_choix || l.prix_pied || l.prix_pied_camion,
+        }));
+      }
+      const { data: opts } = await db.from('options_livraison')
+        .select('*')
+        .eq('grille_id', assignment.grille_id)
+        .order('nom');
+      if (opts && opts.length) {
+        OPTIONS_LIVRAISON = opts;
+        renderOptionsLivraison();
+      }
+      const { data: grilleConfig } = await db.from('grilles_tarifaires')
+        .select('rayon_km')
+        .eq('id', assignment.grille_id)
+        .maybeSingle();
+      if (grilleConfig && grilleConfig.rayon_km) GRILLE_RAYON = grilleConfig.rayon_km;
+    }
+    updatePrix();
+  } catch (e) {
+    console.warn('Admin grille load error:', e);
+  }
+}
+
 // ─── INIT ───────────────────────────────────────────────────
 const _initUser = typeof getSessionUser === 'function' ? getSessionUser() : null;
 const _allowedRoles = ['admin','dispatcher','client','dirigeant','vendeur'];
@@ -2358,6 +2709,7 @@ if (!_initUser) {
   console.warn('[formulaire-vendeur] Rôle non autorisé:', _initUser.role, '→ index');
   window.location.href = 'index.html';
 } else {
+  initAdminMode();
   loadVendeurData().then(() => loadDateConstraints());
 }
 </script>
