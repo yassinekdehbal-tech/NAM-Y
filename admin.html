@@ -96,6 +96,9 @@
     <div class="nav-link" onclick="switchSection('entreprises')">
       <span>🏢</span> Entreprises <span class="nav-count" id="count-entreprises">0</span>
     </div>
+    <div class="nav-link" onclick="switchSection('dispatch-params')">
+      <span>🚚</span> Dispatch <span class="nav-count">⚙️</span>
+    </div>
   </div>
 
   <div class="main">
@@ -171,6 +174,42 @@
         </table>
       </div>
     </div>
+
+    <div class="tab-section" id="section-dispatch-params">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Paramètres Dispatch</div>
+          <div class="page-sub">Configuration de la génération automatique des tournées</div>
+        </div>
+        <button class="btn btn-primary" onclick="saveDispatchParams()">Enregistrer</button>
+      </div>
+
+      <div class="card" style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="fg"><label class="fl">Durée max tournée (heures)</label><input type="number" class="fi" id="dp-duree-max" step="0.5" value="8"></div>
+        <div class="fg"><label class="fl">Distance max (km)</label><input type="number" class="fi" id="dp-distance-max" value="150"></div>
+        <div class="fg"><label class="fl">Distance absolue max (km)</label><input type="number" class="fi" id="dp-distance-abs" value="200"></div>
+        <div class="fg"><label class="fl">Vitesse moyenne (km/h)</label><input type="number" class="fi" id="dp-vitesse" value="30"></div>
+        <div class="fg"><label class="fl">Détour max retrait intermédiaire (km)</label><input type="number" class="fi" id="dp-detour" value="12"></div>
+        <div class="fg"><label class="fl">Nb max retraits par tournée (0=illimité)</label><input type="number" class="fi" id="dp-nb-retraits" value="0"></div>
+        <div class="fg"><label class="fl">Poids max colis homme seul (kg)</label><input type="number" class="fi" id="dp-poids-colis" value="30"></div>
+        <div class="fg"><label class="fl">Poids max commande homme seul (kg)</label><input type="number" class="fi" id="dp-poids-cmd" value="100"></div>
+        <div class="fg"><label class="fl">Temps chargement stop 1 (min)</label><input type="number" class="fi" id="dp-charge-1" value="20"></div>
+        <div class="fg"><label class="fl">Temps chargement stops 2-5 (min)</label><input type="number" class="fi" id="dp-charge-2" value="7"></div>
+        <div class="fg"><label class="fl">Temps chargement stops 6+ (min)</label><input type="number" class="fi" id="dp-charge-6" value="4"></div>
+        <div class="fg"><label class="fl">Temps livraison pièce du choix (min)</label><input type="number" class="fi" id="dp-liv-piece" value="15"></div>
+        <div class="fg"><label class="fl">Temps livraison trottoir (min)</label><input type="number" class="fi" id="dp-liv-trottoir" value="7"></div>
+        <div class="fg"><label class="fl">Méthode par défaut</label>
+          <select class="fi" id="dp-methode">
+            <option value="escargot">Escargot (spirale zones)</option>
+            <option value="ligne_sn">Ligne Sud → Nord</option>
+            <option value="ligne_eo">Ligne Est → Ouest</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Seuil rentabilité min (€ CA/tournée)</label><input type="number" class="fi" id="dp-seuil-renta" value="0" step="10"></div>
+        <div class="fg"><label class="fl">Rayon regroupement même secteur (km)</label><input type="number" class="fi" id="dp-rayon-regroup" value="12"></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -443,6 +482,7 @@ function switchSection(name) {
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
   document.getElementById('section-' + name).classList.add('active');
   event.currentTarget.classList.add('active');
+  if (name === 'dispatch-params') loadDispatchParams();
 }
 
 // ─── STATS ──────────────────────────────────────────────────
@@ -1179,6 +1219,58 @@ function setUnitToggle(field, type) {
 
 function getUnitType(field) {
   return unitTypes[field] || '%';
+}
+
+// ─── DISPATCH PARAMS ────────────────────────────────────────
+async function loadDispatchParams() {
+  try {
+    const { data } = await db.from('parametres_dispatch').select('*').eq('id', 1).single();
+    if (!data) return;
+    document.getElementById('dp-duree-max').value = data.duree_max_h || 8;
+    document.getElementById('dp-distance-max').value = data.distance_max_km || 150;
+    document.getElementById('dp-distance-abs').value = data.distance_absolue_km || 200;
+    document.getElementById('dp-vitesse').value = data.vitesse_moyenne_kmh || 30;
+    document.getElementById('dp-detour').value = data.detour_max_retrait_km || 12;
+    document.getElementById('dp-nb-retraits').value = data.nb_max_retraits || 0;
+    document.getElementById('dp-poids-colis').value = data.poids_max_colis_seul_kg || 30;
+    document.getElementById('dp-poids-cmd').value = data.poids_max_commande_seul_kg || 100;
+    document.getElementById('dp-charge-1').value = data.temps_chargement_1 || 20;
+    document.getElementById('dp-charge-2').value = data.temps_chargement_2_5 || 7;
+    document.getElementById('dp-charge-6').value = data.temps_chargement_6p || 4;
+    document.getElementById('dp-liv-piece').value = data.temps_livraison_piece || 15;
+    document.getElementById('dp-liv-trottoir').value = data.temps_livraison_trottoir || 7;
+    document.getElementById('dp-methode').value = data.methode_defaut || 'escargot';
+    document.getElementById('dp-seuil-renta').value = data.seuil_rentabilite_min || 0;
+    document.getElementById('dp-rayon-regroup').value = data.rayon_regroupement_km || 12;
+  } catch(e) { console.warn('Load dispatch params failed:', e); }
+}
+
+async function saveDispatchParams() {
+  try {
+    const { error } = await db.from('parametres_dispatch').update({
+      duree_max_h: parseFloat(document.getElementById('dp-duree-max').value) || 8,
+      distance_max_km: parseFloat(document.getElementById('dp-distance-max').value) || 150,
+      distance_absolue_km: parseFloat(document.getElementById('dp-distance-abs').value) || 200,
+      vitesse_moyenne_kmh: parseFloat(document.getElementById('dp-vitesse').value) || 30,
+      detour_max_retrait_km: parseFloat(document.getElementById('dp-detour').value) || 12,
+      nb_max_retraits: parseInt(document.getElementById('dp-nb-retraits').value) || 0,
+      poids_max_colis_seul_kg: parseFloat(document.getElementById('dp-poids-colis').value) || 30,
+      poids_max_commande_seul_kg: parseFloat(document.getElementById('dp-poids-cmd').value) || 100,
+      temps_chargement_1: parseInt(document.getElementById('dp-charge-1').value) || 20,
+      temps_chargement_2_5: parseInt(document.getElementById('dp-charge-2').value) || 7,
+      temps_chargement_6p: parseInt(document.getElementById('dp-charge-6').value) || 4,
+      temps_livraison_piece: parseInt(document.getElementById('dp-liv-piece').value) || 15,
+      temps_livraison_trottoir: parseInt(document.getElementById('dp-liv-trottoir').value) || 7,
+      methode_defaut: document.getElementById('dp-methode').value || 'escargot',
+      seuil_rentabilite_min: parseFloat(document.getElementById('dp-seuil-renta').value) || 0,
+      rayon_regroupement_km: parseFloat(document.getElementById('dp-rayon-regroup').value) || 12,
+      updated_at: new Date().toISOString()
+    }).eq('id', 1);
+    if (error) throw error;
+    showToast('Paramètres dispatch enregistrés');
+  } catch(e) {
+    showToast('Erreur: ' + (e.message || e), 'warning');
+  }
 }
 </script>
 </body>

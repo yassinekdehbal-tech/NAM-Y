@@ -188,6 +188,7 @@
   <button id="btnAuj" onclick="goToday()">Auj.</button>
   <button id="btnDemain" onclick="goTomorrow()">Demain</button>
   <button id="btnToutes" onclick="toggleAllDates()">Toutes</button>
+  <button class="btn-sm btn-accent" style="margin-left:auto" onclick="openGenerate()">🤖 Générer tournées</button>
 </div>
 
 <!-- MAP -->
@@ -286,6 +287,23 @@
     <div class="modal-actions">
       <button class="btn-sm btn-outline" onclick="closeModal('modalPublish')">Annuler</button>
       <button class="btn-sm btn-accent" onclick="confirmPublish()">PUBLIER</button>
+    </div>
+  </div>
+</div>
+
+<!-- GENERATE TOURNEES MODAL -->
+<div class="modal-overlay" id="modalGenerate" style="display:none">
+  <div class="modal-box" style="max-width:700px;max-height:85vh;overflow-y:auto">
+    <h3>Génération automatique des tournées</h3>
+    <div id="genParams" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-size:12px;color:var(--text-muted)"></div>
+    <div id="genProgress" style="display:none;padding:16px;text-align:center">
+      <div style="font-size:14px;font-weight:600;margin-bottom:8px">Analyse en cours...</div>
+      <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div id="genBar" style="width:0%;height:100%;background:var(--accent);transition:width .3s"></div></div>
+    </div>
+    <div id="genPreview" style="display:none"></div>
+    <div class="modal-actions" id="genActions">
+      <button class="btn-sm btn-outline" onclick="closeModal('modalGenerate')">Annuler</button>
+      <button class="btn-sm btn-accent" onclick="runGenerate()">Lancer la génération</button>
     </div>
   </div>
 </div>
@@ -914,6 +932,244 @@ async function confirmPublish() {
 }
 
 // ═══════════════════════════════════════════════════════
+//  AI TOURNEE GENERATION
+// ═══════════════════════════════════════════════════════
+let dispatchParams = null;
+let generatedTournees = [];
+
+async function loadDispatchParams() {
+  try {
+    const { data } = await db.from('parametres_dispatch').select('*').eq('id', 1).single();
+    dispatchParams = data || getDefaultParams();
+  } catch(e) { dispatchParams = getDefaultParams(); }
+}
+
+function getDefaultParams() {
+  return {
+    duree_max_h: 8, distance_max_km: 150, distance_absolue_km: 200,
+    vitesse_moyenne_kmh: 30, detour_max_retrait_km: 12, nb_max_retraits: 0,
+    poids_max_colis_seul_kg: 30, poids_max_commande_seul_kg: 100,
+    temps_chargement_1: 20, temps_chargement_2_5: 7, temps_chargement_6p: 4,
+    temps_livraison_piece: 15, temps_livraison_trottoir: 7,
+    methode_defaut: 'escargot', seuil_rentabilite_min: 0, rayon_regroupement_km: 12
+  };
+}
+
+async function openGenerate() {
+  await loadDispatchParams();
+  const p = dispatchParams;
+  document.getElementById('genParams').innerHTML =
+    '<span>Durée max: ' + p.duree_max_h + 'h</span> · ' +
+    '<span>Dist max: ' + p.distance_max_km + 'km</span> · ' +
+    '<span>Méthode: ' + p.methode_defaut + '</span> · ' +
+    '<span>Double équipage: >' + p.poids_max_colis_seul_kg + 'kg/colis</span>';
+  document.getElementById('genProgress').style.display = 'none';
+  document.getElementById('genPreview').style.display = 'none';
+  document.getElementById('genPreview').innerHTML = '';
+  generatedTournees = [];
+  openModal('modalGenerate');
+}
+
+async function runGenerate() {
+  const p = dispatchParams;
+  const unassigned = commandes.filter(c => !c.tournee_id && c.statut != 'annule');
+  if (!unassigned.length) { showToast('Aucune livraison à assigner', 'warning'); return; }
+
+  document.getElementById('genProgress').style.display = 'block';
+  document.getElementById('genBar').style.width = '10%';
+
+  // Step 1: Flag double équipage
+  unassigned.forEach(c => {
+    c._doubleEquipage = false;
+    if (c.poids_max_colis && c.poids_max_colis > p.poids_max_colis_seul_kg) c._doubleEquipage = true;
+    if ((c.poids_total || 0) > p.poids_max_commande_seul_kg && (c.option_livraison || '').toLowerCase().includes('choix')) c._doubleEquipage = true;
+  });
+
+  document.getElementById('genBar').style.width = '30%';
+  await new Promise(r => setTimeout(r, 200));
+
+  // Step 2: Group by créneau then nearest neighbor
+  const creneaux = [...new Set(unassigned.map(c => c.creneau || ''))].sort();
+  const sorted = [];
+  for (const cr of creneaux) {
+    const group = unassigned.filter(c => (c.creneau || '') === cr);
+    // Sort by method
+    if (p.methode_defaut === 'ligne_sn') {
+      group.sort((a, b) => (b.lat || 48.85) - (a.lat || 48.85)); // North to South
+    } else if (p.methode_defaut === 'ligne_eo') {
+      group.sort((a, b) => (a.lng || 2.35) - (b.lng || 2.35)); // East to West
+    } else {
+      // Escargot: nearest neighbor from center
+      const centerLat = group.reduce((s, c) => s + (c.lat || 48.85), 0) / group.length;
+      const centerLng = group.reduce((s, c) => s + (c.lng || 2.35), 0) / group.length;
+      const remaining = [...group];
+      const ordered = [];
+      let current = { lat: centerLat, lng: centerLng };
+      while (remaining.length) {
+        let nearIdx = 0, nearDist = Infinity;
+        for (let i = 0; i < remaining.length; i++) {
+          const d = haversine(current.lat, current.lng, remaining[i].lat || 48.85, remaining[i].lng || 2.35);
+          if (d < nearDist) { nearDist = d; nearIdx = i; }
+        }
+        current = remaining.splice(nearIdx, 1)[0];
+        ordered.push(current);
+      }
+      group.length = 0;
+      group.push(...ordered);
+    }
+    sorted.push(...group);
+  }
+
+  document.getElementById('genBar').style.width = '60%';
+  await new Promise(r => setTimeout(r, 200));
+
+  // Step 3: Build tournées with constraints
+  generatedTournees = [];
+  let current = { stops: [], totalDist: 0, totalMinutes: 0, totalCA: 0, isDouble: false };
+  const maxMinutes = p.duree_max_h * 60;
+
+  // Prioritize double équipage together
+  const doubles = sorted.filter(c => c._doubleEquipage);
+  const singles = sorted.filter(c => !c._doubleEquipage);
+  const orderedAll = [...doubles, ...singles];
+
+  for (const cmd of orderedAll) {
+    // Estimate time for this stop
+    const stopIdx = current.stops.length;
+    let addMinutes = stopIdx === 0 ? p.temps_chargement_1 : (stopIdx < 5 ? p.temps_chargement_2_5 : p.temps_chargement_6p);
+    addMinutes += (cmd.option_livraison || '').toLowerCase().includes('trottoir') ? p.temps_livraison_trottoir : p.temps_livraison_piece;
+
+    if (current.stops.length > 0) {
+      const prev = current.stops[current.stops.length - 1];
+      const dist = haversine(prev.lat || 48.85, prev.lng || 2.35, cmd.lat || 48.85, cmd.lng || 2.35) * 1.3;
+      addMinutes += (dist / p.vitesse_moyenne_kmh) * 60;
+      current.totalDist += dist;
+    }
+
+    // Check constraints
+    const wouldExceedTime = (current.totalMinutes + addMinutes) > maxMinutes;
+    const wouldExceedDist = current.totalDist > p.distance_max_km;
+    const switchDoubleType = current.stops.length > 0 && current.isDouble !== cmd._doubleEquipage && current.stops.length >= 3;
+
+    if (wouldExceedTime || wouldExceedDist || switchDoubleType) {
+      // Finalize current tournée
+      if (current.stops.length > 0) {
+        generatedTournees.push({ ...current });
+      }
+      current = { stops: [], totalDist: 0, totalMinutes: 0, totalCA: 0, isDouble: cmd._doubleEquipage };
+    }
+
+    current.stops.push(cmd);
+    current.totalMinutes += addMinutes;
+    current.totalCA += parseFloat(cmd.prix_ht || 0);
+    if (cmd._doubleEquipage) current.isDouble = true;
+  }
+  if (current.stops.length > 0) generatedTournees.push(current);
+
+  // Check rentability — merge isolated stops with nearest tournée
+  if (p.seuil_rentabilite_min > 0) {
+    generatedTournees = generatedTournees.filter(t => {
+      if (t.totalCA >= p.seuil_rentabilite_min) return true;
+      if (t.stops.length === 1 && generatedTournees.length > 1) {
+        // Find nearest tournée and merge
+        const stop = t.stops[0];
+        let bestIdx = -1, bestDist = Infinity;
+        generatedTournees.forEach((ot, i) => {
+          if (ot === t) return;
+          const lastStop = ot.stops[ot.stops.length - 1];
+          const d = haversine(lastStop.lat || 48.85, lastStop.lng || 2.35, stop.lat || 48.85, stop.lng || 2.35);
+          if (d < bestDist) { bestDist = d; bestIdx = i; }
+        });
+        if (bestIdx >= 0 && bestDist < p.rayon_regroupement_km) {
+          generatedTournees[bestIdx].stops.push(stop);
+          generatedTournees[bestIdx].totalCA += parseFloat(stop.prix_ht || 0);
+          return false;
+        }
+      }
+      return true;
+    });
+  }
+
+  document.getElementById('genBar').style.width = '100%';
+  await new Promise(r => setTimeout(r, 300));
+
+  // Step 4: Render preview
+  renderGeneratePreview();
+}
+
+function renderGeneratePreview() {
+  document.getElementById('genProgress').style.display = 'none';
+  const preview = document.getElementById('genPreview');
+  preview.style.display = 'block';
+
+  if (!generatedTournees.length) {
+    preview.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Aucune tournée générée</div>';
+    return;
+  }
+
+  let html = '<div style="margin-bottom:8px;font-size:13px;font-weight:600">' + generatedTournees.length + ' tournée(s) générée(s)</div>';
+
+  generatedTournees.forEach((t, i) => {
+    const color = COLORS[i % COLORS.length];
+    const doubleTag = t.isDouble ? ' <span style="background:#FEF9C3;color:#854D0E;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600">2 👤</span>' : '';
+    html += '<div style="border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:8px;overflow:hidden">';
+    html += '<div style="padding:10px 14px;background:' + color + '11;border-left:3px solid ' + color + ';display:flex;align-items:center;gap:8px">';
+    html += '<strong style="font-size:13px">Tournée ' + (i + 1) + '</strong>' + doubleTag;
+    html += '<span style="margin-left:auto;font-size:12px;color:var(--text-muted)">' + t.stops.length + ' stops · ' + t.totalDist.toFixed(1) + 'km · ' + Math.round(t.totalMinutes) + 'min · ' + t.totalCA.toFixed(0) + '€</span>';
+    html += '</div>';
+    html += '<div style="padding:6px 14px;font-size:12px">';
+    t.stops.forEach((s, j) => {
+      const doubleIcon = s._doubleEquipage ? ' <span title="Double équipage">2👤</span>' : '';
+      html += '<div style="padding:3px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center">';
+      html += '<span style="color:var(--text-muted);width:20px;text-align:right">' + (j+1) + '.</span>';
+      html += '<span style="font-weight:500">' + (s.dest_nom || '') + '</span>' + doubleIcon;
+      html += '<span style="color:var(--text-muted);margin-left:auto">' + (s.creneau || '') + ' · ' + (s.poids_total || 0) + 'kg</span>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+  });
+
+  preview.innerHTML = html;
+
+  // Update actions
+  document.getElementById('genActions').innerHTML =
+    '<button class="btn-sm btn-outline" onclick="closeModal(\'modalGenerate\')">Annuler</button>' +
+    '<button class="btn-sm btn-outline" onclick="runGenerate()">Regénérer</button>' +
+    '<button class="btn-sm btn-accent" onclick="applyGenerated()">Appliquer (' + generatedTournees.length + ' tournées)</button>';
+}
+
+async function applyGenerated() {
+  if (!generatedTournees.length) return;
+
+  for (let i = 0; i < generatedTournees.length; i++) {
+    const gt = generatedTournees[i];
+    const color = COLORS[i % COLORS.length];
+    const nom = 'Tournee ' + (i + 1) + ' — ' + selectedDate;
+
+    try {
+      // Create tournée
+      const { data: newT, error } = await db.from('tournees').insert({
+        nom, date_tournee: selectedDate, heure_depart: '08:00',
+        couleur: color, statut: 'brouillon'
+      }).select().single();
+
+      if (error || !newT) continue;
+
+      // Assign expeditions
+      for (const stop of gt.stops) {
+        await db.from('expeditions').update({ tournee_id: newT.id }).eq('id', stop.id);
+      }
+    } catch(e) { console.warn('Apply generated failed:', e); }
+  }
+
+  closeModal('modalGenerate');
+  await loadData();
+  renderAll();
+  showToast(generatedTournees.length + ' tournées créées et assignées');
+  generatedTournees = [];
+}
+
+// ═══════════════════════════════════════════════════════
 //  CREATE TOURNEE MODAL
 // ═══════════════════════════════════════════════════════
 let selectedColor = COLORS[0];
@@ -994,6 +1250,7 @@ db.channel('dispatch-rt')
 document.addEventListener('DOMContentLoaded', async () => {
   initMap();
   await loadData();
+  await loadDispatchParams();
   renderAll();
 });
 </script>

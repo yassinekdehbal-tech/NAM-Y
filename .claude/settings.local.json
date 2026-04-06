@@ -81,7 +81,8 @@
       "Bash(python3 -c \":*)",
       "Bash(echo '=== Accès propriétés JS potentiellement faux ===' grep -rn e.date[^_] --include=*.js /Users/wassila/Downloads/NAM-Y/)",
       "Bash(echo '=== Vérification finale ===' grep -rn \"expediteur_adresse\\\\|expediteur_cp\\\\|expediteur_ville\\\\|\\\\.expediteur[^_]\\\\|\\\\.destinataire\\\\|\\\\.dest_tel[^e]\\\\|e\\\\.poids[^_m]\\\\b\\\\|''''date''''\\\\|\\\\.eq.*''''date''''\" --include=*.js --include=*.html /Users/wassila/Downloads/NAM-Y/)",
-      "Bash(echo '=== Colonnes erronées restantes ===' grep -rn \"\\\\.expediteur[^_]\\\\|\\\\.destinataire\\\\b\\\\|\\\\.dest_tel[^e]\\\\|expediteur_adresse\\\\|expediteur_cp\\\\|expediteur_ville\" --include=*.js --include=*.html /Users/wassila/Downloads/NAM-Y/)"
+      "Bash(echo '=== Colonnes erronées restantes ===' grep -rn \"\\\\.expediteur[^_]\\\\|\\\\.destinataire\\\\b\\\\|\\\\.dest_tel[^e]\\\\|expediteur_adresse\\\\|expediteur_cp\\\\|expediteur_ville\" --include=*.js --include=*.html /Users/wassila/Downloads/NAM-Y/)",
+      "Read(//<script>/,/<\\\\/**)"
     ]
   }
 }
