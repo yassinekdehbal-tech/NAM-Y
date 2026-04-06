@@ -336,7 +336,31 @@
       </div>
       <div id="ee-grille-info" style="font-size:12px;color:var(--text-muted);margin-top:4px"></div>
 
-      <div class="section-label">Conditions contractuelles</div>
+      <div class="section-label">Cr&eacute;neaux de livraison</div>
+
+      <div id="ee-creneaux-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+
+      <div id="ee-creneaux-form" style="background:var(--bg-hover);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px;display:none">
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px">Nouveau cr&eacute;neau</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px" id="ee-cr-jours">
+          <div class="perm-item" data-jour="lundi" onclick="toggleJour(this)" style="padding:5px 10px;font-size:11px">Lun</div>
+          <div class="perm-item" data-jour="mardi" onclick="toggleJour(this)" style="padding:5px 10px;font-size:11px">Mar</div>
+          <div class="perm-item" data-jour="mercredi" onclick="toggleJour(this)" style="padding:5px 10px;font-size:11px">Mer</div>
+          <div class="perm-item" data-jour="jeudi" onclick="toggleJour(this)" style="padding:5px 10px;font-size:11px">Jeu</div>
+          <div class="perm-item" data-jour="vendredi" onclick="toggleJour(this)" style="padding:5px 10px;font-size:11px">Ven</div>
+          <div class="perm-item" data-jour="samedi" onclick="toggleJour(this)" style="padding:5px 10px;font-size:11px">Sam</div>
+          <div class="perm-item" data-jour="dimanche" onclick="toggleJour(this)" style="padding:5px 10px;font-size:11px">Dim</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <div class="fg" style="flex:1"><label class="fl">D&eacute;but</label><input type="time" class="fi" id="ee-cr-debut" value="08:00" style="padding:6px 10px"></div>
+          <div class="fg" style="flex:1"><label class="fl">Fin</label><input type="time" class="fi" id="ee-cr-fin" value="12:00" style="padding:6px 10px"></div>
+          <button class="btn btn-accent btn-sm" onclick="addCreneau()" style="height:36px">Ajouter</button>
+        </div>
+      </div>
+
+      <button class="btn btn-ghost btn-sm" id="ee-cr-toggle" onclick="toggleCreneauxForm()" style="margin-top:4px;font-size:12px">+ Ajouter un cr&eacute;neau</button>
+
+      <div class="section-label" style="margin-top:12px">Conditions contractuelles</div>
 
       <div class="fr">
         <div class="fg">
@@ -1139,6 +1163,10 @@ async function editEntreprise(id) {
     el.classList.toggle('on', on);
   });
 
+  // Charger les créneaux
+  await loadCreneaux(id);
+  document.getElementById('ee-creneaux-form').style.display = 'none';
+
   openModal('modal-edit-ent');
 }
 
@@ -1268,6 +1296,80 @@ async function saveDispatchParams() {
     }).eq('id', 1);
     if (error) throw error;
     showToast('Paramètres dispatch enregistrés');
+  } catch(e) {
+    showToast('Erreur: ' + (e.message || e), 'warning');
+  }
+}
+
+// ─── CRÉNEAUX CLIENT ────────────────────────────────────────
+let creneauxClient = [];
+
+function toggleCreneauxForm() {
+  const form = document.getElementById('ee-creneaux-form');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+async function loadCreneaux(entrepriseId) {
+  const list = document.getElementById('ee-creneaux-list');
+  if (!list) return;
+  try {
+    const { data } = await db.from('creneaux_client').select('*').eq('entreprise_id', entrepriseId).eq('actif', true).order('heure_debut');
+    creneauxClient = data || [];
+  } catch(e) { creneauxClient = []; }
+  renderCreneaux();
+}
+
+function renderCreneaux() {
+  const list = document.getElementById('ee-creneaux-list');
+  if (!list) return;
+  if (!creneauxClient.length) {
+    list.innerHTML = '<span style="font-size:12px;color:var(--text-hint)">Aucun cr\u00e9neau configur\u00e9</span>';
+    return;
+  }
+  const JOUR_SHORT = { lundi:'Lun', mardi:'Mar', mercredi:'Mer', jeudi:'Jeu', vendredi:'Ven', samedi:'Sam', dimanche:'Dim' };
+  list.innerHTML = creneauxClient.map(c => {
+    const jours = (c.jours || []).map(j => JOUR_SHORT[j] || j).join('-');
+    return '<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--accent-light);color:var(--accent-dark);border-radius:var(--radius-pill);font-size:12px;font-weight:600">'
+      + jours + ' ' + (c.heure_debut||'').slice(0,5) + '-' + (c.heure_fin||'').slice(0,5)
+      + ' <button onclick="removeCreneau(\'' + c.id + '\')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;padding:0 2px" title="Supprimer">&times;</button>'
+      + '</span>';
+  }).join('');
+}
+
+async function addCreneau() {
+  if (!editingEntId) return;
+  const joursEls = document.querySelectorAll('#ee-cr-jours .perm-item.on');
+  const jours = Array.from(joursEls).map(el => el.dataset.jour);
+  const debut = document.getElementById('ee-cr-debut').value;
+  const fin = document.getElementById('ee-cr-fin').value;
+
+  if (!jours.length) { showToast('S\u00e9lectionnez au moins un jour', 'warning'); return; }
+  if (!debut || !fin) { showToast('Renseignez les heures', 'warning'); return; }
+
+  try {
+    const { data, error } = await db.from('creneaux_client').insert({
+      entreprise_id: editingEntId,
+      jours: jours,
+      heure_debut: debut,
+      heure_fin: fin,
+    }).select().single();
+    if (error) throw error;
+    creneauxClient.push(data);
+    renderCreneaux();
+    // Reset le form
+    document.querySelectorAll('#ee-cr-jours .perm-item').forEach(el => el.classList.remove('on'));
+    showToast('Cr\u00e9neau ajout\u00e9');
+  } catch(e) {
+    showToast('Erreur: ' + (e.message || e), 'warning');
+  }
+}
+
+async function removeCreneau(id) {
+  try {
+    await db.from('creneaux_client').delete().eq('id', id);
+    creneauxClient = creneauxClient.filter(c => c.id != id);
+    renderCreneaux();
+    showToast('Cr\u00e9neau supprim\u00e9');
   } catch(e) {
     showToast('Erreur: ' + (e.message || e), 'warning');
   }
