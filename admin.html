@@ -1206,13 +1206,17 @@ async function saveEntrepriseParams() {
     const selectedGrille = document.getElementById('ee-grille').value;
     if (selectedGrille) {
       try {
-        await db.from('clients_grilles').upsert(
-          { client_id: editingEntId, grille_id: selectedGrille },
-          { onConflict: 'client_id' }
-        );
+        // Supprimer les anciennes assignations puis insérer la nouvelle
+        await db.from('clients_grilles').delete().eq('client_id', editingEntId);
+        await db.from('clients_grilles').insert({ client_id: editingEntId, grille_id: selectedGrille });
       } catch (e) {
         console.warn('Erreur assignation grille:', e);
       }
+    } else {
+      // Si aucune grille sélectionnée, supprimer l'assignation
+      try {
+        await db.from('clients_grilles').delete().eq('client_id', editingEntId);
+      } catch (e) {}
     }
 
     closeModal('modal-edit-ent');
